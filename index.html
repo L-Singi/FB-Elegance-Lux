@@ -49,6 +49,7 @@
         .status-badge.lancamento { background:#b88b4a; color:#000; }
         .status-badge.disponivel { background:#2a2a2a; color:#fff; }
         .status-badge.embreve { background:#444; color:#ddd; }
+        .status-badge.vendido { background:#c0392b; color:#fff; font-weight:600; letter-spacing:0.8px; text-decoration:none; }
         .product-info { padding:20px 16px; text-align:center; }
         .product-category { font-size:0.7rem; text-transform:uppercase; letter-spacing:1.5px; color:#b88b4a; margin-bottom:8px; font-weight:400; }
         .product-title { font-size:1.1rem; font-weight:500; margin-bottom:6px; color:#fff; }
@@ -78,22 +79,10 @@
         .modal-whatsapp:hover { background:#1da851; }
         @media (max-width:768px) {
             .container { padding:0 20px; }
-            .header-inner {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-            .logo-area {
-                align-items: center;
-            }
-            .tagline {
-                max-width: 100%;
-                text-align: center;
-            }
-            .nav-links {
-                justify-content: center;
-                width: 100%;
-            }
+            .header-inner { flex-direction: column; align-items: center; text-align: center; }
+            .logo-area { align-items: center; }
+            .tagline { max-width: 100%; text-align: center; }
+            .nav-links { justify-content: center; width: 100%; }
             .modal-grid { grid-template-columns:1fr; }
             .modal-info { padding:24px; }
             .nav-arrow { opacity:0.6; }
@@ -111,16 +100,13 @@
         .footer-social a:hover { color:#fff; }
         .payment-methods { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; }
         .payment-item { font-size:0.8rem; color:#aaa; display:flex; align-items:center; gap:6px; background:#111; padding:4px 14px; border-radius:40px; border:1px solid #2a2a2a; }
-        .whatsapp-footer { text-align:center; margin:24px 0 20px; }
-        .btn-whatsapp-footer { display:inline-flex; align-items:center; gap:12px; background-color:#25D366; color:#fff; border:none; padding:12px 32px; border-radius:60px; font-weight:500; font-size:0.9rem; text-decoration:none; transition:background .2s; }
-        .btn-whatsapp-footer:hover { background-color:#1da851; }
         .admin-button-footer { text-align:center; }
-        .btn-admin-footer { background:none; border:1px solid #3a3a3a; color:#ccc; padding:10px 28px; border-radius:40px; cursor:pointer; font-size:0.8rem; font-weight:400; transition:.2s; }
-        .btn-admin-footer:hover { background:#1f1f1f; border-color:#fff; color:#fff; }
+        /* Botão admin oculto - acesso apenas via duplo clique na logo */
+        .btn-admin-footer { display: none; }
         .copyright { text-align:center; font-size:0.7rem; color:#6e6e6e; margin-top:32px; }
         .copyright a { color:#6e6e6e; text-decoration:none; transition:color .2s; }
         .copyright a:hover { color:#b88b4a; text-decoration:underline; }
-        .admin-panel { max-width:680px; margin:60px auto 40px; background:#111; border:1px solid #2a2a2a; padding:32px; border-radius:28px; display:none; }
+        .admin-panel { max-width:780px; margin:60px auto 40px; background:#111; border:1px solid #2a2a2a; padding:32px; border-radius:28px; display:none; }
         .admin-panel h3 { font-weight:500; font-size:1.2rem; margin-bottom:24px; color:#fff; border-bottom:1px solid #2a2a2a; padding-bottom:12px; }
         .admin-form { display:flex; flex-direction:column; gap:16px; margin-bottom:40px; }
         .admin-form input, .admin-form select, .admin-form textarea { background:#1a1a1a; border:1px solid #333; border-radius:32px; padding:12px 20px; font-size:0.85rem; font-family:'Inter',sans-serif; color:#fff; }
@@ -134,10 +120,16 @@
         .size-checkbox-group input { width:auto; margin-right:4px; transform:scale(0.9); }
         .admin-list { margin-top:20px; }
         .admin-item { display:flex; align-items:center; justify-content:space-between; background:#1a1a1a; padding:12px 16px; border-radius:60px; margin-bottom:12px; flex-wrap:wrap; gap:12px; border:1px solid #2a2a2a; }
-        .admin-item-info { display:flex; flex-wrap:wrap; gap:12px; align-items:center; font-size:0.85rem; }
+        .admin-item-info { display:flex; flex-wrap:wrap; gap:12px; align-items:center; font-size:0.85rem; flex:2; }
         .admin-item-info strong { font-weight:500; color:#fff; }
-        .admin-item button { background:none; border:1px solid #662222; color:#ff9999; padding:6px 16px; border-radius:30px; cursor:pointer; font-size:0.7rem; transition:.2s; }
-        .admin-item button:hover { background:#662222; color:#fff; border-color:#ff9999; }
+        .admin-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .admin-actions button { background:none; border:1px solid #3a3a3a; color:#ccc; padding:6px 14px; border-radius:30px; cursor:pointer; font-size:0.7rem; transition:.2s; }
+        .admin-actions button.edit-price { border-color:#b88b4a; color:#b88b4a; }
+        .admin-actions button.edit-price:hover { background:#b88b4a; color:#111; }
+        .admin-actions button.mark-sold { border-color:#c0392b; color:#ff9e8f; }
+        .admin-actions button.mark-sold:hover { background:#c0392b; color:#fff; }
+        .admin-actions button.delete-prod { border-color:#662222; color:#ff9999; }
+        .admin-actions button.delete-prod:hover { background:#662222; color:#fff; }
         .empty-message { text-align:center; padding:60px 20px; color:#6a6a6a; font-style:italic; background:#0f0f0f; border-radius:28px; border:1px dashed #2a2a2a; }
         .logout-btn { background:#333; color:#fff; border:none; padding:8px 16px; border-radius:40px; cursor:pointer; margin-top:16px; font-size:0.8rem; transition:.2s; }
         .logout-btn:hover { background:#b88b4a; color:#000; }
@@ -221,13 +213,7 @@
                 <span class="payment-item">💵 Dinheiro</span>
             </div>
         </div>
-        <div class="footer-row">
-            <div class="whatsapp-footer">
-                <a href="https://wa.me/5543996179533?text=Olá!%20Gostaria%20de%20mais%20informações%20sobre%20os%20produtos." class="btn-whatsapp-footer" target="_blank">
-                    📲 FALE CONOSCO NO WHATSAPP
-                </a>
-            </div>
-        </div>
+        <!-- Botão "FALE CONOSCO NO WHATSAPP" removido -->
         <div class="footer-row">
             <div class="admin-button-footer">
                 <button class="btn-admin-footer" id="adminButton">🔐 Área do Admin</button>
@@ -266,7 +252,7 @@
             <div id="adminListaContainer"></div>
         </div>
         <button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button>
-        <p style="font-size:0.7rem; color:#666; margin-top:20px; text-align:center;">Clique duas vezes no logotipo ou use o botão abaixo</p>
+        <!-- Mensagem removida -->
     </div>
 </div>
 
@@ -296,7 +282,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
     (function() {
-        // Configuração Supabase
         const SUPABASE_URL = "https://bachgtlwmaroytvhhvfn.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhY2hndGx3bWFyb3l0dmhodmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0OTQ4MDAsImV4cCI6MjA5MDA3MDgwMH0.J8ajqwCRrAPLkfYMuXYWs82eO6x6s4A_HteoqOtNFFI";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -307,7 +292,6 @@
         let adminVisible = false;
         const adminPanel = document.getElementById('adminPanel');
 
-        // Carregar produtos do Supabase
         async function carregarProdutos() {
             try {
                 const { data, error } = await supabase
@@ -327,7 +311,42 @@
             }
         }
 
-        // Adicionar produto
+        async function atualizarProduto(id, updates) {
+            const { error } = await supabase
+                .from('produtos')
+                .update(updates)
+                .eq('id', id);
+            if (error) {
+                alert('Erro ao atualizar: ' + error.message);
+                return false;
+            }
+            const index = produtos.findIndex(p => p.id === id);
+            if (index !== -1) {
+                produtos[index] = { ...produtos[index], ...updates };
+            }
+            renderizarCatalogo();
+            if (adminVisible) renderizarAdminLista();
+            return true;
+        }
+
+        async function editarPrecoProduto(id, precoAtual) {
+            let novoPrecoRaw = prompt("Digite o novo preço (ex: R$ 299,90 ou 299.90):", precoAtual);
+            if (!novoPrecoRaw) return;
+            let numerico = novoPrecoRaw.replace(/[^\d,]/g, '').replace(',', '.');
+            let numero = parseFloat(numerico);
+            if (isNaN(numero)) {
+                alert("Preço inválido. Use formato como 199,90");
+                return;
+            }
+            const precoFormatado = 'R$ ' + numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            await atualizarProduto(id, { preco: precoFormatado });
+        }
+
+        async function alternarStatusVendido(id, statusAtual) {
+            let novoStatus = (statusAtual === 'vendido') ? 'disponiveis' : 'vendido';
+            await atualizarProduto(id, { status: novoStatus });
+        }
+
         async function adicionarProduto() {
             const nome = document.getElementById('prodNome').value.trim();
             const desc = document.getElementById('prodDesc').value.trim();
@@ -342,7 +361,6 @@
             }
             if (!preco.startsWith('R$')) preco = formatPrice(preco);
 
-            // Upload imagens
             const uploadedUrls = [];
             for (let file of files) {
                 const fileName = `${Date.now()}_${file.name}`;
@@ -407,9 +425,8 @@
             alert('Produto adicionado com sucesso!');
         }
 
-        // Excluir produto
         async function excluirProduto(id) {
-            if (!confirm('Excluir este produto?')) return;
+            if (!confirm('Excluir este produto permanentemente?')) return;
 
             const produto = produtos.find(p => p.id === id);
             if (produto && produto.images && produto.images.length) {
@@ -433,7 +450,6 @@
             if (adminVisible) renderizarAdminLista();
         }
 
-        // Renderização do catálogo
         function renderizarCatalogo() {
             const grid = document.getElementById('product-grid');
             const info = document.getElementById('result-info');
@@ -445,6 +461,13 @@
                 const busca = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 filtrados = filtrados.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(busca));
             }
+            // Ordenar: produtos não vendidos primeiro, depois vendidos (jogar para baixo)
+            filtrados.sort((a,b) => {
+                if (a.status === 'vendido' && b.status !== 'vendido') return 1;
+                if (a.status !== 'vendido' && b.status === 'vendido') return -1;
+                return 0;
+            });
+
             if (filtrados.length === 0) {
                 grid.innerHTML = `<div class="empty-message">✦ Nenhum produto encontrado ✦<br>Adicione produtos ou ajuste os filtros</div>`;
                 info.innerText = 'NENHUM PRODUTO ENCONTRADO';
@@ -464,7 +487,8 @@
                 let statusClass = '';
                 if (prod.status === 'disponiveis') { statusLabel = 'DISPONÍVEL'; statusClass = 'disponivel'; }
                 else if (prod.status === 'lancamentos') { statusLabel = 'LANÇAMENTO'; statusClass = 'lancamento'; }
-                else { statusLabel = 'EM BREVE'; statusClass = 'embreve'; }
+                else if (prod.status === 'embreve') { statusLabel = 'EM BREVE'; statusClass = 'embreve'; }
+                else if (prod.status === 'vendido') { statusLabel = 'VENDIDO'; statusClass = 'vendido'; }
                 let sizeHtml = '';
                 if (prod.categoria === 'vestuario' && prod.tamanhos && prod.tamanhos.length) {
                     sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
@@ -512,61 +536,14 @@
             document.querySelectorAll('.product-card').forEach(card => {
                 const prodId = card.getAttribute('data-id');
                 const prod = produtos.find(p => p.id === prodId);
-                if (prod && !card.dataset.currentIndex) {
-                    card.dataset.currentIndex = '0';
-                }
+                if (prod && !card.dataset.currentIndex) card.dataset.currentIndex = '0';
             });
         }
 
-        function handleArrowClick(e) {
-            e.stopPropagation();
-            const arrow = e.currentTarget;
-            const prodId = arrow.getAttribute('data-id');
-            const direction = arrow.getAttribute('data-dir');
-            const prod = produtos.find(p => p.id === prodId);
-            if (!prod || !prod.images || prod.images.length <= 1) return;
-            const card = arrow.closest('.product-card');
-            let currentIdx = parseInt(card.dataset.currentIndex || '0');
-            if (direction === 'prev') {
-                currentIdx = (currentIdx - 1 + prod.images.length) % prod.images.length;
-            } else {
-                currentIdx = (currentIdx + 1) % prod.images.length;
-            }
-            card.dataset.currentIndex = currentIdx;
-            const imgElement = card.querySelector('.product-image');
-            imgElement.src = prod.images[currentIdx];
-        }
-
-        function handleWhatsAppClick(e) {
-            e.stopPropagation();
-            const id = e.currentTarget.getAttribute('data-id');
-            const prod = produtos.find(p => p.id === id);
-            if (prod) {
-                const numero = "5543996179533";
-                let extra = '';
-                if (prod.categoria === 'vestuario' && prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
-                if (prod.categoria === 'calcados' && prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
-                const msg = `Olá! Tenho interesse no produto: ${prod.nome} - ${prod.preco}${extra}`;
-                window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank');
-            }
-        }
-
-        function handleDetailsClick(e) {
-            e.stopPropagation();
-            const id = e.currentTarget.getAttribute('data-id');
-            const prod = produtos.find(p => p.id === id);
-            if (prod) abrirModal(prod);
-        }
-
-        function handleCardClick(e) {
-            if (e.target.classList.contains('btn-whatsapp-card') || e.target.classList.contains('btn-details') ||
-                e.target.classList.contains('nav-arrow') || e.target.classList.contains('nav-arrow-left') || e.target.classList.contains('nav-arrow-right') ||
-                e.target.closest('.nav-arrow')) return;
-            const card = e.currentTarget;
-            const id = card.getAttribute('data-id');
-            const prod = produtos.find(p => p.id === id);
-            if (prod) abrirModal(prod);
-        }
+        function handleArrowClick(e) { e.stopPropagation(); const arrow = e.currentTarget; const prodId = arrow.getAttribute('data-id'); const direction = arrow.getAttribute('data-dir'); const prod = produtos.find(p => p.id === prodId); if (!prod || !prod.images || prod.images.length <= 1) return; const card = arrow.closest('.product-card'); let currentIdx = parseInt(card.dataset.currentIndex || '0'); if (direction === 'prev') currentIdx = (currentIdx - 1 + prod.images.length) % prod.images.length; else currentIdx = (currentIdx + 1) % prod.images.length; card.dataset.currentIndex = currentIdx; card.querySelector('.product-image').src = prod.images[currentIdx]; }
+        function handleWhatsAppClick(e) { e.stopPropagation(); const id = e.currentTarget.getAttribute('data-id'); const prod = produtos.find(p => p.id === id); if (prod) { const numero = "5543996179533"; let extra = ''; if (prod.categoria === 'vestuario' && prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`; if (prod.categoria === 'calcados' && prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`; const msg = `Olá! Tenho interesse no produto: ${prod.nome} - ${prod.preco}${extra}`; window.open(`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`, '_blank'); } }
+        function handleDetailsClick(e) { e.stopPropagation(); const id = e.currentTarget.getAttribute('data-id'); const prod = produtos.find(p => p.id === id); if (prod) abrirModal(prod); }
+        function handleCardClick(e) { if (e.target.classList.contains('btn-whatsapp-card') || e.target.classList.contains('btn-details') || e.target.classList.contains('nav-arrow') || e.target.closest('.nav-arrow')) return; const card = e.currentTarget; const id = card.getAttribute('data-id'); const prod = produtos.find(p => p.id === id); if (prod) abrirModal(prod); }
 
         function abrirModal(prod) {
             const modal = document.getElementById('productModal');
@@ -579,11 +556,8 @@
             document.getElementById('modalPrice').innerText = prod.preco;
             document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
             let sizeText = '';
-            if (prod.categoria === 'vestuario' && prod.tamanhos && prod.tamanhos.length) {
-                sizeText = `Tamanhos disponíveis: ${prod.tamanhos.join(', ')}`;
-            } else if (prod.categoria === 'calcados' && prod.numeracao) {
-                sizeText = `Numeração: ${prod.numeracao}`;
-            }
+            if (prod.categoria === 'vestuario' && prod.tamanhos && prod.tamanhos.length) sizeText = `Tamanhos disponíveis: ${prod.tamanhos.join(', ')}`;
+            else if (prod.categoria === 'calcados' && prod.numeracao) sizeText = `Numeração: ${prod.numeracao}`;
             document.getElementById('modalSize').innerHTML = sizeText ? `<i class="fas fa-ruler"></i> ${sizeText}` : '';
             const images = prod.images || [];
             const mainImg = document.getElementById('modalMainImg');
@@ -596,11 +570,7 @@
                     thumb.src = img;
                     thumb.classList.add('modal-thumb');
                     if (idx === 0) thumb.classList.add('active');
-                    thumb.addEventListener('click', () => {
-                        mainImg.src = img;
-                        document.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('active'));
-                        thumb.classList.add('active');
-                    });
+                    thumb.addEventListener('click', () => { mainImg.src = img; document.querySelectorAll('.modal-thumb').forEach(t => t.classList.remove('active')); thumb.classList.add('active'); });
                     thumbsDiv.appendChild(thumb);
                 });
             }
@@ -614,38 +584,14 @@
             document.body.style.overflow = 'hidden';
         }
 
-        // Admin - senha fixa (fbadmin)
-        function showAdminPanel() {
-            const senha = prompt("Digite a senha do administrador:");
-            if (senha === "fbadmin") {
-                adminPanel.style.display = 'block';
-                adminVisible = true;
-                renderizarAdminLista();
-            } else if (senha !== null) {
-                alert("Senha incorreta");
-            }
-        }
-
-        function hideAdminPanel() {
-            adminPanel.style.display = 'none';
-            adminVisible = false;
-        }
-
-        function toggleAdmin() {
-            if (adminVisible) {
-                hideAdminPanel();
-            } else {
-                showAdminPanel();
-            }
-        }
+        function showAdminPanel() { const senha = prompt("Digite a senha do administrador:"); if (senha === "fbadmin") { adminPanel.style.display = 'block'; adminVisible = true; renderizarAdminLista(); } else if (senha !== null) alert("Senha incorreta"); }
+        function hideAdminPanel() { adminPanel.style.display = 'none'; adminVisible = false; }
+        function toggleAdmin() { if (adminVisible) hideAdminPanel(); else showAdminPanel(); }
 
         function renderizarAdminLista() {
             const container = document.getElementById('adminListaContainer');
             if (!container) return;
-            if (produtos.length === 0) {
-                container.innerHTML = '<div style="padding:20px; text-align:center; color:#aaa;">Nenhum produto cadastrado</div>';
-                return;
-            }
+            if (produtos.length === 0) { container.innerHTML = '<div style="padding:20px; text-align:center; color:#aaa;">Nenhum produto cadastrado</div>'; return; }
             container.innerHTML = '';
             produtos.forEach(prod => {
                 const div = document.createElement('div');
@@ -659,127 +605,47 @@
                         <span style="color:#b88b4a;">${prod.categoria.toUpperCase()}</span>
                         <span>${prod.preco}</span>
                         <span style="font-size:0.7rem;">📷 ${prod.images ? prod.images.length : 1}</span>
-                        <span style="font-size:0.7rem;">${prod.status === 'disponiveis' ? '✓ Disponível' : (prod.status === 'lancamentos' ? '⭐ Lançamento' : '⏳ Em breve')}</span>
+                        <span style="font-size:0.7rem;">${prod.status === 'disponiveis' ? '✓ Disponível' : (prod.status === 'lancamentos' ? '⭐ Lançamento' : (prod.status === 'embreve' ? '⏳ Em breve' : '🔴 Vendido'))}</span>
                     </div>
-                    <button class="excluir-produto" data-id="${prod.id}">Remover</button>
+                    <div class="admin-actions">
+                        <button class="edit-price" data-id="${prod.id}" data-preco="${prod.preco}">✏️ Editar preço</button>
+                        <button class="mark-sold" data-id="${prod.id}" data-status="${prod.status}">${prod.status === 'vendido' ? '🔄 Reativar' : '🏷️ Marcar vendido'}</button>
+                        <button class="delete-prod" data-id="${prod.id}">🗑️ Remover</button>
+                    </div>
                 `;
                 container.appendChild(div);
             });
-            document.querySelectorAll('.excluir-produto').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const id = btn.getAttribute('data-id');
-                    excluirProduto(id);
-                });
+            document.querySelectorAll('.edit-price').forEach(btn => {
+                btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-id'); const precoAtual = btn.getAttribute('data-preco'); editarPrecoProduto(id, precoAtual); });
+            });
+            document.querySelectorAll('.mark-sold').forEach(btn => {
+                btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-id'); const statusAtual = btn.getAttribute('data-status'); alternarStatusVendido(id, statusAtual); });
+            });
+            document.querySelectorAll('.delete-prod').forEach(btn => {
+                btn.addEventListener('click', (e) => { const id = btn.getAttribute('data-id'); excluirProduto(id); });
             });
         }
 
-        // Utilitários
-        function formatPrice(value) {
-            let numeric = value.replace(/\D/g, '');
-            if (numeric === '') return 'R$ ';
-            let number = parseFloat(numeric) / 100;
-            return 'R$ ' + number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function handlePriceInput(e) {
-            let input = e.target;
-            let cursorPos = input.selectionStart;
-            let raw = input.value;
-            let formatted = formatPrice(raw);
-            input.value = formatted;
-            if (cursorPos <= 3) cursorPos = 3;
-            input.setSelectionRange(cursorPos, cursorPos);
-        }
-
-        function updateDynamicFields() {
-            const categoria = document.getElementById('prodCategoria').value;
-            const container = document.getElementById('dynamicFieldsContainer');
-            container.innerHTML = '';
-            if (categoria === 'vestuario') {
-                container.innerHTML = `
-                    <div class="dynamic-field">
-                        <label style="display:block; margin-bottom:8px; font-size:0.8rem; color:#ccc;">Tamanhos disponíveis:</label>
-                        <div class="size-checkbox-group">
-                            <label><input type="checkbox" value="PP"> PP</label>
-                            <label><input type="checkbox" value="P"> P</label>
-                            <label><input type="checkbox" value="M"> M</label>
-                            <label><input type="checkbox" value="G"> G</label>
-                            <label><input type="checkbox" value="GG"> GG</label>
-                        </div>
-                    </div>
-                `;
-            } else if (categoria === 'calcados') {
-                container.innerHTML = `
-                    <div class="dynamic-field">
-                        <input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)" style="width:100%;">
-                    </div>
-                `;
-            }
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
+        function formatPrice(value) { let numeric = value.replace(/\D/g, ''); if (numeric === '') return 'R$ '; let number = parseFloat(numeric) / 100; return 'R$ ' + number.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function handlePriceInput(e) { let input = e.target; let raw = input.value; let formatted = formatPrice(raw); input.value = formatted; input.setSelectionRange(3,3); }
+        function updateDynamicFields() { const categoria = document.getElementById('prodCategoria').value; const container = document.getElementById('dynamicFieldsContainer'); container.innerHTML = ''; if (categoria === 'vestuario') { container.innerHTML = `<div class="dynamic-field"><label style="display:block; margin-bottom:8px; font-size:0.8rem; color:#ccc;">Tamanhos disponíveis:</label><div class="size-checkbox-group"><label><input type="checkbox" value="PP"> PP</label><label><input type="checkbox" value="P"> P</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="G"> G</label><label><input type="checkbox" value="GG"> GG</label></div></div>`; } else if (categoria === 'calcados') { container.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)" style="width:100%;"></div>`; } }
+        function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
 
         // Eventos
-        document.getElementById('adminButton').addEventListener('click', toggleAdmin);
         document.getElementById('adminTriggerLogo').addEventListener('dblclick', toggleAdmin);
         document.getElementById('btnAdicionarProduto').addEventListener('click', adicionarProduto);
         document.getElementById('prodCategoria').addEventListener('change', updateDynamicFields);
-        const priceInput = document.getElementById('prodPreco');
-        priceInput.addEventListener('input', handlePriceInput);
-        priceInput.addEventListener('focus', () => { if (priceInput.value === 'R$ ') priceInput.setSelectionRange(3, 3); });
+        const priceInput = document.getElementById('prodPreco'); priceInput.addEventListener('input', handlePriceInput);
+        document.querySelectorAll('.cat-btn').forEach(btn => { btn.addEventListener('click', () => { filtroCategoria = btn.getAttribute('data-cat'); document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderizarCatalogo(); }); });
+        document.getElementById('searchInput').addEventListener('input', (e) => { termoBusca = e.target.value; renderizarCatalogo(); });
+        document.getElementById('scrollNovidades').addEventListener('click', (e) => { e.preventDefault(); document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+        document.getElementById('logoutAdminBtn').addEventListener('click', () => hideAdminPanel());
+        window.addEventListener('click', (e) => { const modal = document.getElementById('productModal'); if (e.target === modal) { modal.style.display = 'none'; document.body.style.overflow = 'auto'; } });
+        document.querySelector('.modal-close').addEventListener('click', () => { document.getElementById('productModal').style.display = 'none'; document.body.style.overflow = 'auto'; });
 
-        const catBtns = document.querySelectorAll('.cat-btn');
-        const coringaBtn = document.getElementById('coringaBtn');
-        function aplicarFiltroCategoria(categoria) {
-            filtroCategoria = categoria;
-            catBtns.forEach(btn => btn.classList.remove('active'));
-            if (categoria === 'todos') coringaBtn.classList.add('active');
-            else document.querySelector(`.cat-btn[data-cat="${categoria}"]`).classList.add('active');
-            renderizarCatalogo();
-        }
-        catBtns.forEach(btn => {
-            btn.addEventListener('click', () => aplicarFiltroCategoria(btn.getAttribute('data-cat')));
-        });
-
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            termoBusca = e.target.value;
-            renderizarCatalogo();
-        });
-
-        document.getElementById('scrollNovidades').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-
-        document.getElementById('logoutAdminBtn').addEventListener('click', () => {
-            hideAdminPanel();
-        });
-
-        // Inicialização
         adminPanel.style.display = 'none';
         updateDynamicFields();
         carregarProdutos();
-
-        // Fechar modal ao clicar fora
-        window.addEventListener('click', (e) => {
-            const modal = document.getElementById('productModal');
-            if (e.target === modal) {
-                modal.style.display = 'none';
-                document.body.style.overflow = 'auto';
-            }
-        });
-        document.querySelector('.modal-close').addEventListener('click', () => {
-            document.getElementById('productModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        });
     })();
 </script>
 </body>
