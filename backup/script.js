@@ -5,6 +5,7 @@
     let adminVisible = false;
     let currentEditId = null;
 
+    // ✅ Todas as chamadas ao banco passam pelo server.js — nenhuma chave exposta no frontend
     const API_BASE = '/api/products';
 
     async function apiFetch(path = '', options = {}) {
@@ -19,7 +20,6 @@
     const adminPanel = document.getElementById('adminPanel');
     const toast = document.getElementById('toastNotification');
     const toastMessage = document.getElementById('toastMessage');
-    
     function showToast(msg, isError = false) {
         toastMessage.innerText = msg;
         toast.style.borderLeftColor = isError ? '#c0392b' : '#b88b4a';
@@ -27,14 +27,12 @@
         toast.classList.add('show');
         setTimeout(() => { toast.classList.remove('show'); }, 3000);
     }
-    
     document.getElementById('toastClose').addEventListener('click', () => toast.classList.remove('show'));
 
     // Carrinho
     let cart = JSON.parse(localStorage.getItem('fb_cart')) || [];
     function saveCart() { localStorage.setItem('fb_cart', JSON.stringify(cart)); updateCartUI(); }
     function updateCartUI() { document.getElementById('cartCount').innerText = cart.reduce((sum,item)=>sum+item.quantity,0); renderCartModal(); }
-    
     function addToCart(prod, qty=1) {
         if (prod.status === 'vendido') { showToast('❌ Item já vendido!', true); return; }
         const existing = cart.find(item=>item.id===prod.id);
@@ -43,10 +41,8 @@
         saveCart();
         showToast(`✓ ${prod.nome} adicionado ao carrinho`);
     }
-    
     function removeFromCart(id) { cart = cart.filter(item=>item.id!==id); saveCart(); }
     function clearCart() { cart = []; saveCart(); }
-    
     function renderCartModal() {
         const container = document.getElementById('cartItemsList');
         if(!container) return;
@@ -71,7 +67,6 @@
         document.getElementById('cartTotal').innerHTML = `Total: R$ ${total.toFixed(2).replace('.',',')}`;
         document.querySelectorAll('.cart-item-remove').forEach(btn=>{ btn.addEventListener('click',(e)=>{ removeFromCart(btn.getAttribute('data-id')); renderCartModal(); }); });
     }
-    
     function sendCartToWhatsApp() {
         if(cart.length===0) { showToast('Seu carrinho está vazio', true); return; }
         let msg = "🛍️ *Meu pedido:*%0A";
@@ -86,6 +81,7 @@
         window.open(`https://wa.me/5543996179533?text=${msg}`, '_blank');
     }
 
+    // ✅ Carregar produtos via API (sem Supabase no frontend)
     async function carregarProdutos() {
         try {
             const data = await apiFetch();
@@ -218,6 +214,7 @@
     });
     window.addEventListener('click', e => { if (e.target === document.getElementById('productModal')) { document.getElementById('productModal').style.display = 'none'; document.body.style.overflow = 'auto'; } });
 
+    // ✅ Admin: todas as operações via API
     async function atualizarProduto(id, updates) {
         try {
             const updated = await apiFetch(`/${id}`, {
@@ -244,89 +241,7 @@
         } catch(err) { console.error(err); showToast('Erro ao remover produto.', true); }
     }
 
-    async function salvarEdicaoComImagens() {
-        const nome = document.getElementById('editNome').value.trim();
-        const desc = document.getElementById('editDesc').value.trim();
-        let preco = document.getElementById('editPreco').value.trim();
-        const categoria = document.getElementById('editCategoria').value;
-        const status = document.getElementById('editStatus').value;
-        const newImagesFiles = document.getElementById('editNewImages').files;
-        
-        if (!nome || !preco) {
-            showToast('Nome e preço são obrigatórios', true);
-            return;
-        }
-        
-        if (!preco.startsWith('R$')) {
-            preco = 'R$ ' + preco.replace(/[^\d,]/g, '').replace(',', '.');
-        }
-        
-        const existingImages = [];
-        document.querySelectorAll('#editImagesContainer .image-preview-item img').forEach(img => {
-            if (img.src && !img.src.startsWith('blob:')) {
-                existingImages.push(img.src);
-            }
-        });
-        
-        const formData = new FormData();
-        formData.append('nome', nome);
-        formData.append('descricao_completa', desc);
-        formData.append('preco', preco);
-        formData.append('categoria', categoria);
-        formData.append('status', status);
-        formData.append('existingImages', JSON.stringify(existingImages));
-        
-        if (categoria === 'vestuario') {
-            const checkboxes = document.querySelectorAll('#editTamanhosGroup input[type="checkbox"]');
-            const tamanhos = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
-            if (!tamanhos.length) {
-                showToast('Selecione pelo menos um tamanho', true);
-                return;
-            }
-            formData.append('tamanhos', JSON.stringify(tamanhos));
-        } else if (categoria === 'calcados') {
-            const numeracao = document.getElementById('editNumeracao')?.value.trim();
-            if (!numeracao) {
-                showToast('Informe a numeração', true);
-                return;
-            }
-            formData.append('numeracao', numeracao);
-        }
-        
-        for (let i = 0; i < newImagesFiles.length; i++) {
-            formData.append('newImages', newImagesFiles[i]);
-        }
-        
-        try {
-            const response = await fetch(`${API_BASE}/${currentEditId}`, {
-                method: 'PUT',
-                body: formData
-            });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erro ao atualizar');
-            }
-            
-            const updated = await response.json();
-            const index = produtos.findIndex(p => p.id === currentEditId);
-            if (index !== -1) produtos[index] = updated;
-            
-            renderizarCatalogo();
-            renderizarSecoesCuradas();
-            if (adminVisible) renderizarAdminLista();
-            
-            document.getElementById('editModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-            showToast('Produto atualizado com sucesso!');
-            
-        } catch (err) {
-            console.error(err);
-            showToast(err.message || 'Erro ao atualizar produto.', true);
-        }
-    }
-
-    function abrirEdicao(prod) {
+    async function abrirEdicao(prod) {
         currentEditId = prod.id;
         document.getElementById('editNome').value = prod.nome;
         document.getElementById('editDesc').value = prod.descricao_completa || '';
@@ -368,7 +283,39 @@
         if (prod) updateEditSizeFields({ ...prod, categoria: document.getElementById('editCategoria').value });
     });
 
-    document.getElementById('editSaveBtn').addEventListener('click', salvarEdicaoComImagens);
+    document.getElementById('editSaveBtn').addEventListener('click', async () => {
+        const nome = document.getElementById('editNome').value.trim();
+        const desc = document.getElementById('editDesc').value.trim();
+        let preco = document.getElementById('editPreco').value.trim();
+        const categoria = document.getElementById('editCategoria').value;
+        const status = document.getElementById('editStatus').value;
+        if (!nome || !preco) { alert('Nome e preço são obrigatórios'); return; }
+        if (!preco.startsWith('R$')) preco = 'R$ ' + preco.replace(/[^\d,]/g, '').replace(',', '.');
+        let tamanhos = null, numeracao = null;
+        if (categoria === 'vestuario') {
+            const checkboxes = document.querySelectorAll('#editTamanhosGroup input[type="checkbox"]');
+            tamanhos = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
+            if (!tamanhos.length) { alert('Selecione pelo menos um tamanho'); return; }
+        } else if (categoria === 'calcados') {
+            numeracao = document.getElementById('editNumeracao')?.value.trim();
+            if (!numeracao) { alert('Informe a numeração'); return; }
+        }
+        const existingImages = produtos.find(p => p.id === currentEditId).images || [];
+        let updatedImages = [...existingImages];
+        document.querySelectorAll('#editImagesContainer .remove-image-btn').forEach(btn => {
+            const idx = parseInt(btn.getAttribute('data-index'));
+            if (!isNaN(idx)) updatedImages.splice(idx, 1);
+        });
+        const updates = { nome, descricao_completa: desc, preco, categoria, status, images: updatedImages };
+        if (categoria === 'vestuario') updates.tamanhos = tamanhos;
+        else if (categoria === 'calcados') updates.numeracao = numeracao;
+        else { updates.tamanhos = null; updates.numeracao = null; }
+        await atualizarProduto(currentEditId, updates);
+        document.getElementById('editModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        showToast('Produto atualizado!');
+    });
+
     document.getElementById('editCancelBtn').addEventListener('click', () => {
         document.getElementById('editModal').style.display = 'none';
         document.body.style.overflow = 'auto';
@@ -411,136 +358,46 @@
         await atualizarProduto(id, { status: novoStatus });
     }
 
+    // ✅ Adicionar produto via API
     async function adicionarProduto() {
         const nome = document.getElementById('prodNome').value.trim();
         const desc = document.getElementById('prodDesc').value.trim();
         let preco = document.getElementById('prodPreco').value.trim();
-        const files = document.getElementById('prodImagensFile').files;
+        const imagesText = document.getElementById('prodImagens').value.trim();
+        const images = imagesText.split('\n').map(url => url.trim()).filter(url => url);
         const categoria = document.getElementById('prodCategoria').value;
         const status = document.getElementById('prodStatus').value;
-        
-        if (!nome || !preco || files.length === 0) {
-            showToast('Preencha nome, preço e selecione pelo menos uma imagem.', true);
-            return;
-        }
-        
-        if (!preco.startsWith('R$')) {
-            preco = formatPrice(preco);
-        }
-        
-        const formData = new FormData();
-        formData.append('nome', nome);
-        formData.append('descricao_completa', desc);
-        formData.append('preco', preco);
-        formData.append('categoria', categoria);
-        formData.append('status', status);
-        
+        if (!nome || !preco || images.length === 0) { alert('Preencha nome, preço e pelo menos uma URL de imagem.'); return; }
+        if (!preco.startsWith('R$')) preco = formatPrice(preco);
+        const data = { nome, descricao_completa: desc, preco, images, categoria, status };
         if (categoria === 'vestuario') {
             const checkboxes = document.querySelectorAll('#dynamicFieldsContainer input[type="checkbox"]');
             const tamanhos = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
-            if (tamanhos.length === 0) {
-                showToast('Selecione pelo menos um tamanho.', true);
-                return;
-            }
-            formData.append('tamanhos', JSON.stringify(tamanhos));
+            if (tamanhos.length === 0) { alert('Selecione pelo menos um tamanho.'); return; }
+            data.tamanhos = tamanhos;
         } else if (categoria === 'calcados') {
             const numeracao = document.getElementById('numeracaoInput')?.value.trim();
-            if (!numeracao) {
-                showToast('Informe a numeração.', true);
-                return;
-            }
-            formData.append('numeracao', numeracao);
+            if (!numeracao) { alert('Informe a numeração.'); return; }
+            data.numeracao = numeracao;
         }
-        
-        for (let i = 0; i < files.length; i++) {
-            formData.append('images', files[i]);
-        }
-        
         try {
-            const response = await fetch(API_BASE, {
+            const result = await apiFetch('', {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Erro ao adicionar produto');
-            }
-            
-            const result = await response.json();
             produtos.unshift(result);
-            renderizarCatalogo();
-            renderizarSecoesCuradas();
+            renderizarCatalogo(); renderizarSecoesCuradas();
             if (adminVisible) renderizarAdminLista();
-            
-            document.getElementById('prodNome').value = '';
-            document.getElementById('prodDesc').value = '';
-            document.getElementById('prodPreco').value = 'R$ ';
-            document.getElementById('prodImagensFile').value = '';
-            document.getElementById('imagePreviewContainer').innerHTML = '';
+            document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = '';
+            document.getElementById('prodPreco').value = 'R$ '; document.getElementById('prodImagens').value = '';
             updateDynamicFields();
-            
             showToast('Produto adicionado com sucesso!');
-        } catch (err) {
-            console.error(err);
-            showToast(err.message || 'Erro ao adicionar produto.', true);
-        }
-    }
-
-    function setupImagePreview() {
-        const fileInput = document.getElementById('prodImagensFile');
-        const previewContainer = document.getElementById('imagePreviewContainer');
-        
-        if (!fileInput || !previewContainer) return;
-        
-        fileInput.addEventListener('change', function() {
-            previewContainer.innerHTML = '';
-            const files = Array.from(this.files);
-            
-            files.forEach((file, index) => {
-                const reader = new FileReader();
-                const previewDiv = document.createElement('div');
-                previewDiv.className = 'image-preview-item';
-                
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.width = '80px';
-                    img.style.height = '80px';
-                    img.style.objectFit = 'cover';
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.innerHTML = '✕';
-                    removeBtn.className = 'remove-preview-btn';
-                    removeBtn.onclick = () => {
-                        const dt = new DataTransfer();
-                        const newFiles = Array.from(fileInput.files).filter((_, i) => i !== index);
-                        newFiles.forEach(f => dt.items.add(f));
-                        fileInput.files = dt.files;
-                        previewDiv.remove();
-                        setupImagePreview();
-                    };
-                    
-                    previewDiv.appendChild(img);
-                    previewDiv.appendChild(removeBtn);
-                    previewContainer.appendChild(previewDiv);
-                };
-                
-                reader.readAsDataURL(file);
-            });
-        });
+        } catch(err) { console.error(err); showToast('Erro ao adicionar produto.', true); }
     }
 
     function formatPrice(v) { let n = v.replace(/\D/g, ''); if (!n) return 'R$ '; let num = parseFloat(n) / 100; return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
-    
-    function updateDynamicFields() { 
-        const cat = document.getElementById('prodCategoria').value; 
-        const cont = document.getElementById('dynamicFieldsContainer'); 
-        cont.innerHTML = ''; 
-        if (cat === 'vestuario') cont.innerHTML = `<div class="dynamic-field"><label>Tamanhos disponíveis:</label><div class="size-checkbox-group"><label><input type="checkbox" value="PP"> PP</label><label><input type="checkbox" value="P"> P</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="G"> G</label><label><input type="checkbox" value="GG"> GG</label></div></div>`; 
-        else if (cat === 'calcados') cont.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)"></div>`; 
-    }
-    
+    function updateDynamicFields() { const cat = document.getElementById('prodCategoria').value; const cont = document.getElementById('dynamicFieldsContainer'); cont.innerHTML = ''; if (cat === 'vestuario') cont.innerHTML = `<div class="dynamic-field"><label>Tamanhos disponíveis:</label><div class="size-checkbox-group"><label><input type="checkbox" value="PP"> PP</label><label><input type="checkbox" value="P"> P</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="G"> G</label><label><input type="checkbox" value="GG"> GG</label></div></div>`; else if (cat === 'calcados') cont.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)"></div>`; }
     function escapeHtml(s) { if (!s) return ''; return s.replace(/[&<>]/g, m => { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
 
     const header = document.querySelector('.header');
@@ -552,21 +409,20 @@
     const loginModal = document.getElementById('loginModal');
     function showLoginModal() { loginModal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
     function hideLoginModal() { loginModal.style.display = 'none'; document.body.style.overflow = 'auto'; }
-    
     let logoClickTimer = null;
     const logoElement = document.getElementById('adminTriggerLogo');
     logoElement.addEventListener('click', () => {
+        // Cancela timer anterior se existir, reinicia sempre
         if (logoClickTimer) clearTimeout(logoClickTimer);
         logoClickTimer = setTimeout(() => { logoClickTimer = null; window.location.reload(); }, 350);
     });
     logoElement.addEventListener('dblclick', () => {
+        // Duplo clique cancela o reload e abre o login admin
         if (logoClickTimer) { clearTimeout(logoClickTimer); logoClickTimer = null; }
         showLoginModal();
     });
-    
     document.getElementById('loginModalClose').addEventListener('click', hideLoginModal);
     window.addEventListener('click', e => { if (e.target === loginModal) hideLoginModal(); });
-    
     document.getElementById('loginAdminBtn').addEventListener('click', () => {
         const pass = document.getElementById('adminPassword').value;
         if (pass === "fbadmin") {
@@ -584,20 +440,16 @@
     document.getElementById('btnAdicionarProduto').addEventListener('click', adicionarProduto);
     document.getElementById('prodCategoria').addEventListener('change', updateDynamicFields);
     document.getElementById('prodPreco').addEventListener('input', function(e){ let raw = e.target.value; e.target.value = formatPrice(raw); e.target.setSelectionRange(3,3); });
-    
     document.querySelectorAll('.cat-btn').forEach(btn => btn.addEventListener('click', () => { filtroCategoria = btn.getAttribute('data-cat'); document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); renderizarCatalogo(); }));
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca = e.target.value; renderizarCatalogo(); });
-    
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display = 'flex'; });
     document.getElementById('closeCart').addEventListener('click', () => cartModal.style.display = 'none');
     document.getElementById('clearCartBtn').addEventListener('click', () => { clearCart(); renderCartModal(); });
     document.getElementById('sendCartWhatsapp').addEventListener('click', () => { sendCartToWhatsApp(); cartModal.style.display = 'none'; });
     window.addEventListener('click', e => { if (e.target === cartModal) cartModal.style.display = 'none'; });
-    
     adminPanel.style.display = 'none';
     updateDynamicFields();
-    setupImagePreview();
     carregarProdutos();
     updateCartUI();
 })();

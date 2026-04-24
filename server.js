@@ -18,7 +18,6 @@ const upload = multer({ storage });
 // Middleware
 app.use(express.json());
 app.use(express.static(__dirname));
-app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.get('/api/products', async (req, res) => {
@@ -36,42 +35,113 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', upload.array('images'), async (req, res) => {
   try {
-    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, images } = req.body;
+    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao } = req.body;
     let uploadedUrls = [];
+    
     if (req.files && req.files.length) {
-      // FormData com files
       for (let file of req.files) {
-        const fileName = `${Date.now()}_${file.originalname}`;
-        const { error } = await supabase.storage.from('produtos').upload(fileName, file.buffer, { contentType: file.mimetype });
-        if (error) throw error;
+        const fileName = `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const { error: uploadError } = await supabase.storage
+          .from('produtos')
+          .upload(fileName, file.buffer, { contentType: file.mimetype });
+        if (uploadError) throw uploadError;
         const { data: pub } = supabase.storage.from('produtos').getPublicUrl(fileName);
         uploadedUrls.push(pub.publicUrl);
       }
-    } else if (images) {
-      // JSON com URLs
-      uploadedUrls = Array.isArray(images) ? images : [images];
     }
-    const novoProduto = { nome, descricao_completa, preco, images: uploadedUrls, categoria, status };
-    if (categoria === 'vestuario' && tamanhos) novoProduto.tamanhos = Array.isArray(tamanhos) ? tamanhos : JSON.parse(tamanhos);
-    if (categoria === 'calcados' && numeracao) novoProduto.numeracao = numeracao;
+    
+    if (uploadedUrls.length === 0) {
+      return res.status(400).json({ error: 'Pelo menos uma imagem é obrigatória' });
+    }
+    
+    const novoProduto = { 
+      nome, 
+      descricao_completa, 
+      preco, 
+      images: uploadedUrls, 
+      categoria, 
+      status 
+    };
+    
+    if (categoria === 'vestuario' && tamanhos) {
+      novoProduto.tamanhos = Array.isArray(tamanhos) ? tamanhos : JSON.parse(tamanhos);
+    }
+    if (categoria === 'calcados' && numeracao) {
+      novoProduto.numeracao = numeracao;
+    }
+    
     const { data, error } = await supabase.from('produtos').insert([novoProduto]).select();
     if (error) throw error;
     res.json(data[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', upload.array('newImages'), async (req, res) => {
   try {
+    const { id } = req.params;
+    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages } = req.body;
+    
+    const { data: currentProduct, error: fetchError } = await supabase
+      .from('produtos')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    
+    let newImageUrls = [];
+    if (req.files && req.files.length) {
+      for (let file of req.files) {
+        const fileName = `${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const { error: uploadError } = await supabase.storage
+          .from('produtos')
+          .upload(fileName, file.buffer, { contentType: file.mimetype });
+        if (uploadError) throw uploadError;
+        const { data: pub } = supabase.storage.from('produtos').getPublicUrl(fileName);
+        newImageUrls.push(pub.publicUrl);
+      }
+    }
+    
+    let oldImages = [];
+    if (existingImages) {
+      oldImages = JSON.parse(existingImages);
+    } else {
+      oldImages = currentProduct.images || [];
+    }
+    
+    const allImages = [...oldImages, ...newImageUrls];
+    
+    const updates = {
+      nome,
+      descricao_completa,
+      preco,
+      categoria,
+      status,
+      images: allImages
+    };
+    
+    if (categoria === 'vestuario' && tamanhos) {
+      updates.tamanhos = JSON.parse(tamanhos);
+    } else if (categoria === 'calcados' && numeracao) {
+      updates.numeracao = numeracao;
+    } else {
+      updates.tamanhos = null;
+      updates.numeracao = null;
+    }
+    
     const { data, error } = await supabase
       .from('produtos')
-      .update(req.body)
-      .eq('id', req.params.id)
+      .update(updates)
+      .eq('id', id)
       .select();
+    
     if (error) throw error;
     res.json(data[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -89,9 +159,8 @@ app.delete('/api/products/:id', async (req, res) => {
   }
 });
 
-// Serve index.html for root
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
