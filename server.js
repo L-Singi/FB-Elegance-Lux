@@ -4,7 +4,7 @@ const path = require('path');
 const multer = require('multer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // Supabase config
 const SUPABASE_URL = "https://bachgtlwmaroytvhhvfn.supabase.co";
