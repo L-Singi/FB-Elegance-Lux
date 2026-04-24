@@ -35,20 +35,23 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', upload.array('images'), async (req, res) => {
   try {
-    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao } = req.body;
-    const files = req.files;
-    const uploadedUrls = [];
-    if (files && files.length) {
-      for (let file of files) {
+    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, images } = req.body;
+    let uploadedUrls = [];
+    if (req.files && req.files.length) {
+      // FormData com files
+      for (let file of req.files) {
         const fileName = `${Date.now()}_${file.originalname}`;
         const { error } = await supabase.storage.from('produtos').upload(fileName, file.buffer, { contentType: file.mimetype });
         if (error) throw error;
         const { data: pub } = supabase.storage.from('produtos').getPublicUrl(fileName);
         uploadedUrls.push(pub.publicUrl);
       }
+    } else if (images) {
+      // JSON com URLs
+      uploadedUrls = Array.isArray(images) ? images : [images];
     }
     const novoProduto = { nome, descricao_completa, preco, images: uploadedUrls, categoria, status };
-    if (categoria === 'vestuario' && tamanhos) novoProduto.tamanhos = JSON.parse(tamanhos);
+    if (categoria === 'vestuario' && tamanhos) novoProduto.tamanhos = Array.isArray(tamanhos) ? tamanhos : JSON.parse(tamanhos);
     if (categoria === 'calcados' && numeracao) novoProduto.numeracao = numeracao;
     const { data, error } = await supabase.from('produtos').insert([novoProduto]).select();
     if (error) throw error;

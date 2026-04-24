@@ -5,6 +5,8 @@
     let adminVisible = false;
     let currentEditId = null;
 
+    const API_BASE = window.location.hostname === 'localhost' ? '/api' : '/.netlify/functions';
+
     const adminPanel = document.getElementById('adminPanel');
     const toast = document.getElementById('toastNotification');
     const toastMessage = document.getElementById('toastMessage');
@@ -72,7 +74,7 @@
     // Carregar produtos
     async function carregarProdutos() {
         try {
-            const response = await fetch('/.netlify/functions/products');
+            const response = await fetch(`${API_BASE}/products`);
             if (!response.ok) throw new Error('Erro ao carregar produtos');
             produtos = await response.json();
             renderizarCatalogo();
@@ -202,7 +204,8 @@
     // Admin
     async function atualizarProduto(id, updates) {
         try {
-            const response = await fetch(`/.netlify/functions/products?id=${id}`, {
+            const url = window.location.hostname === 'localhost' ? `${API_BASE}/products/${id}` : `${API_BASE}/products?id=${id}`;
+            const response = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updates)
@@ -219,7 +222,8 @@
     async function excluirProduto(id) {
         if (!confirm('Excluir este produto permanentemente?')) return;
         try {
-            const response = await fetch(`/.netlify/functions/products?id=${id}`, { method: 'DELETE' });
+            const url = window.location.hostname === 'localhost' ? `${API_BASE}/products/${id}` : `${API_BASE}/products?id=${id}`;
+            const response = await fetch(url, { method: 'DELETE' });
             if (!response.ok) throw new Error('Erro ao excluir');
             produtos = produtos.filter(p => p.id !== id);
             renderizarCatalogo(); renderizarSecoesCuradas();
@@ -342,38 +346,32 @@
         const nome = document.getElementById('prodNome').value.trim();
         const desc = document.getElementById('prodDesc').value.trim();
         let preco = document.getElementById('prodPreco').value.trim();
-        const files = document.getElementById('prodImagens').files;
+        const imagesText = document.getElementById('prodImagens').value.trim();
+        const images = imagesText.split('\n').map(url => url.trim()).filter(url => url);
         const categoria = document.getElementById('prodCategoria').value;
         const status = document.getElementById('prodStatus').value;
-        if (!nome || !preco || files.length === 0) { alert('Preencha nome, preço e selecione pelo menos uma imagem.'); return; }
+        if (!nome || !preco || images.length === 0) { alert('Preencha nome, preço e pelo menos uma URL de imagem.'); return; }
         if (!preco.startsWith('R$')) preco = formatPrice(preco);
-        const formData = new FormData();
-        formData.append('nome', nome);
-        formData.append('descricao_completa', desc);
-        formData.append('preco', preco);
-        formData.append('categoria', categoria);
-        formData.append('status', status);
-        for (let file of files) {
-            formData.append('images', file);
-        }
+        const data = { nome, descricao_completa: desc, preco, images, categoria, status };
         if (categoria === 'vestuario') {
             const checkboxes = document.querySelectorAll('#dynamicFieldsContainer input[type="checkbox"]');
             const tamanhos = Array.from(checkboxes).filter(cb => cb.checked).map(cb => cb.value);
             if (tamanhos.length === 0) { alert('Selecione pelo menos um tamanho.'); return; }
-            formData.append('tamanhos', JSON.stringify(tamanhos));
+            data.tamanhos = tamanhos;
         } else if (categoria === 'calcados') {
             const numeracao = document.getElementById('numeracaoInput')?.value.trim();
             if (!numeracao) { alert('Informe a numeração.'); return; }
-            formData.append('numeracao', numeracao);
+            data.numeracao = numeracao;
         }
         try {
-            const response = await fetch('/.netlify/functions/products', {
+            const response = await fetch(`${API_BASE}/products`, {
                 method: 'POST',
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
             });
             if (!response.ok) throw new Error('Erro ao salvar');
-            const data = await response.json();
-            produtos.push(data);
+            const result = await response.json();
+            produtos.push(result);
             renderizarCatalogo(); renderizarSecoesCuradas();
             if (adminVisible) renderizarAdminLista();
             document.getElementById('prodNome').value = ''; document.getElementById('prodDesc').value = '';
