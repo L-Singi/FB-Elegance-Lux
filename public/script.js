@@ -81,11 +81,16 @@
                 .select('*')
                 .order('created_at', { ascending: false });
             if (error) throw error;
-            produtos = data || [];
+            produtos = Array.isArray(data) ? data : [];
             renderizarCatalogo();
             renderizarSecoesCuradas();
-            if(adminVisible) renderizarAdminLista();
-        } catch(err) { console.error(err); }
+            if (adminVisible) renderizarAdminLista();
+        } catch(err) {
+            console.error('Falha ao carregar produtos:', err);
+            const grid = document.getElementById('product-grid');
+            if (grid) grid.innerHTML = '<div class="empty-message">Erro ao carregar produtos. Veja o console do navegador.</div>';
+            showToast('Erro ao carregar o estoque do Supabase.', true);
+        }
     }
 
     function renderizarSecoesCuradas() {
