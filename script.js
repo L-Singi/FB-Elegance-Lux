@@ -398,11 +398,22 @@
     const loginModal = document.getElementById('loginModal');
     function showLoginModal() { loginModal.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
     function hideLoginModal() { loginModal.style.display = 'none'; document.body.style.overflow = 'auto'; }
-    const isMobile = () => window.innerWidth <= 768 || navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile()) {
-        document.getElementById('adminTriggerLogo').addEventListener('click', () => window.location.reload());
-    }
-    document.getElementById('adminTriggerLogo').addEventListener('dblclick', showLoginModal);
+    let logoClickTimer = null;
+    const logoElement = document.getElementById('adminTriggerLogo');
+    logoElement.addEventListener('click', () => {
+        if (logoClickTimer) return;
+        logoClickTimer = setTimeout(() => {
+            window.location.reload();
+            logoClickTimer = null;
+        }, 250);
+    });
+    logoElement.addEventListener('dblclick', () => {
+        if (logoClickTimer) {
+            clearTimeout(logoClickTimer);
+            logoClickTimer = null;
+        }
+        showLoginModal();
+    });
     document.getElementById('loginModalClose').addEventListener('click', hideLoginModal);
     window.addEventListener('click', e => { if (e.target === loginModal) hideLoginModal(); });
     document.getElementById('loginAdminBtn').addEventListener('click', () => {
