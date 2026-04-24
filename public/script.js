@@ -5,7 +5,7 @@
     let adminVisible = false;
     let currentEditId = null;
 
-    const API_BASE = window.location.hostname === 'localhost' ? '/api' : '/.netlify/functions';
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? '/api' : '/.netlify/functions';
 
     const adminPanel = document.getElementById('adminPanel');
     const toast = document.getElementById('toastNotification');
