@@ -532,14 +532,30 @@
     }
 
     function formatPrice(v) {
-        let n = v.replace(/\D/g, '');
-        if (!n) return 'R$ ';
+        // Remove "R$ " se existir
+        let cleanValue = v.replace(/^R\$\s*/, '');
 
-        // Trata como valor em reais
-        // Sempre adiciona ",00" para valores inteiros
-        let num = parseFloat(n);
+        // Remove pontos (separadores de milhares) mas mantém vírgula
+        cleanValue = cleanValue.replace(/\./g, '');
 
-        return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        // Se tem vírgula, trata como decimal
+        if (cleanValue.includes(',')) {
+            let parts = cleanValue.split(',');
+            let integerPart = parts[0] || '0';
+            let decimalPart = (parts[1] || '').substring(0, 2); // Máximo 2 casas decimais
+
+            // Preenche com zeros se necessário
+            while (decimalPart.length < 2) {
+                decimalPart += '0';
+            }
+
+            let num = parseFloat(integerPart + '.' + decimalPart);
+            return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        } else {
+            // Trata como valor inteiro em reais
+            let num = parseFloat(cleanValue) || 0;
+            return 'R$ ' + num.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+        }
     }
     
     function updateDynamicFields() { 
