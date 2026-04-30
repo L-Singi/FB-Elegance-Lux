@@ -27,18 +27,7 @@
     }
 
     async function dbGetAll() {
-        const data = await sbFetch('GET', '/rest/v1/produtos?select=*&order=ordem.asc.nullslast');
-        // Aplica ordem customizada salva no localStorage
-        const savedOrder = JSON.parse(localStorage.getItem('fb_ordem') || '[]');
-        if (savedOrder.length) {
-            data.sort((a, b) => {
-                const ia = savedOrder.indexOf(a.id), ib = savedOrder.indexOf(b.id);
-                if (ia === -1 && ib === -1) return 0;
-                if (ia === -1) return 1; if (ib === -1) return -1;
-                return ia - ib;
-            });
-        }
-        return data;
+        return sbFetch('GET', '/rest/v1/produtos?select=*&order=ordem.asc.nullslast,created_at.desc');
     }
     async function dbInsert(data)    { const r = await sbFetch('POST',  '/rest/v1/produtos', data); return Array.isArray(r) ? r[0] : r; }
     async function dbUpdate(id, data){ const r = await sbFetch('PATCH', `/rest/v1/produtos?id=eq.${id}`, data); return Array.isArray(r) ? r[0] : r; }
@@ -344,7 +333,6 @@
 
     // ─── ADMIN: LISTA ─────────────────────────────────────────────────────────
     async function salvarOrdem() {
-        localStorage.setItem('fb_ordem', JSON.stringify(produtos.map(p => p.id)));
         renderizarCatalogo();
         renderizarSecoesCuradas();
         showToast('💾 Salvando ordem...');
