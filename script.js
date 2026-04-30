@@ -656,4 +656,23 @@
     updateDynamicFields();
     carregarProdutos();
     updateCartUI();
+
+    // ─── POLLING: atualiza em tempo real a cada 10s ───────────────────────────
+    async function sincronizarSilencioso() {
+        try {
+            const data = await dbGetAll();
+            const novaOrdem = data.map(p => p.id).join(',');
+            const ordemAtual = produtos.map(p => p.id).join(',');
+            // Só re-renderiza se algo mudou (ordem, status, novos itens)
+            if (novaOrdem !== ordemAtual || JSON.stringify(data) !== JSON.stringify(produtos)) {
+                produtos = Array.isArray(data) ? data : [];
+                renderizarCatalogo();
+                renderizarSecoesCuradas();
+                // Não re-renderiza lista admin durante polling para não atrapalhar drag
+            }
+        } catch(e) {
+            // falha silenciosa no polling
+        }
+    }
+    setInterval(sincronizarSilencioso, 10000);
 })();
