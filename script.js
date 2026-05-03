@@ -26,9 +26,7 @@
         return text ? JSON.parse(text) : [];
     }
 
-    async function dbGetAll() {
-        return sbFetch('GET', '/rest/v1/produtos?select=*&order=ordem.asc.nullslast,created_at.desc');
-    }
+    async function dbGetAll()        { return sbFetch('GET',    '/rest/v1/produtos?select=*&order=created_at.desc'); }
     async function dbInsert(data)    { const r = await sbFetch('POST',  '/rest/v1/produtos', data); return Array.isArray(r) ? r[0] : r; }
     async function dbUpdate(id, data){ const r = await sbFetch('PATCH', `/rest/v1/produtos?id=eq.${id}`, data); return Array.isArray(r) ? r[0] : r; }
     async function dbDelete(id)      { await sbFetch('DELETE', `/rest/v1/produtos?id=eq.${id}`); }
@@ -249,30 +247,6 @@
     }
 
     // ─── MODAL PRODUTO ────────────────────────────────────────────────────────
-    // Swipe na foto do modal
-    let modalImgs = [], modalImgIdx = 0;
-    (function setupModalSwipe() {
-        const mainImg = document.getElementById('modalMainImg');
-        let startX = 0, isDragging = false;
-        mainImg.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; }, { passive: true });
-        mainImg.addEventListener('touchend', e => {
-            if (!isDragging) return;
-            isDragging = false;
-            const diff = startX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) < 40) return;
-            if (diff > 0) modalNavImg(1); else modalNavImg(-1);
-        });
-    })();
-
-    function modalNavImg(dir) {
-        if (modalImgs.length <= 1) return;
-        modalImgIdx = (modalImgIdx + dir + modalImgs.length) % modalImgs.length;
-        const mainImg = document.getElementById('modalMainImg');
-        const thumbsDiv = document.getElementById('modalThumbs');
-        mainImg.src = modalImgs[modalImgIdx];
-        thumbsDiv.querySelectorAll('.modal-thumb').forEach((t, i) => t.classList.toggle('active', i === modalImgIdx));
-    }
-
     function abrirModal(prod) {
         document.getElementById('modalTitle').innerText = prod.nome;
         document.getElementById('modalCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
@@ -282,15 +256,14 @@
         if (prod.categoria==='vestuario'&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
         else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         document.getElementById('modalSize').innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
-        modalImgs = prod.images||[];
-        modalImgIdx = 0;
+        const imgs = prod.images||[];
         const mainImg = document.getElementById('modalMainImg');
         const thumbsDiv = document.getElementById('modalThumbs');
-        mainImg.src = modalImgs[0]||'';
+        mainImg.src = imgs[0]||'';
         thumbsDiv.innerHTML = '';
-        modalImgs.forEach((img,i) => {
+        imgs.forEach((img,i) => {
             const t = document.createElement('img'); t.src=img; t.className='modal-thumb'; if(i===0) t.classList.add('active');
-            t.addEventListener('click', () => { modalImgIdx=i; mainImg.src=img; thumbsDiv.querySelectorAll('.modal-thumb').forEach(x=>x.classList.remove('active')); t.classList.add('active'); });
+            t.addEventListener('click', () => { mainImg.src=img; thumbsDiv.querySelectorAll('.modal-thumb').forEach(x=>x.classList.remove('active')); t.classList.add('active'); });
             thumbsDiv.appendChild(t);
         });
         let extra = '';
@@ -332,43 +305,15 @@
     }
 
     // ─── ADMIN: LISTA ─────────────────────────────────────────────────────────
-    async function salvarOrdem() {
-        renderizarCatalogo();
-        renderizarSecoesCuradas();
-        showToast('💾 Salvando ordem...');
-        try {
-            await Promise.all(
-                produtos.map((p, i) => sbFetch('PATCH', `/rest/v1/produtos?id=eq.${p.id}`, { ordem: i }))
-            );
-            showToast('✓ Ordem salva!');
-        } catch(e) {
-            console.error('Erro ao salvar ordem:', e);
-            showToast('⚠️ Erro ao salvar: ' + e.message, true);
-        }
-    }
-
     function renderizarAdminLista() {
         const c = document.getElementById('adminListaContainer');
         if (!c) return;
         if (!produtos.length) { c.innerHTML='<div style="padding:20px;text-align:center;color:#aaa;">Nenhum produto cadastrado</div>'; return; }
         c.innerHTML = '';
         const ST = { disponiveis:'✓ Disponível', lancamentos:'⭐ Lançamento', embreve:'⏳ Em breve', vendido:'🔴 Vendido' };
-
-        // Instrução de drag
-        const hint = document.createElement('div');
-        hint.style.cssText = 'text-align:center;font-size:0.75rem;color:#888;padding:8px 0 16px;user-select:none;';
-        hint.innerHTML = '☰ Arraste os itens para reordenar o acervo';
-        c.appendChild(hint);
-
-        let dragSrc = null;
-
         produtos.forEach(prod => {
-            const div = document.createElement('div');
-            div.className = 'admin-item';
-            div.draggable = true;
-            div.dataset.id = prod.id;
+            const div = document.createElement('div'); div.className='admin-item';
             div.innerHTML = `
-                <div class="admin-drag-handle" title="Arrastar">☰</div>
                 <div class="admin-item-info">
                     <strong>${escapeHtml(prod.nome)}</strong>
                     <span style="color:#b88b4a">${prod.categoria.toUpperCase()}</span>
@@ -381,69 +326,12 @@
                     <button class="mark-sold" data-id="${prod.id}" data-status="${prod.status}">${prod.status==='vendido'?'🔄 Reativar':'🏷️ Marcar vendido'}</button>
                     <button class="delete-prod" data-id="${prod.id}">🗑️ Remover</button>
                 </div>`;
-
-            // ── Drag & Drop (desktop) ──
-            div.addEventListener('dragstart', e => {
-                dragSrc = div;
-                e.dataTransfer.effectAllowed = 'move';
-                div.style.opacity = '0.4';
-            });
-            div.addEventListener('dragend', () => {
-                div.style.opacity = '';
-                c.querySelectorAll('.admin-item').forEach(el => el.classList.remove('drag-over'));
-            });
-            div.addEventListener('dragover', e => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                if (div !== dragSrc) div.classList.add('drag-over');
-            });
-            div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
-            div.addEventListener('drop', e => {
-                e.preventDefault();
-                div.classList.remove('drag-over');
-                if (!dragSrc || dragSrc === div) return;
-                const ids = [...c.querySelectorAll('.admin-item')].map(el => el.dataset.id);
-                const fromIdx = ids.indexOf(dragSrc.dataset.id);
-                const toIdx   = ids.indexOf(div.dataset.id);
-                produtos.splice(toIdx, 0, produtos.splice(fromIdx, 1)[0]);
-                salvarOrdem();
-                renderizarAdminLista();
-            });
-
-            // ── Touch drag (mobile) ──
-            let touchY = 0;
-            div.querySelector('.admin-drag-handle').addEventListener('touchstart', e => {
-                touchY = e.touches[0].clientY;
-                div.style.background = '#1e1e1e';
-            }, { passive: true });
-            div.querySelector('.admin-drag-handle').addEventListener('touchmove', e => {
-                e.preventDefault();
-                const deltaY = e.touches[0].clientY - touchY;
-                const items = [...c.querySelectorAll('.admin-item')];
-                const idx = items.indexOf(div);
-                if (deltaY < -40 && idx > 0) {
-                    c.insertBefore(div, items[idx - 1]);
-                    touchY = e.touches[0].clientY;
-                } else if (deltaY > 40 && idx < items.length - 1) {
-                    c.insertBefore(items[idx + 1], div);
-                    touchY = e.touches[0].clientY;
-                }
-            }, { passive: false });
-            div.querySelector('.admin-drag-handle').addEventListener('touchend', () => {
-                div.style.background = '';
-                const newOrder = [...c.querySelectorAll('.admin-item')].map(el => el.dataset.id);
-                produtos.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
-                salvarOrdem();
-            });
-
             c.appendChild(div);
         });
-
         c.querySelectorAll('.edit-ad').forEach(b => b.addEventListener('click', () => { const p=produtos.find(x=>x.id===b.dataset.id); if(p) abrirEdicao(p); }));
         c.querySelectorAll('.mark-sold').forEach(b => b.addEventListener('click', () => alternarVendido(b.dataset.id, b.dataset.status)));
         c.querySelectorAll('.delete-prod').forEach(b => b.addEventListener('click', () => excluirProduto(b.dataset.id)));
     }
-
 
     // ─── ADMIN: ADICIONAR ─────────────────────────────────────────────────────
     async function adicionarProduto() {
@@ -583,7 +471,7 @@
         const cat = document.getElementById('prodCategoria').value;
         const c = document.getElementById('dynamicFieldsContainer');
         c.innerHTML = '';
-        if (cat==='vestuario') c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="PP"> PP</label><label><input type="checkbox" value="P"> P</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="G"> G</label><label><input type="checkbox" value="GG"> GG</label></div></div>`;
+        if (cat==='vestuario') c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="XXS"> XXS</label><label><input type="checkbox" value="XS"> XS</label><label><input type="checkbox" value="S"> S</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="L"> L</label><label><input type="checkbox" value="XL"> XL</label><label><input type="checkbox" value="XXL"> XXL</label></div></div>`;
         else if (cat==='calcados') c.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)"></div>`;
     }
 
@@ -644,23 +532,4 @@
     updateDynamicFields();
     carregarProdutos();
     updateCartUI();
-
-    // ─── POLLING: atualiza em tempo real a cada 10s ───────────────────────────
-    async function sincronizarSilencioso() {
-        try {
-            const data = await dbGetAll();
-            const novaOrdem = data.map(p => p.id).join(',');
-            const ordemAtual = produtos.map(p => p.id).join(',');
-            // Só re-renderiza se algo mudou (ordem, status, novos itens)
-            if (novaOrdem !== ordemAtual || JSON.stringify(data) !== JSON.stringify(produtos)) {
-                produtos = Array.isArray(data) ? data : [];
-                renderizarCatalogo();
-                renderizarSecoesCuradas();
-                // Não re-renderiza lista admin durante polling para não atrapalhar drag
-            }
-        } catch(e) {
-            // falha silenciosa no polling
-        }
-    }
-    setInterval(sincronizarSilencioso, 10000);
 })();
