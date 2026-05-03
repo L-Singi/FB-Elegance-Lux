@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>FB · Elegance Lux | Outfits Importados</title>
     <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,7 @@
     <div class="container header-inner">
         <div class="logo-area" id="adminTriggerLogo">
             <img src="logo.png" alt="FB Elegance Lux" class="logo-img">
-            <div class="tagline">Elevando seu estilo de vida ao patamar mais alto. <br><span>Somente produtos originais, Enviamos para todo BR.</span></div>
+            <div class="tagline">Elevando seu estilo de vida ao patamar mais alto. ✨<br><span>Somente produtos originais, Enviamos para todo 🇧🇷</span></div>
         </div>
         <div class="search-header">
             <div class="search-box">
@@ -41,7 +41,7 @@
     <div class="container">
         <div class="filters-section">
             <div class="filter-group">
-                <button class="filter-btn cat-btn active" data-cat="todos">READY TO WEAR</button>
+                <button class="filter-btn cat-btn active" data-cat="todos">READY-TO-WEAR</button>
                 <button class="filter-btn cat-btn" data-cat="vestuario">VESTUÁRIO</button>
                 <button class="filter-btn cat-btn" data-cat="shorts">SHORTS</button>
                 <button class="filter-btn cat-btn" data-cat="calcados">CALÇADOS</button>
@@ -148,7 +148,7 @@
 </div>
 
 <!-- Admin panel (oculto) -->
-<div class="container"><div id="adminPanel" class="admin-panel"><h3>✦ Gerenciar acervo</h3><div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
+<div class="container"><div id="adminPanel" class="admin-panel"><h3>✦ Gerenciar acervo</h3><div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
 
 <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i><span id="toastMessage">Produto adicionado ao carrinho</span><i class="fas fa-times toast-close" id="toastClose"></i></div>
 
