@@ -148,7 +148,7 @@
         let msg = "🛍️ *Meu pedido:*%0A";
         cart.forEach(item => {
             let extra = '';
-            if (item.categoria==='vestuario' && item.tamanhos) extra = ` (Tam: ${item.tamanhos.join(',')})`;
+            if ((item.categoria==='vestuario'||item.categoria==='shorts') && item.tamanhos) extra = ` (Tam: ${item.tamanhos.join(',')})`;
             if (item.categoria==='calcados'  && item.numeracao) extra = ` (Num: ${item.numeracao})`;
             msg += `- ${item.nome}${extra} - ${item.preco} x ${item.quantity}%0A`;
         });
@@ -188,7 +188,7 @@
 
     // ─── CARD ─────────────────────────────────────────────────────────────────
     const STATUS = { disponiveis:['DISPONÍVEL','disponivel'], lancamentos:['LANÇAMENTO','lancamento'], embreve:['EM BREVE','embreve'], vendido:['VENDIDO','vendido'] };
-    const CAT_LABEL = { calcados:'CALÇADOS', vestuario:'VESTUÁRIO', lifestyle:'LIFESTYLE' };
+    const CAT_LABEL = { calcados:'CALÇADOS', vestuario:'VESTUÁRIO', lifestyle:'LIFESTYLE', shorts:'SHORTS' };
 
     function criarCard(prod) {
         const card = document.createElement('div');
@@ -198,7 +198,7 @@
         const images = prod.images || [];
         const isSold = prod.status === 'vendido';
         let sizeHtml = '';
-        if (prod.categoria==='vestuario' && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
+        if ((prod.categoria==='vestuario'||prod.categoria==='shorts') && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
         else if (prod.categoria==='calcados' && prod.numeracao) sizeHtml = `<div class="product-size-info">Numeração: ${prod.numeracao}</div>`;
         const descHtml = prod.descricao_completa ? `<p class="product-desc-preview">${escapeHtml(prod.descricao_completa)}</p>` : '';
         card.innerHTML = `
@@ -253,7 +253,7 @@
         document.getElementById('modalPrice').innerText = prod.preco;
         document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
         let st = '';
-        if (prod.categoria==='vestuario'&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
+        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
         else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         document.getElementById('modalSize').innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
         const imgs = prod.images||[];
@@ -267,7 +267,7 @@
             thumbsDiv.appendChild(t);
         });
         let extra = '';
-        if (prod.categoria==='vestuario'&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
+        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
         document.getElementById('modalWhatsappBtn').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
         document.getElementById('productModal').style.display = 'flex';
@@ -358,7 +358,7 @@
         }
 
         const data = { nome, descricao_completa:desc, preco, images, categoria, status };
-        if (categoria==='vestuario') {
+        if (categoria==='vestuario'||categoria==='shorts') {
             const t = Array.from(document.querySelectorAll('#dynamicFieldsContainer input[type=checkbox]:checked')).map(cb=>cb.value);
             if (!t.length) { alert('Selecione pelo menos um tamanho.'); return; }
             data.tamanhos = t;
@@ -407,7 +407,7 @@
     function updateEditSizeFields(prod) {
         const c = document.getElementById('editSizeContainer');
         c.innerHTML = '';
-        if (prod.categoria==='vestuario') {
+        if (prod.categoria==='vestuario'||prod.categoria==='shorts') {
             c.innerHTML = `<label>Tamanhos:</label><div class="edit-checkbox-group" id="editTamanhosGroup">${['XXS','XS','S','M','L','XL','XXL'].map(t=>`<label><input type="checkbox" value="${t}" ${prod.tamanhos?.includes(t)?'checked':''}> ${t}</label>`).join('')}</div>`;
         } else if (prod.categoria==='calcados') {
             c.innerHTML = `<label>Numeração</label><input type="text" id="editNumeracao" value="${prod.numeracao||''}" placeholder="Ex: 35, 36, 37-40">`;
@@ -437,7 +437,7 @@
         if (!nome||!preco) { alert('Nome e preço são obrigatórios'); return; }
 
         let tamanhos=null, numeracao=null;
-        if (categoria==='vestuario') {
+        if (categoria==='vestuario'||categoria==='shorts') {
             tamanhos = Array.from(document.querySelectorAll('#editTamanhosGroup input:checked')).map(cb=>cb.value);
             if (!tamanhos.length) { alert('Selecione pelo menos um tamanho'); return; }
         } else if (categoria==='calcados') {
@@ -471,7 +471,7 @@
         const cat = document.getElementById('prodCategoria').value;
         const c = document.getElementById('dynamicFieldsContainer');
         c.innerHTML = '';
-        if (cat==='vestuario') c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="XXS"> XXS</label><label><input type="checkbox" value="XS"> XS</label><label><input type="checkbox" value="S"> S</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="L"> L</label><label><input type="checkbox" value="XL"> XL</label><label><input type="checkbox" value="XXL"> XXL</label></div></div>`;
+        if (cat==='vestuario'||cat==='shorts') c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="XXS"> XXS</label><label><input type="checkbox" value="XS"> XS</label><label><input type="checkbox" value="S"> S</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="L"> L</label><label><input type="checkbox" value="XL"> XL</label><label><input type="checkbox" value="XXL"> XXL</label></div></div>`;
         else if (cat==='calcados') c.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)"></div>`;
     }
 

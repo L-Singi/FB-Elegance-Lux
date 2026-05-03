@@ -42,8 +42,9 @@
         <div class="filters-section">
             <div class="filter-group">
                 <button class="filter-btn cat-btn active" data-cat="todos">READY-TO-WEAR</button>
-                <button class="filter-btn cat-btn" data-cat="calcados">CALÇADOS</button>
                 <button class="filter-btn cat-btn" data-cat="vestuario">VESTUÁRIO</button>
+                <button class="filter-btn cat-btn" data-cat="shorts">SHORTS</button>
+                <button class="filter-btn cat-btn" data-cat="calcados">CALÇADOS</button>
                 <button class="filter-btn cat-btn" data-cat="lifestyle">LIFESTYLE</button>
             </div>
             <div class="result-info" id="result-info"></div>
@@ -128,7 +129,7 @@
         <div class="edit-form-group"><label>Nome</label><input type="text" id="editNome" placeholder="Nome do produto"></div>
         <div class="edit-form-group"><label>Descrição</label><textarea id="editDesc" rows="3" placeholder="Descrição completa"></textarea></div>
         <div class="edit-form-group"><label>Preço (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00"></div>
-        <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option></select></div>
+        <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select></div>
         <div class="edit-form-group" id="editSizeContainer"></div>
         <div class="edit-form-group"><label>Status</label><select id="editStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option><option value="vendido">Vendido</option></select></div>
         <div class="edit-form-group"><label>Imagens atuais</label><div id="editImagesContainer" class="current-images"></div><label>Adicionar novas imagens</label><input type="file" id="editNewImages" accept="image/*" multiple></div>
@@ -147,7 +148,7 @@
 </div>
 
 <!-- Admin panel (oculto) -->
-<div class="container"><div id="adminPanel" class="admin-panel"><h3>✦ Gerenciar acervo</h3><div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
+<div class="container"><div id="adminPanel" class="admin-panel"><h3>✦ Gerenciar acervo</h3><div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
 
 <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i><span id="toastMessage">Produto adicionado ao carrinho</span><i class="fas fa-times toast-close" id="toastClose"></i></div>
 
