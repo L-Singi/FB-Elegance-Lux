@@ -557,6 +557,138 @@
     document.getElementById('sendCartWhatsapp').addEventListener('click', () => { sendCartToWhatsApp(); cartModal.style.display='none'; });
     window.addEventListener('click', e => { if(e.target===cartModal) cartModal.style.display='none'; });
 
+    // ─── DASHBOARD DE VENDAS ──────────────────────────────────────────────────
+
+    function calcularReceita(lista) {
+        return lista.reduce((sum, p) => {
+            const n = parseFloat((p.preco||'').replace('R$','').replace(/\./g,'').replace(',','.').trim()) || 0;
+            return sum + n;
+        }, 0);
+    }
+
+    function formatarMoeda(v) {
+        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function tempoRelativo(dateStr) {
+        if (!dateStr) return '—';
+        const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
+        if (diff < 60) return 'agora';
+        if (diff < 3600) return Math.floor(diff/60) + 'min atrás';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h atrás';
+        return Math.floor(diff/86400) + 'd atrás';
+    }
+
+    const CAT_LABELS_DASH = { calcados:'Calçados', vestuario:'Vestuário', lifestyle:'Lifestyle', shorts:'Shorts' };
+    const CAT_ICONS = { calcados:'👟', vestuario:'👕', lifestyle:'✨', shorts:'🩳' };
+
+    function renderDashboard() {
+        const todos = produtos;
+        if (!todos.length) return;
+
+        const vendidos   = todos.filter(p => p.status === 'vendido');
+        const ativos     = todos.filter(p => p.status !== 'vendido');
+        const receitaVendidos = calcularReceita(vendidos);
+        const ticketMedio = vendidos.length ? receitaVendidos / vendidos.length : 0;
+
+        // KPIs
+        document.getElementById('dashReceita').textContent  = formatarMoeda(receitaVendidos);
+        document.getElementById('dashAtivos').textContent   = ativos.length;
+        document.getElementById('dashVendidos').textContent = vendidos.length;
+        document.getElementById('dashTicket').textContent   = vendidos.length ? formatarMoeda(ticketMedio) : '—';
+
+        document.getElementById('dashReceitaDelta').className = 'dash-kpi-delta up';
+        document.getElementById('dashReceitaDelta').textContent = vendidos.length + ' peças vendidas';
+        document.getElementById('dashAtivosDelta').className = 'dash-kpi-delta neutral';
+        document.getElementById('dashAtivosDelta').textContent = todos.length + ' total no acervo';
+        document.getElementById('dashVendidosDelta').className = 'dash-kpi-delta up';
+        document.getElementById('dashVendidosDelta').textContent = todos.length ? Math.round(vendidos.length/todos.length*100) + '% do acervo' : '';
+        document.getElementById('dashTicketDelta').className = 'dash-kpi-delta neutral';
+        document.getElementById('dashTicketDelta').textContent = 'por peça vendida';
+
+        // Gráfico de barras por categoria
+        const cats = ['calcados','vestuario','lifestyle','shorts'];
+        const catData = cats.map(cat => ({
+            cat,
+            label: CAT_LABELS_DASH[cat],
+            total: todos.filter(p=>p.categoria===cat).length,
+            vendidos: todos.filter(p=>p.categoria===cat&&p.status==='vendido').length,
+            receita: calcularReceita(todos.filter(p=>p.categoria===cat&&p.status==='vendido'))
+        }));
+        const maxReceita = Math.max(...catData.map(c=>c.receita), 1);
+        const svgW = 560, svgH = 160, barW = 80, gap = 60;
+        const startX = (svgW - (cats.length * (barW + gap) - gap)) / 2;
+        let svgContent = `<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b88b4a"/><stop offset="100%" stop-color="#8a6e2e" stop-opacity="0.4"/></linearGradient></defs>`;
+        // Grid lines
+        [0,40,80,120,160].forEach(y => {
+            svgContent += `<line x1="0" y1="${y}" x2="${svgW}" y2="${y}" stroke="#2a2518" stroke-width="1"/>`;
+        });
+        catData.forEach((c, i) => {
+            const x = startX + i*(barW+gap);
+            const barH = c.receita > 0 ? Math.max(6, (c.receita/maxReceita)*130) : 4;
+            const y = 140 - barH;
+            svgContent += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="url(#dg)" rx="4"/>`;
+            if (c.receita > 0) {
+                svgContent += `<text x="${x+barW/2}" y="${y-6}" text-anchor="middle" fill="#b88b4a" font-size="9" font-family="Inter,sans-serif">${formatarMoeda(c.receita).replace('R$ ','R$')}</text>`;
+            }
+        });
+        document.getElementById('dashChartSvg').innerHTML = svgContent;
+        document.getElementById('dashChartX').innerHTML = catData.map(c=>`<span>${c.label}</span>`).join('');
+
+        // Funil por categoria
+        const maxTotal = Math.max(...catData.map(c=>c.total), 1);
+        document.getElementById('dashFunnel').innerHTML = catData.map(c => `
+            <div class="dash-funnel-item">
+                <div class="dash-funnel-top">
+                    <div class="dash-funnel-label">${CAT_ICONS[c.cat]} ${c.label}</div>
+                    <div class="dash-funnel-count">${c.total}</div>
+                </div>
+                <div class="dash-funnel-track"><div class="dash-funnel-fill" style="width:${Math.max(4,c.total/maxTotal*100)}%"></div></div>
+                <div class="dash-funnel-pct">${c.vendidos} vendidos · ${c.total>0?Math.round(c.vendidos/c.total*100):0}% do estoque</div>
+            </div>`).join('');
+
+        // Tabela status por categoria
+        document.getElementById('dashTableBody').innerHTML = catData.map(c => `
+            <tr>
+                <td>${c.label}</td>
+                <td>${c.total}</td>
+                <td>${c.total - c.vendidos}</td>
+                <td class="gold">${c.vendidos}</td>
+            </tr>`).join('');
+
+        // Atividade: últimos 5 cadastros
+        const recentes = [...todos].sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+        document.getElementById('dashActivity').innerHTML = recentes.map(p => `
+            <div class="dash-act-item">
+                <div class="dash-act-icon">${CAT_ICONS[p.categoria]||'✦'}</div>
+                <div class="dash-act-body">
+                    <div class="dash-act-text"><strong>${escapeHtml(p.nome)}</strong></div>
+                    <div class="dash-act-time">${tempoRelativo(p.created_at)} · ${CAT_LABELS_DASH[p.categoria]||p.categoria}</div>
+                </div>
+                <div class="dash-act-badge">${p.preco}</div>
+            </div>`).join('');
+    }
+
+    // Abrir/fechar dashboard
+    document.getElementById('openDashboardBtn').addEventListener('click', () => {
+        const panel = document.getElementById('dashboardPanel');
+        panel.style.display = 'block';
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        renderDashboard();
+    });
+    document.getElementById('closeDashboardBtn').addEventListener('click', () => {
+        document.getElementById('dashboardPanel').style.display = 'none';
+    });
+
+    // Tabs de período (visual apenas — sem dados históricos no Supabase ainda)
+    document.querySelectorAll('.dash-period-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.dash-period-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderDashboard(); // re-render (futuro: filtrar por data)
+        });
+    });
+
     // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
     document.getElementById('adminPanel').style.display = 'none';
     document.getElementById('prodPreco').value = 'R$ 0,00';

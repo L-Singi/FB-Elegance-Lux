@@ -87,6 +87,116 @@
     </div>
 </footer>
 
+<!-- ── PAINEL ADMIN + DASHBOARD (ocultos por padrão) ── -->
+<section id="adminSection">
+
+<!-- Dashboard de vendas -->
+<div id="dashboardPanel" class="dashboard-panel" style="display:none;">
+    <div class="dash-topbar">
+        <div class="dash-topbar-left">
+            <div class="dash-eyebrow">✦ Controle de Vendas</div>
+            <div class="dash-title">Visão <em>Geral</em></div>
+        </div>
+        <div class="dash-topbar-right">
+            <div class="dash-period-tabs">
+                <div class="dash-period-tab active" data-period="7">7 dias</div>
+                <div class="dash-period-tab" data-period="30">30 dias</div>
+                <div class="dash-period-tab" data-period="90">90 dias</div>
+            </div>
+            <button id="closeDashboardBtn" class="dash-close-btn">✕ Fechar</button>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="dash-kpi-grid">
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-symbol">✦</div>
+            <div class="dash-kpi-label">Receita Total</div>
+            <div class="dash-kpi-value" id="dashReceita">—</div>
+            <div class="dash-kpi-delta up" id="dashReceitaDelta"></div>
+        </div>
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-symbol">✦</div>
+            <div class="dash-kpi-label">Produtos Ativos</div>
+            <div class="dash-kpi-value" id="dashAtivos">—</div>
+            <div class="dash-kpi-delta" id="dashAtivosDelta"></div>
+        </div>
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-symbol">✦</div>
+            <div class="dash-kpi-label">Vendidos</div>
+            <div class="dash-kpi-value" id="dashVendidos">—</div>
+            <div class="dash-kpi-delta" id="dashVendidosDelta"></div>
+        </div>
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-symbol">✦</div>
+            <div class="dash-kpi-label">Ticket Médio</div>
+            <div class="dash-kpi-value" id="dashTicket">—</div>
+            <div class="dash-kpi-delta" id="dashTicketDelta"></div>
+        </div>
+    </div>
+
+    <!-- Gráfico + Funil -->
+    <div class="dash-mid-grid">
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div>
+                    <div class="dash-card-eyebrow">✦ Distribuição</div>
+                    <div class="dash-card-title">Receita por Categoria</div>
+                </div>
+            </div>
+            <div class="dash-chart-wrap">
+                <svg id="dashChartSvg" class="dash-chart-svg" viewBox="0 0 560 160" preserveAspectRatio="none"></svg>
+                <div class="dash-chart-x" id="dashChartX"></div>
+            </div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div>
+                    <div class="dash-card-eyebrow">✦ Acervo</div>
+                    <div class="dash-card-title">Por Categoria</div>
+                </div>
+            </div>
+            <div id="dashFunnel" class="dash-funnel"></div>
+        </div>
+    </div>
+
+    <!-- Tabela + Atividade -->
+    <div class="dash-bottom-grid">
+        <div class="dash-card dash-table-card">
+            <div class="dash-card-head">
+                <div>
+                    <div class="dash-card-eyebrow">✦ Estoque</div>
+                    <div class="dash-card-title">Status do Acervo</div>
+                </div>
+            </div>
+            <table class="dash-table">
+                <thead><tr><th>Categoria</th><th>Total</th><th>Ativos</th><th>Vendidos</th></tr></thead>
+                <tbody id="dashTableBody"></tbody>
+            </table>
+        </div>
+        <div class="dash-card">
+            <div class="dash-card-head">
+                <div>
+                    <div class="dash-card-eyebrow">✦ Recentes</div>
+                    <div class="dash-card-title">Últimos Cadastros</div>
+                </div>
+            </div>
+            <div id="dashActivity" class="dash-activity"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin panel (oculto) -->
+<div class="container"><div id="adminPanel" class="admin-panel">
+        <div class="admin-panel-header">
+            <h3>✦ Gerenciar acervo</h3>
+            <button id="openDashboardBtn" class="btn-dashboard">📊 Dashboard de Vendas</button>
+        </div>
+        <div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
+
+</section><!-- /adminSection -->
+
+<!-- Modais -->
 <!-- Modal do produto -->
 <div id="productModal" class="modal">
     <div class="modal-content">
@@ -150,9 +260,6 @@
         <button id="loginAdminBtn">Entrar</button>
     </div>
 </div>
-
-<!-- Admin panel (oculto) -->
-<div class="container"><div id="adminPanel" class="admin-panel"><h3>✦ Gerenciar acervo</h3><div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
 
 <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i><span id="toastMessage">Produto adicionado ao carrinho</span><i class="fas fa-times toast-close" id="toastClose"></i></div>
 
