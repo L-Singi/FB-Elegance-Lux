@@ -668,6 +668,32 @@
         renderizarSecoesCuradas();
     }
 
+    function syncSizesToInput(){
+        const sel = Array.from(document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt.active')).map(b=>b.dataset.size);
+        admEl('adm-f-tamanhos').value = sel.join(',');
+    }
+    function updateSizeButtonsFromValue(val){
+        const arr = String(val||'').split(',').map(x=>x.trim()).filter(Boolean);
+        document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
+            b.classList.toggle('active', arr.includes(b.dataset.size));
+        });
+    }
+    function refreshNumSizeVisibility(){
+        const cat = admEl('adm-f-cat').value;
+        const rowNum = admEl('adm-row-numeracao');
+        const rowSizes = admEl('adm-row-tamanhos');
+        if(cat==='calcados'){
+            if(rowNum) rowNum.style.display='block';
+            if(rowSizes) rowSizes.style.display='none';
+        } else if(cat==='vestuario' || cat==='shorts'){
+            if(rowNum) rowNum.style.display='none';
+            if(rowSizes) rowSizes.style.display='block';
+        } else {
+            if(rowNum) rowNum.style.display='none';
+            if(rowSizes) rowSizes.style.display='none';
+        }
+    }
+
     function admInit() {
         if (admInited) { admLoadData().then(() => { admRenderDash(); admRenderStock(); }); return; }
         admInited = true;
@@ -751,36 +777,9 @@
         });
 
         // Inicializa seletor de tamanhos e lógica de visibilidade para numeração/tamanhos
-        function syncSizesToInput(){
-            const sel = Array.from(document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt.active')).map(b=>b.dataset.size);
-            admEl('adm-f-tamanhos').value = sel.join(',');
-        }
-        function updateSizeButtonsFromValue(val){
-            const arr = String(val||'').split(',').map(x=>x.trim()).filter(Boolean);
-            document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
-                b.classList.toggle('active', arr.includes(b.dataset.size));
-            });
-        }
-        // attach click handlers
         document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
             b.addEventListener('click', ()=>{ b.classList.toggle('active'); syncSizesToInput(); });
         });
-        // show/hide rows based on category
-        function refreshNumSizeVisibility(){
-            const cat = admEl('adm-f-cat').value;
-            const rowNum = admEl('adm-row-numeracao');
-            const rowSizes = admEl('adm-row-tamanhos');
-            if(cat==='calcados'){
-                if(rowNum) rowNum.style.display='block';
-                if(rowSizes) rowSizes.style.display='none';
-            } else if(cat==='vestuario' || cat==='shorts'){
-                if(rowNum) rowNum.style.display='none';
-                if(rowSizes) rowSizes.style.display='block';
-            } else {
-                if(rowNum) rowNum.style.display='none';
-                if(rowSizes) rowSizes.style.display='none';
-            }
-        }
         admEl('adm-f-cat').addEventListener('change', ()=>{ refreshNumSizeVisibility(); });
 
         // Filtros estoque
