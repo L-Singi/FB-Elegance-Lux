@@ -652,6 +652,34 @@
     </div>
 </div>
 
+<!-- Modal mobile (bottom sheet) -->
+<div id="mobileSheet" class="mobile-sheet-overlay">
+    <div class="mobile-sheet">
+        <div class="mobile-sheet-handle"></div>
+        <button class="mobile-sheet-close" id="mobileSheetClose"><i class="fas fa-times"></i></button>
+
+        <div class="mobile-sheet-gallery">
+            <div class="mobile-sheet-img-wrap">
+                <img id="mobileSheetImg" class="mobile-sheet-main-img" src="" alt="">
+                <div class="mobile-sheet-nav mobile-sheet-nav-left" id="mobileSheetNavLeft"><i class="fas fa-chevron-left"></i></div>
+                <div class="mobile-sheet-nav mobile-sheet-nav-right" id="mobileSheetNavRight"><i class="fas fa-chevron-right"></i></div>
+            </div>
+            <div id="mobileSheetThumbs" class="mobile-sheet-thumbs"></div>
+        </div>
+
+        <div class="mobile-sheet-info">
+            <div id="mobileSheetCategory" class="mobile-sheet-category"></div>
+            <h2 id="mobileSheetTitle" class="mobile-sheet-title"></h2>
+            <div id="mobileSheetPrice" class="mobile-sheet-price"></div>
+            <div id="mobileSheetSize" class="mobile-sheet-size"></div>
+            <div id="mobileSheetDesc" class="mobile-sheet-desc"></div>
+            <a id="mobileSheetWhatsapp" class="mobile-sheet-whatsapp" href="#" target="_blank">
+                <i class="fab fa-whatsapp"></i> Consultar via WhatsApp
+            </a>
+        </div>
+    </div>
+</div>
+
 <div id="toastNotification" class="toast-notification"><i class="fas fa-check-circle"></i><span id="toastMessage">Produto adicionado ao carrinho</span><i class="fas fa-times toast-close" id="toastClose"></i></div>
 
 <script src="script.js"></script>

@@ -265,9 +265,9 @@
                 <button class="btn-details"><i class="fas fa-expand-alt"></i> Detalhes</button>
             </div>`;
         card.querySelector('.btn-add-cart').addEventListener('click', e => { e.stopPropagation(); isSold ? showToast('❌ Item já vendido', true) : addToCart(prod); });
-        card.querySelector('.btn-details').addEventListener('click', e => { e.stopPropagation(); abrirModal(prod); });
+        card.querySelector('.btn-details').addEventListener('click', e => { e.stopPropagation(); abrirProduto(prod); });
         card.querySelectorAll('.nav-arrow').forEach(a => a.addEventListener('click', e => { e.stopPropagation(); trocarImagem(prod, a.dataset.dir, card); }));
-        card.addEventListener('click', e => { if (!e.target.closest('.btn-add-cart,.btn-details,.nav-arrow')) abrirModal(prod); });
+        card.addEventListener('click', e => { if (!e.target.closest('.btn-add-cart,.btn-details,.nav-arrow')) abrirProduto(prod); });
         return card;
     }
 
@@ -298,6 +298,114 @@
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
     }
+
+    // ─── DISPATCHER: mobile sheet ou modal desktop ────────────────────────────
+    function abrirProduto(prod) {
+        if (window.innerWidth <= 768) {
+            abrirMobileSheet(prod);
+        } else {
+            abrirModal(prod);
+        }
+    }
+
+    // ─── MOBILE BOTTOM SHEET ─────────────────────────────────────────────────
+    function abrirMobileSheet(prod) {
+        const overlay  = document.getElementById('mobileSheet');
+        const mainImg  = document.getElementById('mobileSheetImg');
+        const thumbsDiv = document.getElementById('mobileSheetThumbs');
+        const navLeft  = document.getElementById('mobileSheetNavLeft');
+        const navRight = document.getElementById('mobileSheetNavRight');
+
+        document.getElementById('mobileSheetTitle').innerText    = prod.nome;
+        document.getElementById('mobileSheetCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
+        document.getElementById('mobileSheetPrice').innerText    = prod.preco;
+        document.getElementById('mobileSheetDesc').innerText     = prod.descricao_completa || '';
+
+        let st = '';
+        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
+        else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
+        const sizeEl = document.getElementById('mobileSheetSize');
+        sizeEl.innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
+
+        let extra = '';
+        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
+        if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
+        document.getElementById('mobileSheetWhatsapp').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
+
+        const imgs = prod.images || [];
+        let currentIdx = 0;
+
+        function goTo(idx) {
+            if (!imgs.length) return;
+            currentIdx = (idx + imgs.length) % imgs.length;
+            mainImg.style.opacity = '0';
+            const tmp = new Image();
+            tmp.onload = () => { mainImg.src = imgs[currentIdx]; mainImg.style.opacity = '1'; };
+            tmp.src = imgs[currentIdx];
+            thumbsDiv.querySelectorAll('.mobile-sheet-thumb').forEach((t,i) => t.classList.toggle('active', i===currentIdx));
+        }
+
+        // Carrega imagem inicial
+        if (imgs.length) {
+            mainImg.style.opacity = '0';
+            const tmp0 = new Image();
+            tmp0.onload = () => { mainImg.src = imgs[0]; mainImg.style.opacity = '1'; };
+            tmp0.src = imgs[0];
+        } else {
+            mainImg.src = 'https://placehold.co/600x450?text=Sem+imagem';
+        }
+
+        // Thumbnails
+        thumbsDiv.innerHTML = '';
+        imgs.forEach((src, i) => {
+            const t = document.createElement('img');
+            t.src = src; t.loading = 'lazy'; t.className = 'mobile-sheet-thumb';
+            if (i === 0) t.classList.add('active');
+            t.addEventListener('click', () => goTo(i));
+            thumbsDiv.appendChild(t);
+        });
+
+        // Setas
+        if (imgs.length <= 1) { navLeft.classList.add('hidden'); navRight.classList.add('hidden'); }
+        else { navLeft.classList.remove('hidden'); navRight.classList.remove('hidden'); }
+        navLeft.onclick = () => goTo(currentIdx - 1);
+        navRight.onclick = () => goTo(currentIdx + 1);
+
+        // Swipe touch na imagem
+        let tStartX = 0, tStartY = 0, swiping = false;
+        mainImg.addEventListener('touchstart', e => {
+            tStartX = e.touches[0].clientX; tStartY = e.touches[0].clientY; swiping = false;
+        }, { passive: true });
+        mainImg.addEventListener('touchmove', e => {
+            const dx = Math.abs(e.touches[0].clientX - tStartX);
+            const dy = Math.abs(e.touches[0].clientY - tStartY);
+            if (dx > dy && dx > 8) { swiping = true; e.preventDefault(); }
+        }, { passive: false });
+        mainImg.addEventListener('touchend', e => {
+            if (!swiping) return;
+            const dx = e.changedTouches[0].clientX - tStartX;
+            if (Math.abs(dx) > 35) goTo(dx < 0 ? currentIdx + 1 : currentIdx - 1);
+        }, { passive: true });
+
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function fecharMobileSheet() {
+        const overlay = document.getElementById('mobileSheet');
+        const sheet = overlay.querySelector('.mobile-sheet');
+        sheet.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+            overlay.classList.remove('open');
+            sheet.style.transform = '';
+        }, 360);
+        document.body.style.overflow = 'auto';
+    }
+
+    document.getElementById('mobileSheetClose').addEventListener('click', fecharMobileSheet);
+    document.getElementById('mobileSheet').addEventListener('click', e => {
+        if (e.target === document.getElementById('mobileSheet')) fecharMobileSheet();
+    });
 
     // ─── MODAL PRODUTO ────────────────────────────────────────────────────────
     function abrirModal(prod) {

@@ -197,7 +197,7 @@ body {
 
 .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 500px; }
 .modal-gallery { background: #151515; padding: 20px; border-radius: 24px 0 0 24px; display: flex; flex-direction: column; align-items:center; }
-.modal-img-wrap { position: relative; margin-bottom: 12px; width:100%; display:flex; align-items:center; justify-content:center; min-height: 200px; }
+.modal-img-wrap { position: relative; margin-bottom: 12px; width:100%; display:flex; align-items:center; justify-content:center; }
 .modal-main-img { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: 16px; cursor: default; display: block; transition: opacity .28s ease; }
 .modal-nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); color: #fff; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; opacity: 0.9; z-index: 50; }
 .modal-img-wrap .modal-nav-arrow { opacity: 0.9; }
@@ -416,23 +416,13 @@ body {
         padding: 14px 14px 8px !important;
         border-radius: 20px 20px 0 0 !important;
     }
-    #productModal .modal-img-wrap {
-        width: 100% !important;
-        min-height: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        overflow: hidden !important;
-    }
     #productModal .modal-main-img {
-        display: block !important;
         max-width: 100% !important;
-        width: 100% !important;
+        width: auto !important;
         height: auto !important;
-        max-height: 65vw !important;
+        max-height: 70vh !important;
         object-fit: contain !important;
-        object-position: center center !important;
-        margin: 0 auto 10px !important;
+        margin-bottom: 10px !important;
         border-radius: 14px !important;
         cursor: grab !important;
         transition: opacity .22s ease !important;
@@ -883,4 +873,192 @@ body {
 
     .admin-panel-header { flex-direction: column; align-items: flex-start; }
     .btn-dashboard { width: 100%; justify-content: center; }
+}
+/* ========== MOBILE BOTTOM SHEET ========== */
+.mobile-sheet-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1200;
+    align-items: flex-end;
+    justify-content: center;
+}
+.mobile-sheet-overlay.open {
+    display: flex;
+}
+.mobile-sheet {
+    width: 100%;
+    max-height: 93vh;
+    background: #111;
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid #2a2a2a;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(100%);
+    transition: transform 0.38s cubic-bezier(0.32, 0.72, 0, 1);
+    position: relative;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.mobile-sheet-overlay.open .mobile-sheet {
+    transform: translateY(0);
+}
+.mobile-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+    margin: 12px auto 0;
+}
+.mobile-sheet-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: rgba(30,30,30,0.9);
+    border: 1px solid #2a2a2a;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: background 0.2s;
+}
+.mobile-sheet-close:hover { background: #b88b4a; border-color: #b88b4a; }
+
+/* Gallery */
+.mobile-sheet-gallery {
+    padding: 16px 16px 8px;
+}
+.mobile-sheet-img-wrap {
+    position: relative;
+    width: 100%;
+    background: #151515;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4/3;
+}
+.mobile-sheet-main-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+    transition: opacity 0.22s ease;
+}
+.mobile-sheet-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.85rem;
+    z-index: 5;
+    transition: background 0.2s;
+}
+.mobile-sheet-nav:hover { background: #b88b4a; }
+.mobile-sheet-nav-left { left: 10px; }
+.mobile-sheet-nav-right { right: 10px; }
+.mobile-sheet-nav.hidden { display: none !important; }
+
+.mobile-sheet-thumbs {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+}
+.mobile-sheet-thumbs::-webkit-scrollbar { display: none; }
+.mobile-sheet-thumb {
+    width: 54px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.18s;
+}
+.mobile-sheet-thumb.active { border-color: #b88b4a; }
+
+/* Info */
+.mobile-sheet-info {
+    padding: 16px 20px 24px;
+}
+.mobile-sheet-category {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #b88b4a;
+    margin-bottom: 6px;
+}
+.mobile-sheet-title {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+.mobile-sheet-price {
+    font-size: 1.35rem;
+    font-weight: 500;
+    color: #fff;
+    margin: 8px 0;
+}
+.mobile-sheet-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    color: #ccc;
+    margin: 6px 0 10px;
+}
+.mobile-sheet-size:empty { display: none; }
+.mobile-sheet-desc {
+    font-size: 0.85rem;
+    color: #bbb;
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+.mobile-sheet-whatsapp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: #25D366;
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 30px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    text-decoration: none;
+    transition: background 0.2s;
+    width: 100%;
+}
+.mobile-sheet-whatsapp:hover { background: #1da851; }
+
+/* Ocultar bottom sheet no desktop */
+@media (min-width: 769px) {
+    .mobile-sheet-overlay { display: none !important; }
 }
