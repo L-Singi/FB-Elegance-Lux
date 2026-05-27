@@ -821,7 +821,7 @@
         admNewFiles = [];
         admEl('adm-m-title').textContent = p?'Editar produto':'Novo produto';
         admEl('adm-f-nome').value = p?p.nome||'':'';
-        admEl('adm-f-preco').value = p?p.preco||'':'';
+        admEl('adm-f-preco').value = p?p.preco||'R$ 0,00':'R$ 0,00';
         admEl('adm-f-cat').value = p?p.categoria||'vestuario':'vestuario';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
@@ -1076,6 +1076,7 @@
     // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
     window.addEventListener('scroll', () => document.querySelector('.header').classList.toggle('shrink', window.scrollY > 10));
     bindPreco(document.getElementById('prodPreco'));
+    bindPreco(document.getElementById('adm-f-preco'));
     bindPreco(document.getElementById('editPreco'));
     carregarProdutos();
     updateCartUI();
