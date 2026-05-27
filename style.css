@@ -133,7 +133,7 @@ body {
 .product-card { background-color: #111; border-radius: 20px; overflow: hidden; transition: transform 0.3s, box-shadow 0.2s; border: 1px solid #222; box-shadow: 0 8px 20px rgba(0,0,0,0.4); cursor: pointer; }
 .product-card:hover { transform: translateY(-6px); border-color: #3a3a3a; box-shadow: 0 20px 30px -8px rgba(0,0,0,0.6); }
 .product-image-container { position: relative; aspect-ratio: 3/4; width: 100%; background-color: #1a1a1a; overflow: hidden; }
-.product-image { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+.product-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 0.5s; display: block; }
 .product-card:hover .product-image { transform: scale(1.02); }
 
 .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); color: #fff; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; opacity: 0; z-index: 5; font-size: 0.9rem; }
@@ -350,12 +350,18 @@ body {
         aspect-ratio: 3/4;
         height: auto;
         border-radius: 16px 16px 0 0;
+        position: relative;
+        overflow: hidden;
     }
 
     .product-image {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         object-fit: cover;
+        object-position: center top;
     }
 
     .product-info {
@@ -815,40 +821,54 @@ body {
 @media (max-width: 768px) {
     .dashboard-panel {
         margin: 0 0 24px;
-        border-radius: 16px;
+        border-radius: 0;
         border-left: none;
         border-right: none;
-        border-radius: 0;
     }
     .dash-topbar {
-        padding: 18px 16px 14px;
-        gap: 10px;
+        padding: 14px 12px 12px;
+        gap: 8px;
+        flex-direction: column;
+        align-items: flex-start;
     }
-    .dash-title { font-size: 18px; }
-    .dash-topbar-right { width: 100%; justify-content: space-between; }
+    .dash-title { font-size: 17px; }
+    .dash-topbar-right {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+    }
     .dash-period-tabs { flex: 1; }
-    .dash-period-tab { flex: 1; text-align: center; padding: 7px 8px; font-size: 9px; }
+    .dash-period-tab {
+        flex: 1;
+        text-align: center;
+        padding: 6px 8px;
+        font-size: 9px;
+    }
+    .dash-close-btn { font-size: 9px; padding: 6px 10px; }
 
     .dash-kpi-grid {
         grid-template-columns: 1fr 1fr;
-        margin: 14px 14px 0;
+        margin: 10px 10px 0;
         border-radius: 10px;
     }
-    .dash-kpi-card { padding: 14px; }
+    .dash-kpi-card { padding: 12px; }
     .dash-kpi-value { font-size: 20px; }
+    .dash-kpi-label { font-size: 7px; }
 
     .dash-mid-grid {
         grid-template-columns: 1fr;
-        padding: 12px 14px 0;
+        padding: 10px 10px 0;
+        gap: 10px;
     }
     .dash-bottom-grid {
         grid-template-columns: 1fr;
-        padding: 12px 14px 0;
+        padding: 10px 10px 0;
+        gap: 10px;
     }
-    .dash-card { padding: 14px; }
-    .dash-card-title { font-size: 13px; }
+    .dash-card { padding: 12px; }
+    .dash-card-title { font-size: 12px; }
 
-    .dash-table th, .dash-table td { padding: 8px 10px; }
+    .dash-table th, .dash-table td { padding: 7px 8px; }
     .dash-table { font-size: 10px; }
 
     .admin-panel-header { flex-direction: column; align-items: flex-start; }
