@@ -55,6 +55,7 @@
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     let produtos = [];
     let filtroCategoria = 'todos';
+    let filtroTamanhos = []; // filtro de tamanho: array de tamanhos selecionados
     let termoBusca = '';
     let adminVisible = false;
     let currentEditId = null;
@@ -240,9 +241,18 @@
             const b = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
             f = f.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(b));
         }
+        // Filtro de tamanho
+        if (filtroTamanhos.length > 0) {
+            f = f.filter(p => {
+                if ((p.categoria==='vestuario'||p.categoria==='shorts') && p.tamanhos) {
+                    return filtroTamanhos.some(sel => p.tamanhos.includes(sel));
+                }
+                return false;
+            });
+        }
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
         grid.innerHTML = '';
-        if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
+        if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto disponível neste tamanho ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
     }
 
@@ -549,6 +559,21 @@
         renderizarCatalogo();
     }));
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
+
+    // Filtro de tamanho
+    document.querySelectorAll('.size-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tam = btn.dataset.size;
+            if (filtroTamanhos.includes(tam)) {
+                filtroTamanhos = filtroTamanhos.filter(t => t !== tam);
+                btn.classList.remove('active');
+            } else {
+                filtroTamanhos.push(tam);
+                btn.classList.add('active');
+            }
+            renderizarCatalogo();
+        });
+    });
 
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display='flex'; });

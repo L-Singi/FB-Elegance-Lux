@@ -1,4 +1,4 @@
--- Script SQL para desabilitar Row Level Security (RLS) na tabela 'produtos' e configurar políticas para o storage do Supabase
+ -- Script SQL para desabilitar Row Level Security (RLS) na tabela 'produtos' e configurar políticas para o storage do Supabase
 -- Execute este script no SQL Editor do Supabase (https://supabase.com/dashboard/project/YOUR_PROJECT/sql)
 
 -- Desabilitar RLS para a tabela produtos

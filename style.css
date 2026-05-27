@@ -92,6 +92,39 @@ body {
 .filter-btn.active { color: #fff; font-weight: 500; border-bottom: 1px solid #b88b4a; padding-bottom: 4px; }
 .result-info { display: none; }
 
+/* ========== FILTRO DE TAMANHO ========== */
+.size-filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 10px;
+    margin-bottom: 4px;
+}
+.size-filter-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    align-self: center;
+    margin-right: 4px;
+}
+.size-filter-btn {
+    background: transparent;
+    border: 1px solid #333;
+    color: #888;
+    padding: 4px 14px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+.size-filter-btn:hover { border-color: #b88b4a; color: #b88b4a; }
+.size-filter-btn.active { background: #b88b4a; border-color: #b88b4a; color: #000; font-weight: 600; }
+
 /* ========== CARDS DE PRODUTO ========== */
 .product-grid, .curated-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 40px 30px; margin: 40px 0; }
 .curated-section { margin: 40px 0 20px; }
@@ -284,68 +317,61 @@ body {
 
 /* ========== RESPONSIVIDADE ========== */
 @media (max-width: 768px) {
-    .container { padding: 0 20px; }
+    .container { padding: 0 12px; }
     .header-inner { flex-direction: column; align-items: center; text-align: center; }
     .search-header { max-width: 100%; margin: 8px 0; }
     .header-actions { justify-content: center; }
-    .filter-group { gap: 16px; }
+    .filter-group { gap: 12px; }
     .modal-grid { grid-template-columns: 1fr; }
     .cart-item-img { width: 40px; height: 40px; }
 
-    /* Acervo: layout horizontal no mobile */
+    /* Acervo: 2 colunas no mobile */
     .product-grid, .curated-grid {
-        grid-template-columns: 1fr;
-        gap: 16px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin: 20px 0;
     }
 
     .product-card {
         display: flex;
-        flex-direction: row;
-        align-items: stretch;
+        flex-direction: column;
         border-radius: 16px;
     }
 
     .product-image-container {
-        width: 130px;
-        min-width: 130px;
-        aspect-ratio: unset;
+        width: 100%;
+        aspect-ratio: 3/4;
         height: auto;
-        min-height: 160px;
-        border-radius: 16px 0 0 16px;
-        flex-shrink: 0;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
     .product-info {
         flex: 1;
-        text-align: left;
-        padding: 12px 14px;
+        text-align: center;
+        padding: 10px 10px 12px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        overflow: hidden;
+        justify-content: flex-start;
     }
 
-    .product-title { font-size: 0.95rem; margin-bottom: 4px; }
-    .product-category { font-size: 0.65rem; margin-bottom: 4px; }
-    .product-price { font-size: 0.9rem; margin: 4px 0; }
+    .product-title { font-size: 0.82rem; margin-bottom: 2px; }
+    .product-category { font-size: 0.6rem; margin-bottom: 2px; }
+    .product-price { font-size: 0.85rem; margin: 4px 0; }
 
-    /* Descrição aparece no mobile com até 3 linhas */
-    .product-desc-preview {
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        font-size: 0.72rem;
-        color: #aaa;
-        line-height: 1.4;
-        margin: 4px 0 6px;
-    }
+    /* Oculta descrição prévia no mobile (sem espaço no card 2col) */
+    .product-desc-preview { display: none; }
 
     .product-info .btn-add-cart,
     .product-info .btn-details {
         width: 100%;
-        font-size: 0.72rem;
-        padding: 6px 12px;
+        font-size: 0.68rem;
+        padding: 5px 8px;
         margin-top: 4px;
     }
 
@@ -762,6 +788,13 @@ body {
     align-self: center;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+/* Tablet: 3 colunas */
+@media (min-width: 769px) and (max-width: 1100px) {
+    .product-grid, .curated-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 /* ── RESPONSIVIDADE DASHBOARD ── */
