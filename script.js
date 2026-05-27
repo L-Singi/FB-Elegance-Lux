@@ -521,13 +521,7 @@
     }
 
     // ─── EVENTOS ──────────────────────────────────────────────────────────────
-    window.addEventListener('scroll', () => document.querySelector('.header').classList.toggle('shrink', window.scrollY > 10));
-
-    // Formatar preço — vincula nos dois campos
-    bindPreco(document.getElementById('prodPreco'));
-    bindPreco(document.getElementById('editPreco'));
-
-    // Login admin (duplo clique no logo)
+    // ─── LOGIN ADMIN ──────────────────────────────────────────────────────────
     const loginModal = document.getElementById('loginModal');
     let logoTimer = null;
     document.getElementById('adminTriggerLogo').addEventListener('click', () => {
@@ -542,16 +536,317 @@
     window.addEventListener('click', e => { if(e.target===loginModal) { loginModal.style.display='none'; document.body.style.overflow='auto'; } });
     document.getElementById('loginAdminBtn').addEventListener('click', () => {
         if (document.getElementById('adminPassword').value==='fbadmin') {
-            document.getElementById('adminPanel').style.display='block';
-            adminVisible=true; renderizarAdminLista();
-            loginModal.style.display='none'; document.body.style.overflow='auto';
+            loginModal.style.display='none';
+            document.body.style.overflow='hidden';
             document.getElementById('adminPassword').value='';
+            abrirAdminOverlay();
         } else alert('Senha incorreta');
     });
 
-    document.getElementById('logoutAdminBtn').addEventListener('click', () => { document.getElementById('adminPanel').style.display='none'; adminVisible=false; });
-    document.getElementById('btnAdicionarProduto').addEventListener('click', adicionarProduto);
-    document.getElementById('prodCategoria').addEventListener('change', updateDynamicFields);
+    function abrirAdminOverlay() {
+        const overlay = document.getElementById('adminOverlay');
+        overlay.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+        adminVisible = true;
+        admInit();
+    }
+
+    document.getElementById('logoutAdminBtn').addEventListener('click', () => {
+        document.getElementById('adminOverlay').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        adminVisible = false;
+    });
+
+    // ─── DASHBOARD v2 ────────────────────────────────────────────────────────
+    let admProds = [], admEditId = null, admRevChart = null, admTab = 'dashboard', admDragSrcId = null;
+    let admInited = false;
+
+    const ADM_CATS = {vestuario:'Vestuário',shorts:'Shorts',calcados:'Calçados',lifestyle:'Lifestyle'};
+    const ADM_ICONS = {vestuario:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',lifestyle:'ti-sparkles'};
+    const ADM_COLORS = ['#b88b4a','#7a5c2e','#d4a85a','#c8a87a'];
+    const ADM_STATUS_OPTS = {disponiveis:'Disponível',lancamentos:'Lançamento',vendido:'Vendido',embreve:'Em breve'};
+    const ADM_STATUS_CLS = {disponiveis:'adm-p-disp',lancamentos:'adm-p-lanc',vendido:'adm-p-vend',embreve:'adm-p-brev'};
+
+    const admPn = p => parseFloat((p||'').replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;
+    const admFR = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    const admRt = d => { if(!d)return'—'; const s=(Date.now()-new Date(d))/1000; if(s<60)return'agora'; if(s<3600)return Math.floor(s/60)+'min atrás'; if(s<86400)return Math.floor(s/3600)+'h atrás'; return Math.floor(s/86400)+'d atrás'; };
+    const admEsc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
+    const admEl = id => document.getElementById(id);
+
+    function admToast(msg) { const t=admEl('adm-toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2600); }
+
+    async function admLoadData() {
+        try { admProds = await dbGetAll(); } catch { admProds = []; }
+        // Sync back to main produtos array so catalog stays in sync
+        produtos = admProds;
+        renderizarCatalogo();
+        renderizarSecoesCuradas();
+    }
+
+    function admInit() {
+        if (admInited) { admLoadData().then(() => { admRenderDash(); admRenderStock(); }); return; }
+        admInited = true;
+
+        // NAV
+        document.querySelectorAll('.adm-n[data-adm-tab]').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.adm-n').forEach(n=>n.classList.remove('active'));
+                el.classList.add('active');
+                admTab = el.dataset.admTab;
+                document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
+                admEl('adm-tab-'+admTab).classList.add('active');
+                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias'};
+                admEl('adm-tb-title').textContent = titles[admTab]||admTab;
+                admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
+                admEl('adm-btn-add').style.display = admTab==='estoque'?'flex':'none';
+                if(admTab==='dashboard') admRenderDash();
+                if(admTab==='categorias') admRenderCats();
+                if(admTab==='estoque') admRenderStock();
+            });
+        });
+
+        // Período tabs
+        document.querySelectorAll('.adm-ptab').forEach(t => {
+            t.addEventListener('click', () => {
+                document.querySelectorAll('.adm-ptab').forEach(x=>x.classList.remove('active'));
+                t.classList.add('active'); admRenderDash();
+            });
+        });
+
+        // Botão novo item
+        admEl('adm-btn-add').addEventListener('click', () => admOpenModal(null));
+
+        // Modal
+        admEl('adm-m-close').addEventListener('click', admCloseModal);
+        admEl('adm-m-cancel').addEventListener('click', admCloseModal);
+        admEl('adm-modal-bg').addEventListener('click', e => { if(e.target===admEl('adm-modal-bg')) admCloseModal(); });
+
+        admEl('adm-m-save').addEventListener('click', async () => {
+            const nome = admEl('adm-f-nome').value.trim();
+            if(!nome){admToast('Nome obrigatório');return;}
+            const payload = {nome, preco:admEl('adm-f-preco').value.trim(), categoria:admEl('adm-f-cat').value, status:admEl('adm-f-status').value, descricao_completa:admEl('adm-f-desc').value.trim()};
+            if(!admEditId) payload.images=[];
+            try {
+                if(admEditId){await dbUpdate(admEditId,payload);admToast('Produto atualizado');}
+                else{await dbInsert(payload);admToast('Produto adicionado');}
+                admCloseModal();
+                await admLoadData();
+                if(admTab==='estoque') admRenderStock();
+                if(admTab==='dashboard') admRenderDash();
+            } catch(e){admToast('Erro: '+e.message);}
+        });
+
+        // Filtros estoque
+        ['adm-s-search','adm-s-cat','adm-s-status','adm-s-sort'].forEach(id => {
+            const el = admEl(id);
+            el.addEventListener('input', admRenderStock);
+            el.addEventListener('change', admRenderStock);
+        });
+
+        admLoadData().then(() => { admRenderDash(); admRenderStock(); });
+    }
+
+    function admOpenModal(p) {
+        admEditId = p?p.id:null;
+        admEl('adm-m-title').textContent = p?'Editar produto':'Novo produto';
+        admEl('adm-f-nome').value = p?p.nome||'':'';
+        admEl('adm-f-preco').value = p?p.preco||'':'';
+        admEl('adm-f-cat').value = p?p.categoria||'vestuario':'vestuario';
+        admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
+        admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
+        admEl('adm-modal-bg').classList.add('open');
+    }
+    function admCloseModal() { admEl('adm-modal-bg').classList.remove('open'); }
+
+    async function admMoveStatus(id, newStatus) {
+        try {
+            await dbUpdate(id,{status:newStatus});
+            const p = admProds.find(x=>x.id===id);
+            if(p){p.status=newStatus;}
+            admToast('Status → '+ADM_STATUS_OPTS[newStatus]);
+            if(admTab==='estoque') admRenderStock();
+            if(admTab==='dashboard') admRenderDash();
+            renderizarCatalogo();
+        } catch(e){admToast('Erro: '+e.message);}
+    }
+
+    function admPeriod() { const a=document.querySelector('.adm-ptab.active'); return a?a.dataset.p:'all'; }
+    function admFilterP(list) {
+        const p=admPeriod(); if(p==='all') return list;
+        const cut=Date.now()-parseInt(p)*86400000;
+        return list.filter(x=>new Date(x.created_at)>=cut);
+    }
+
+    function admRenderDash() {
+        const all = admFilterP(admProds);
+        const vend = all.filter(p=>p.status==='vendido');
+        const atv = all.filter(p=>p.status!=='vendido');
+        const rec = vend.reduce((s,p)=>s+admPn(p.preco),0);
+        const tick = vend.length?rec/vend.length:0;
+
+        admEl('adm-k-rec').textContent = admFR(rec);
+        admEl('adm-k-at').textContent = atv.length;
+        admEl('adm-k-vend').textContent = vend.length;
+        admEl('adm-k-tick').textContent = vend.length?admFR(tick):'—';
+        admEl('adm-k-rec-d').textContent = vend.length+' peças vendidas';
+        admEl('adm-k-at-d').textContent = all.length+' total no período';
+        admEl('adm-k-vend-d').className='adm-kdelta up';
+        admEl('adm-k-vend-d').textContent = all.length?Math.round(vend.length/all.length*100)+'% do acervo':'';
+
+        const cats=['vestuario','shorts','calcados','lifestyle'];
+        const cd=cats.map((c,i)=>({
+            c,label:ADM_CATS[c],color:ADM_COLORS[i],
+            total:all.filter(p=>p.categoria===c).length,
+            vend:vend.filter(p=>p.categoria===c).length,
+            rec:vend.filter(p=>p.categoria===c).reduce((s,p)=>s+admPn(p.preco),0)
+        }));
+
+        if(admRevChart) admRevChart.destroy();
+        admRevChart = new Chart(admEl('adm-revChart').getContext('2d'),{
+            type:'bar',
+            data:{labels:cd.map(x=>x.label),datasets:[{label:'Receita',data:cd.map(x=>x.rec),backgroundColor:ADM_COLORS,borderRadius:4,borderSkipped:false}]},
+            options:{responsive:true,maintainAspectRatio:false,
+                plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>'  '+admFR(v.raw)}}},
+                scales:{
+                    x:{grid:{display:false},ticks:{color:'#666',font:{size:11}}},
+                    y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#666',font:{size:11},callback:v=>v===0?'0':'R$'+Math.round(v/1000)+'k'}}
+                }}
+        });
+
+        admEl('adm-chartLeg').innerHTML=cd.map(x=>`<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:${x.color}"></span>${x.label} ${admFR(x.rec)}</span>`).join('');
+
+        const maxT=Math.max(...cd.map(x=>x.total),1);
+        admEl('adm-funnel').innerHTML=cd.map(x=>`<div class="adm-fi">
+            <div class="adm-fih"><span><i class="ti ${ADM_ICONS[x.c]}" style="font-size:12px;margin-right:3px"></i>${x.label}</span><span>${x.total}</span></div>
+            <div class="adm-ftrack"><div class="adm-ffill" style="width:${Math.max(4,Math.round(x.total/maxT*100))}%"></div></div>
+            <div class="adm-fsub">${x.vend} vendidos · ${x.total?Math.round(x.vend/x.total*100):0}%</div>
+        </div>`).join('');
+
+        admEl('adm-dash-tbl').innerHTML=cd.map(x=>`<tr><td>${x.label}</td><td>${x.total}</td><td class="adm-td-g">${x.total-x.vend}</td><td style="color:#b88b4a;font-weight:500">${x.vend}</td></tr>`).join('');
+
+        const rec5=[...all].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+        admEl('adm-dash-act').innerHTML=rec5.length?rec5.map(p=>`<div class="adm-ai">
+            <div class="adm-ai-ic"><i class="ti ${ADM_ICONS[p.categoria]||'ti-box'}" style="font-size:14px;color:#b88b4a"></i></div>
+            <div class="adm-ai-body"><div class="adm-ai-name">${admEsc(p.nome)}</div><div class="adm-ai-time">${admRt(p.created_at)} · ${ADM_CATS[p.categoria]||p.categoria}</div></div>
+            <div class="adm-ai-price">${p.preco||'—'}</div>
+        </div>`).join(''):'<div style="color:#555;font-size:12px;padding:8px 0">Nenhum produto neste período</div>';
+    }
+
+    function admRenderStock() {
+        const srch=(admEl('adm-s-search').value||'').toLowerCase();
+        const catF=admEl('adm-s-cat').value;
+        const stF=admEl('adm-s-status').value;
+        const sort=admEl('adm-s-sort').value;
+        let list=admProds.filter(p=>{
+            if(srch&&!(p.nome||'').toLowerCase().includes(srch))return false;
+            if(catF&&p.categoria!==catF)return false;
+            if(stF&&p.status!==stF)return false;
+            return true;
+        });
+        if(sort==='nome')list.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+        else if(sort==='preco_asc')list.sort((a,b)=>admPn(a.preco)-admPn(b.preco));
+        else if(sort==='preco_desc')list.sort((a,b)=>admPn(b.preco)-admPn(a.preco));
+
+        const body=admEl('adm-stbl-body');
+        const empty=admEl('adm-s-empty');
+        if(!list.length){body.innerHTML='';empty.style.display='block';return;}
+        empty.style.display='none';
+
+        body.innerHTML=list.map(p=>{
+            const icon=ADM_ICONS[p.categoria]||'ti-box';
+            const sCls=ADM_STATUS_CLS[p.status]||'adm-p-brev';
+            const sLbl=ADM_STATUS_OPTS[p.status]||p.status;
+            const otherOpts=Object.entries(ADM_STATUS_OPTS).filter(([k])=>k!==p.status);
+            return `<tr draggable="true" data-id="${p.id}">
+                <td style="color:#444;text-align:center"><i class="ti ti-grip-vertical" style="font-size:14px"></i></td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <div style="width:26px;height:26px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <i class="ti ${icon}" style="font-size:13px;color:#b88b4a"></i>
+                        </div>
+                        <div style="min-width:0">
+                            <div style="font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${admEsc(p.nome)}</div>
+                            ${p.descricao_completa?`<div style="font-size:10px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${admEsc(p.descricao_completa)}</div>`:''}
+                        </div>
+                    </div>
+                </td>
+                <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span></td>
+                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}</td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        <span class="adm-pill ${sCls}">${sLbl}</span>
+                        <select class="adm-move-sel" data-moveid="${p.id}">
+                            <option value="">Mover →</option>
+                            ${otherOpts.map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <button class="adm-abtn" data-edit="${p.id}"><i class="ti ti-edit"></i></button>
+                    <button class="adm-abtn del" data-del="${p.id}"><i class="ti ti-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('');
+
+        body.querySelectorAll('[data-edit]').forEach(btn=>{
+            btn.addEventListener('click',()=>{const p=admProds.find(x=>x.id===btn.dataset.edit);if(p)admOpenModal(p);});
+        });
+        body.querySelectorAll('[data-del]').forEach(btn=>{
+            btn.addEventListener('click',async()=>{
+                const p=admProds.find(x=>x.id===btn.dataset.del);
+                if(!p||!confirm(`Excluir "${p.nome}"?`))return;
+                try{await dbDelete(p.id);admToast('Produto excluído');await admLoadData();admRenderStock();}
+                catch(e){admToast('Erro: '+e.message);}
+            });
+        });
+        body.querySelectorAll('.adm-move-sel').forEach(sel=>{
+            sel.addEventListener('change',async()=>{
+                const ns=sel.value; if(!ns)return;
+                await admMoveStatus(sel.dataset.moveid,ns);
+                sel.value='';
+            });
+        });
+
+        // Drag & drop
+        body.querySelectorAll('tr[draggable]').forEach(row=>{
+            row.addEventListener('dragstart',e=>{admDragSrcId=row.dataset.id;e.dataTransfer.effectAllowed='move';});
+            row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over');});
+            row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+            row.addEventListener('drop',e=>{
+                e.preventDefault();row.classList.remove('drag-over');
+                if(!admDragSrcId||admDragSrcId===row.dataset.id)return;
+                const si=admProds.findIndex(x=>x.id===admDragSrcId);
+                const ti=admProds.findIndex(x=>x.id===row.dataset.id);
+                if(si<0||ti<0)return;
+                const [item]=admProds.splice(si,1);
+                admProds.splice(ti,0,item);
+                admRenderStock();
+                admToast('Ordem atualizada');
+            });
+            row.addEventListener('dragend',()=>body.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over')));
+        });
+    }
+
+    function admRenderCats() {
+        const cats=['vestuario','shorts','calcados','lifestyle'];
+        admEl('adm-cat-cards').innerHTML=cats.map(cat=>{
+            const list=admProds.filter(p=>p.categoria===cat);
+            const vd=list.filter(p=>p.status==='vendido');
+            const rec=vd.reduce((s,p)=>s+admPn(p.preco),0);
+            return `<div class="adm-dc" style="cursor:pointer" onclick="document.querySelector('[data-adm-tab=estoque]').click();document.getElementById('adm-s-cat').value='${cat}';document.getElementById('adm-s-cat').dispatchEvent(new Event('change'))">
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
+                    <div style="width:34px;height:34px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center"><i class="ti ${ADM_ICONS[cat]}" style="font-size:17px;color:#b88b4a"></i></div>
+                    <div><div style="font-weight:500;font-size:13px;color:#fff">${ADM_CATS[cat]}</div><div style="font-size:11px;color:#555">${list.length} produtos</div></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+                    <span style="color:#555">Receita</span><span style="color:#b88b4a;font-weight:500">${admFR(rec)}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:11px">
+                    <span style="color:#555">Vendidos</span><span style="color:#ccc">${vd.length} de ${list.length}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
     document.querySelectorAll('.cat-btn').forEach(btn => btn.addEventListener('click', () => {
         filtroCategoria = btn.dataset.cat;
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -582,142 +877,10 @@
     document.getElementById('sendCartWhatsapp').addEventListener('click', () => { sendCartToWhatsApp(); cartModal.style.display='none'; });
     window.addEventListener('click', e => { if(e.target===cartModal) cartModal.style.display='none'; });
 
-    // ─── DASHBOARD DE VENDAS ──────────────────────────────────────────────────
-
-    function calcularReceita(lista) {
-        return lista.reduce((sum, p) => {
-            const n = parseFloat((p.preco||'').replace('R$','').replace(/\./g,'').replace(',','.').trim()) || 0;
-            return sum + n;
-        }, 0);
-    }
-
-    function formatarMoeda(v) {
-        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    function tempoRelativo(dateStr) {
-        if (!dateStr) return '—';
-        const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-        if (diff < 60) return 'agora';
-        if (diff < 3600) return Math.floor(diff/60) + 'min atrás';
-        if (diff < 86400) return Math.floor(diff/3600) + 'h atrás';
-        return Math.floor(diff/86400) + 'd atrás';
-    }
-
-    const CAT_LABELS_DASH = { calcados:'Calçados', vestuario:'Vestuário', lifestyle:'Lifestyle', shorts:'Shorts' };
-    const CAT_ICONS = { calcados:'👟', vestuario:'👕', lifestyle:'✨', shorts:'🩳' };
-
-    function renderDashboard() {
-        const todos = produtos;
-        if (!todos.length) return;
-
-        const vendidos   = todos.filter(p => p.status === 'vendido');
-        const ativos     = todos.filter(p => p.status !== 'vendido');
-        const receitaVendidos = calcularReceita(vendidos);
-        const ticketMedio = vendidos.length ? receitaVendidos / vendidos.length : 0;
-
-        // KPIs
-        document.getElementById('dashReceita').textContent  = formatarMoeda(receitaVendidos);
-        document.getElementById('dashAtivos').textContent   = ativos.length;
-        document.getElementById('dashVendidos').textContent = vendidos.length;
-        document.getElementById('dashTicket').textContent   = vendidos.length ? formatarMoeda(ticketMedio) : '—';
-
-        document.getElementById('dashReceitaDelta').className = 'dash-kpi-delta up';
-        document.getElementById('dashReceitaDelta').textContent = vendidos.length + ' peças vendidas';
-        document.getElementById('dashAtivosDelta').className = 'dash-kpi-delta neutral';
-        document.getElementById('dashAtivosDelta').textContent = todos.length + ' total no acervo';
-        document.getElementById('dashVendidosDelta').className = 'dash-kpi-delta up';
-        document.getElementById('dashVendidosDelta').textContent = todos.length ? Math.round(vendidos.length/todos.length*100) + '% do acervo' : '';
-        document.getElementById('dashTicketDelta').className = 'dash-kpi-delta neutral';
-        document.getElementById('dashTicketDelta').textContent = 'por peça vendida';
-
-        // Gráfico de barras por categoria
-        const cats = ['calcados','vestuario','lifestyle','shorts'];
-        const catData = cats.map(cat => ({
-            cat,
-            label: CAT_LABELS_DASH[cat],
-            total: todos.filter(p=>p.categoria===cat).length,
-            vendidos: todos.filter(p=>p.categoria===cat&&p.status==='vendido').length,
-            receita: calcularReceita(todos.filter(p=>p.categoria===cat&&p.status==='vendido'))
-        }));
-        const maxReceita = Math.max(...catData.map(c=>c.receita), 1);
-        const svgW = 560, svgH = 160, barW = 80, gap = 60;
-        const startX = (svgW - (cats.length * (barW + gap) - gap)) / 2;
-        let svgContent = `<defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b88b4a"/><stop offset="100%" stop-color="#8a6e2e" stop-opacity="0.4"/></linearGradient></defs>`;
-        // Grid lines
-        [0,40,80,120,160].forEach(y => {
-            svgContent += `<line x1="0" y1="${y}" x2="${svgW}" y2="${y}" stroke="#2a2518" stroke-width="1"/>`;
-        });
-        catData.forEach((c, i) => {
-            const x = startX + i*(barW+gap);
-            const barH = c.receita > 0 ? Math.max(6, (c.receita/maxReceita)*130) : 4;
-            const y = 140 - barH;
-            svgContent += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="url(#dg)" rx="4"/>`;
-            if (c.receita > 0) {
-                svgContent += `<text x="${x+barW/2}" y="${y-6}" text-anchor="middle" fill="#b88b4a" font-size="9" font-family="Inter,sans-serif">${formatarMoeda(c.receita).replace('R$ ','R$')}</text>`;
-            }
-        });
-        document.getElementById('dashChartSvg').innerHTML = svgContent;
-        document.getElementById('dashChartX').innerHTML = catData.map(c=>`<span>${c.label}</span>`).join('');
-
-        // Funil por categoria
-        const maxTotal = Math.max(...catData.map(c=>c.total), 1);
-        document.getElementById('dashFunnel').innerHTML = catData.map(c => `
-            <div class="dash-funnel-item">
-                <div class="dash-funnel-top">
-                    <div class="dash-funnel-label">${CAT_ICONS[c.cat]} ${c.label}</div>
-                    <div class="dash-funnel-count">${c.total}</div>
-                </div>
-                <div class="dash-funnel-track"><div class="dash-funnel-fill" style="width:${Math.max(4,c.total/maxTotal*100)}%"></div></div>
-                <div class="dash-funnel-pct">${c.vendidos} vendidos · ${c.total>0?Math.round(c.vendidos/c.total*100):0}% do estoque</div>
-            </div>`).join('');
-
-        // Tabela status por categoria
-        document.getElementById('dashTableBody').innerHTML = catData.map(c => `
-            <tr>
-                <td>${c.label}</td>
-                <td>${c.total}</td>
-                <td>${c.total - c.vendidos}</td>
-                <td class="gold">${c.vendidos}</td>
-            </tr>`).join('');
-
-        // Atividade: últimos 5 cadastros
-        const recentes = [...todos].sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
-        document.getElementById('dashActivity').innerHTML = recentes.map(p => `
-            <div class="dash-act-item">
-                <div class="dash-act-icon">${CAT_ICONS[p.categoria]||'✦'}</div>
-                <div class="dash-act-body">
-                    <div class="dash-act-text"><strong>${escapeHtml(p.nome)}</strong></div>
-                    <div class="dash-act-time">${tempoRelativo(p.created_at)} · ${CAT_LABELS_DASH[p.categoria]||p.categoria}</div>
-                </div>
-                <div class="dash-act-badge">${p.preco}</div>
-            </div>`).join('');
-    }
-
-    // Abrir/fechar dashboard
-    document.getElementById('openDashboardBtn').addEventListener('click', () => {
-        const panel = document.getElementById('dashboardPanel');
-        panel.style.display = 'block';
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        renderDashboard();
-    });
-    document.getElementById('closeDashboardBtn').addEventListener('click', () => {
-        document.getElementById('dashboardPanel').style.display = 'none';
-    });
-
-    // Tabs de período (visual apenas — sem dados históricos no Supabase ainda)
-    document.querySelectorAll('.dash-period-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-            document.querySelectorAll('.dash-period-tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            renderDashboard(); // re-render (futuro: filtrar por data)
-        });
-    });
-
     // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
-    document.getElementById('adminPanel').style.display = 'none';
-    document.getElementById('prodPreco').value = 'R$ 0,00';
-    updateDynamicFields();
+    window.addEventListener('scroll', () => document.querySelector('.header').classList.toggle('shrink', window.scrollY > 10));
+    bindPreco(document.getElementById('prodPreco'));
+    bindPreco(document.getElementById('editPreco'));
     carregarProdutos();
     updateCartUI();
 })();

@@ -97,113 +97,278 @@
     </div>
 </footer>
 
-<!-- ── PAINEL ADMIN + DASHBOARD (ocultos por padrão) ── -->
-<section id="adminSection">
+<!-- ── PAINEL ADMIN v2 (oculto por padrão) ── -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 
-<!-- Dashboard de vendas -->
-<div id="dashboardPanel" class="dashboard-panel" style="display:none;">
-    <div class="dash-topbar">
-        <div class="dash-topbar-left">
-            <div class="dash-eyebrow">✦ Controle de Vendas</div>
-            <div class="dash-title">Visão <em>Geral</em></div>
-        </div>
-        <div class="dash-topbar-right">
-            <div class="dash-period-tabs">
-                <div class="dash-period-tab active" data-period="7">7 dias</div>
-                <div class="dash-period-tab" data-period="all">All</div>
-            </div>
-            <button id="closeDashboardBtn" class="dash-close-btn">✕ Fechar</button>
-        </div>
-    </div>
+<div id="adminOverlay" style="display:none; position:fixed; inset:0; background:#0a0a0a; z-index:2000; overflow-y:auto; padding:20px;">
 
-    <!-- KPIs -->
-    <div class="dash-kpi-grid">
-        <div class="dash-kpi-card">
-            <div class="dash-kpi-symbol">✦</div>
-            <div class="dash-kpi-label">Receita Total</div>
-            <div class="dash-kpi-value" id="dashReceita">—</div>
-            <div class="dash-kpi-delta up" id="dashReceitaDelta"></div>
-        </div>
-        <div class="dash-kpi-card">
-            <div class="dash-kpi-symbol">✦</div>
-            <div class="dash-kpi-label">Produtos Ativos</div>
-            <div class="dash-kpi-value" id="dashAtivos">—</div>
-            <div class="dash-kpi-delta" id="dashAtivosDelta"></div>
-        </div>
-        <div class="dash-kpi-card">
-            <div class="dash-kpi-symbol">✦</div>
-            <div class="dash-kpi-label">Vendidos</div>
-            <div class="dash-kpi-value" id="dashVendidos">—</div>
-            <div class="dash-kpi-delta" id="dashVendidosDelta"></div>
-        </div>
-        <div class="dash-kpi-card">
-            <div class="dash-kpi-symbol">✦</div>
-            <div class="dash-kpi-label">Ticket Médio</div>
-            <div class="dash-kpi-value" id="dashTicket">—</div>
-            <div class="dash-kpi-delta" id="dashTicketDelta"></div>
-        </div>
-    </div>
+  <!-- Botão sair flutuante -->
+  <button id="logoutAdminBtn" style="position:fixed;top:16px;right:16px;z-index:2100;background:#1a1a1a;border:1px solid #333;color:#aaa;padding:7px 16px;border-radius:30px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='#b88b4a';this.style.color='#b88b4a'" onmouseout="this.style.borderColor='#333';this.style.color='#aaa'">✕ Sair do Admin</button>
 
-    <!-- Gráfico + Funil -->
-    <div class="dash-mid-grid">
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <div>
-                    <div class="dash-card-eyebrow">✦ Distribuição</div>
-                    <div class="dash-card-title">Receita por Categoria</div>
-                </div>
-            </div>
-            <div class="dash-chart-wrap">
-                <svg id="dashChartSvg" class="dash-chart-svg" viewBox="0 0 560 160" preserveAspectRatio="none"></svg>
-                <div class="dash-chart-x" id="dashChartX"></div>
-            </div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <div>
-                    <div class="dash-card-eyebrow">✦ Acervo</div>
-                    <div class="dash-card-title">Por Categoria</div>
-                </div>
-            </div>
-            <div id="dashFunnel" class="dash-funnel"></div>
-        </div>
-    </div>
+  <!-- Também precisa manter os campos de add produto ocultos para o script.js existente -->
+  <div style="display:none">
+    <input type="text" id="prodNome"><textarea id="prodDesc"></textarea><input type="text" id="prodPreco" value="R$ 0,00"><textarea id="prodImagens"></textarea><input type="file" id="prodImageFiles" accept="image/*" multiple><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto"></button><div id="adminListaContainer"></div>
+  </div>
 
-    <!-- Tabela + Atividade -->
-    <div class="dash-bottom-grid">
-        <div class="dash-card dash-table-card">
-            <div class="dash-card-head">
-                <div>
-                    <div class="dash-card-eyebrow">✦ Estoque</div>
-                    <div class="dash-card-title">Status do Acervo</div>
-                </div>
+  <style>
+  #adm-root{display:flex;height:calc(100vh - 40px);background:#111;border-radius:16px;overflow:hidden;border:1px solid #222;font-size:13px;color:#eaeaea;position:relative;font-family:'Inter',sans-serif}
+  #adm-sidebar{width:200px;background:#0d0d0d;border-right:1px solid #1e1e1e;display:flex;flex-direction:column;flex-shrink:0}
+  .adm-logo{padding:16px 14px 12px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;gap:10px}
+  .adm-logo-icon{width:32px;height:32px;border-radius:8px;background:#b88b4a;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+  .adm-logo-name{font-size:13px;font-weight:500;color:#fff}
+  .adm-logo-sub{font-size:11px;color:#666}
+  .adm-nav{flex:1;padding:10px 8px;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+  .adm-n{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:#777;font-size:13px;transition:background .12s,color .12s;white-space:nowrap;user-select:none}
+  .adm-n:hover{background:#1a1a1a;color:#eaeaea}
+  .adm-n.active{background:#1a1a1a;color:#b88b4a;font-weight:500}
+  .adm-n i{font-size:17px;flex-shrink:0}
+  .adm-sep{height:1px;background:#1e1e1e;margin:8px 4px}
+  #adm-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+  #adm-topbar{padding:0 16px;height:52px;border-bottom:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between;background:#0d0d0d;flex-shrink:0}
+  .adm-tb-title{font-size:15px;font-weight:500;color:#fff}
+  .adm-tb-right{display:flex;align-items:center;gap:8px}
+  .adm-ptabs{display:flex;gap:4px}
+  .adm-ptab{padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;background:transparent;border:1px solid #2a2a2a;color:#777;user-select:none;transition:all .15s}
+  .adm-ptab.active{background:#b88b4a;color:#000;border-color:#b88b4a;font-weight:600}
+  .adm-btn-add{background:#b88b4a;color:#000;border:none;border-radius:8px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s}
+  .adm-btn-add:hover{background:#d4a85a}
+  .adm-btn-ghost{background:transparent;border:1px solid #2a2a2a;border-radius:8px;padding:6px 11px;font-size:12px;cursor:pointer;color:#eaeaea;transition:background .15s}
+  .adm-btn-ghost:hover{background:#1a1a1a}
+  #adm-content{flex:1;overflow-y:auto;padding:14px 16px}
+  .adm-panel{display:none}.adm-panel.active{display:block}
+  .adm-kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px}
+  .adm-kcard{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:13px 13px 11px}
+  .adm-klabel{font-size:11px;color:#666;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+  .adm-kval{font-size:20px;font-weight:500;line-height:1.2;margin-bottom:2px;color:#fff}
+  .adm-kdelta{font-size:11px;color:#666}
+  .adm-kdelta.up{color:#4caf87}
+  .adm-crow{display:grid;grid-template-columns:1.6fr 1fr;gap:10px;margin-bottom:12px}
+  .adm-dc{background:#151515;border:1px solid #1e1e1e;border-radius:12px;padding:14px}
+  .adm-dc-title{font-size:13px;font-weight:500;margin-bottom:3px;color:#fff}
+  .adm-dc-sub{font-size:11px;color:#666;margin-bottom:11px}
+  .adm-fi{margin-bottom:10px}
+  .adm-fih{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;color:#ccc}
+  .adm-fih span:last-child{color:#666}
+  .adm-ftrack{height:5px;background:#1e1e1e;border-radius:3px;overflow:hidden}
+  .adm-ffill{height:100%;background:#b88b4a;border-radius:3px;transition:width .6s ease}
+  .adm-fsub{font-size:10px;color:#555;margin-top:2px}
+  .adm-brow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .adm-dtable{width:100%;border-collapse:collapse;font-size:12px}
+  .adm-dtable th{font-weight:500;color:#555;font-size:11px;text-align:left;padding:5px 8px;border-bottom:1px solid #1e1e1e}
+  .adm-dtable td{padding:6px 8px;border-bottom:1px solid #1a1a1a;color:#aaa}
+  .adm-dtable tr:last-child td{border-bottom:none}
+  .adm-td-g{color:#b88b4a;font-weight:500}
+  .adm-ai{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1e1e1e}
+  .adm-ai:last-child{border-bottom:none}
+  .adm-ai-ic{width:30px;height:30px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .adm-ai-body{flex:1;min-width:0}
+  .adm-ai-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
+  .adm-ai-time{font-size:11px;color:#555}
+  .adm-ai-price{font-size:11px;color:#b88b4a;font-weight:500;white-space:nowrap}
+  .adm-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .adm-sbox{flex:1;min-width:110px;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;outline:none;font-family:inherit}
+  .adm-sbox:focus{border-color:#b88b4a}
+  .adm-fsel{padding:7px 9px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;cursor:pointer;outline:none;font-family:inherit}
+  .adm-fsel:focus{border-color:#b88b4a}
+  .adm-twrap{background:#151515;border:1px solid #1e1e1e;border-radius:12px;overflow:hidden}
+  .adm-stbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+  .adm-stbl th{padding:9px 10px;text-align:left;font-weight:500;font-size:11px;color:#555;border-bottom:1px solid #1e1e1e;background:#111;white-space:nowrap}
+  .adm-stbl td{padding:9px 10px;border-bottom:1px solid #1a1a1a;vertical-align:middle;color:#ccc}
+  .adm-stbl tr:last-child td{border-bottom:none}
+  .adm-stbl tr[draggable=true]{cursor:grab}
+  .adm-stbl tr[draggable=true]:active{opacity:.7}
+  .adm-stbl tr.drag-over td{background:#1e1a0e}
+  .adm-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500}
+  .adm-p-disp{background:rgba(76,175,135,.15);color:#4caf87}
+  .adm-p-lanc{background:rgba(100,149,237,.15);color:#6495ed}
+  .adm-p-vend{background:#1e1e1e;color:#555}
+  .adm-p-brev{background:#1a1a1a;color:#666;border:1px solid #2a2a2a}
+  .adm-catpill{display:inline-block;padding:2px 7px;border-radius:20px;font-size:10px;background:#1a1a1a;color:#777;border:1px solid #2a2a2a}
+  .adm-abtn{background:none;border:none;cursor:pointer;color:#555;font-size:15px;padding:3px 4px;border-radius:5px;transition:color .12s}
+  .adm-abtn:hover{color:#eaeaea}
+  .adm-abtn.del:hover{color:#e05252}
+  .adm-move-sel{font-size:11px;padding:4px 7px;border-radius:8px;border:1px solid #2a2a2a;background:#1a1a1a;color:#eaeaea;cursor:pointer;outline:none;font-family:inherit}
+  .adm-move-sel:focus{border-color:#b88b4a}
+  #adm-modal-bg{display:none;position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center}
+  #adm-modal-bg.open{display:flex}
+  .adm-modal{background:#151515;border-radius:12px;border:1px solid #2a2a2a;padding:20px;width:350px;max-height:520px;overflow-y:auto;position:relative}
+  .adm-modal h3{font-size:15px;font-weight:500;margin-bottom:14px;color:#fff}
+  .adm-fr{margin-bottom:10px}
+  .adm-fr label{display:block;font-size:11px;color:#666;margin-bottom:4px}
+  .adm-fr input,.adm-fr select,.adm-fr textarea{width:100%;padding:7px 10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;color:#eaeaea;font-size:12px;outline:none;font-family:inherit}
+  .adm-fr input:focus,.adm-fr select:focus,.adm-fr textarea:focus{border-color:#b88b4a}
+  .adm-fr textarea{resize:vertical;min-height:55px}
+  .adm-f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .adm-m-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .adm-m-close{position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;font-size:18px;color:#555;transition:color .15s}
+  .adm-m-close:hover{color:#eaeaea}
+  .adm-drag-hint{font-size:11px;color:#555;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+  .adm-empty{text-align:center;padding:28px;color:#555;font-size:13px}
+  #adm-toast{position:absolute;bottom:14px;right:14px;background:#1e1e1e;border:1px solid #2a2a2a;border-left:3px solid #b88b4a;border-radius:8px;padding:9px 14px;font-size:12px;color:#eaeaea;display:none;z-index:100}
+  #adm-toast.show{display:block}
+  @media(max-width:600px){
+    #adm-root{height:auto;min-height:calc(100vh - 40px);flex-direction:column}
+    #adm-sidebar{width:100%;flex-direction:row;height:48px;overflow-x:auto}
+    .adm-logo{display:none}
+    .adm-nav{flex-direction:row;padding:6px 8px;gap:4px;overflow-x:auto;overflow-y:hidden}
+    .adm-n{padding:6px 10px;white-space:nowrap}
+    .adm-sep{display:none}
+    .adm-crow,.adm-brow{grid-template-columns:1fr}
+    .adm-kgrid{grid-template-columns:1fr 1fr}
+  }
+  </style>
+
+  <div id="adm-root">
+    <nav id="adm-sidebar">
+      <div class="adm-logo">
+        <div class="adm-logo-icon"><i class="ti ti-hanger"></i></div>
+        <div><div class="adm-logo-name">FB Elegance</div><div class="adm-logo-sub">Admin</div></div>
+      </div>
+      <div class="adm-nav">
+        <div class="adm-n active" data-adm-tab="dashboard"><i class="ti ti-chart-bar"></i><span>Dashboard</span></div>
+        <div class="adm-n" data-adm-tab="estoque"><i class="ti ti-stack-2"></i><span>Estoque</span></div>
+        <div class="adm-sep"></div>
+        <div class="adm-n" data-adm-tab="categorias"><i class="ti ti-tag"></i><span>Categorias</span></div>
+      </div>
+    </nav>
+
+    <div id="adm-main">
+      <div id="adm-topbar">
+        <div class="adm-tb-title" id="adm-tb-title">Dashboard de vendas</div>
+        <div class="adm-tb-right">
+          <div class="adm-ptabs" id="adm-ptabs">
+            <div class="adm-ptab active" data-p="7">7 dias</div>
+            <div class="adm-ptab" data-p="30">30 dias</div>
+            <div class="adm-ptab" data-p="all">Todos</div>
+          </div>
+          <button class="adm-btn-add" id="adm-btn-add" style="display:none"><i class="ti ti-plus"></i><span>Novo item</span></button>
+        </div>
+      </div>
+
+      <div id="adm-content">
+        <!-- DASHBOARD -->
+        <div class="adm-panel active" id="adm-tab-dashboard">
+          <div class="adm-kgrid">
+            <div class="adm-kcard"><div class="adm-klabel">Receita total</div><div class="adm-kval" id="adm-k-rec">—</div><div class="adm-kdelta up" id="adm-k-rec-d"></div></div>
+            <div class="adm-kcard"><div class="adm-klabel">Ativos</div><div class="adm-kval" id="adm-k-at">—</div><div class="adm-kdelta" id="adm-k-at-d"></div></div>
+            <div class="adm-kcard"><div class="adm-klabel">Vendidos</div><div class="adm-kval" id="adm-k-vend">—</div><div class="adm-kdelta up" id="adm-k-vend-d"></div></div>
+            <div class="adm-kcard"><div class="adm-klabel">Ticket médio</div><div class="adm-kval" id="adm-k-tick">—</div><div class="adm-kdelta">por peça</div></div>
+          </div>
+          <div class="adm-crow">
+            <div class="adm-dc">
+              <div class="adm-dc-title">Receita por categoria</div>
+              <div class="adm-dc-sub">Peças vendidas</div>
+              <div style="position:relative;width:100%;height:165px"><canvas id="adm-revChart"></canvas></div>
+              <div id="adm-chartLeg" style="display:flex;gap:12px;margin-top:9px;flex-wrap:wrap;font-size:11px;color:#555"></div>
             </div>
-            <table class="dash-table">
+            <div class="adm-dc">
+              <div class="adm-dc-title">Por categoria</div>
+              <div class="adm-dc-sub">Distribuição do acervo</div>
+              <div id="adm-funnel"></div>
+            </div>
+          </div>
+          <div class="adm-brow">
+            <div class="adm-dc">
+              <div class="adm-dc-title" style="margin-bottom:9px">Status do acervo</div>
+              <table class="adm-dtable">
                 <thead><tr><th>Categoria</th><th>Total</th><th>Ativos</th><th>Vendidos</th></tr></thead>
-                <tbody id="dashTableBody"></tbody>
-            </table>
-        </div>
-        <div class="dash-card">
-            <div class="dash-card-head">
-                <div>
-                    <div class="dash-card-eyebrow">✦ Recentes</div>
-                    <div class="dash-card-title">Últimos Cadastros</div>
-                </div>
+                <tbody id="adm-dash-tbl"></tbody>
+              </table>
             </div>
-            <div id="dashActivity" class="dash-activity"></div>
+            <div class="adm-dc">
+              <div class="adm-dc-title" style="margin-bottom:9px">Últimos cadastros</div>
+              <div id="adm-dash-act"></div>
+            </div>
+          </div>
         </div>
+
+        <!-- ESTOQUE -->
+        <div class="adm-panel" id="adm-tab-estoque">
+          <div class="adm-drag-hint"><i class="ti ti-grip-vertical" style="font-size:14px"></i>Arraste linhas para reordenar · use o seletor para mover status</div>
+          <div class="adm-toolbar">
+            <input class="adm-sbox" id="adm-s-search" placeholder="Buscar produto..." type="search" autocomplete="off">
+            <select class="adm-fsel" id="adm-s-cat">
+              <option value="">Todas categorias</option>
+              <option value="vestuario">Vestuário</option>
+              <option value="shorts">Shorts</option>
+              <option value="calcados">Calçados</option>
+              <option value="lifestyle">Lifestyle</option>
+            </select>
+            <select class="adm-fsel" id="adm-s-status">
+              <option value="">Todos status</option>
+              <option value="disponiveis">Disponível</option>
+              <option value="lancamentos">Lançamento</option>
+              <option value="vendido">Vendido</option>
+              <option value="embreve">Em breve</option>
+            </select>
+            <select class="adm-fsel" id="adm-s-sort">
+              <option value="newest">Mais recentes</option>
+              <option value="nome">Nome A→Z</option>
+              <option value="preco_asc">Menor preço</option>
+              <option value="preco_desc">Maior preço</option>
+            </select>
+          </div>
+          <div class="adm-twrap">
+            <table class="adm-stbl">
+              <thead><tr>
+                <th style="width:32px"></th>
+                <th style="width:36%">Nome</th>
+                <th style="width:15%">Categoria</th>
+                <th style="width:14%">Preço</th>
+                <th style="width:22%">Status</th>
+                <th style="width:80px">Ações</th>
+              </tr></thead>
+              <tbody id="adm-stbl-body"></tbody>
+            </table>
+          </div>
+          <div id="adm-s-empty" class="adm-empty" style="display:none">Nenhum produto encontrado</div>
+        </div>
+
+        <!-- CATEGORIAS -->
+        <div class="adm-panel" id="adm-tab-categorias">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px" id="adm-cat-cards"></div>
+        </div>
+      </div>
     </div>
-</div>
 
-<!-- Admin panel (oculto) -->
-<div class="container"><div id="adminPanel" class="admin-panel">
-        <div class="admin-panel-header">
-            <h3>✦ Gerenciar acervo</h3>
-            <button id="openDashboardBtn" class="btn-dashboard">📊 Dashboard de Vendas</button>
+    <!-- MODAL -->
+    <div id="adm-modal-bg">
+      <div class="adm-modal">
+        <button class="adm-m-close" id="adm-m-close">&times;</button>
+        <h3 id="adm-m-title">Novo produto</h3>
+        <div class="adm-fr"><label>Nome do produto</label><input type="text" id="adm-f-nome" placeholder="Ex: Camiseta Lux Premium"></div>
+        <div class="adm-f2">
+          <div class="adm-fr"><label>Preço</label><input type="text" id="adm-f-preco" placeholder="R$ 0,00"></div>
+          <div class="adm-fr"><label>Categoria</label>
+            <select id="adm-f-cat">
+              <option value="vestuario">Vestuário</option>
+              <option value="shorts">Shorts</option>
+              <option value="calcados">Calçados</option>
+              <option value="lifestyle">Lifestyle</option>
+            </select>
+          </div>
         </div>
-        <div class="admin-form"><input type="text" id="prodNome" placeholder="Nome do produto"><textarea id="prodDesc" rows="3" placeholder="Descrição completa"></textarea><input type="text" id="prodPreco" placeholder="R$ 0,00" value="R$ "><textarea id="prodImagens" rows="2" placeholder="URLs das imagens (uma por linha) — opcional se fizer upload"></textarea><small>Cole URLs de imagens, uma por linha, <strong>OU</strong> faça upload abaixo:</small><input type="file" id="prodImageFiles" accept="image/*" multiple style="background:#1a1a1a;border:1px solid #333;padding:10px 16px;border-radius:30px;color:#ccc;font-size:0.8rem;cursor:pointer;"><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto">+ Adicionar peça</button></div><div class="admin-list"><h3>Produtos cadastrados</h3><div id="adminListaContainer"></div></div><button id="logoutAdminBtn" class="logout-btn">Sair do Admin</button></div></div>
+        <div class="adm-fr"><label>Status</label>
+          <select id="adm-f-status">
+            <option value="disponiveis">Disponível</option>
+            <option value="lancamentos">Lançamento</option>
+            <option value="embreve">Em breve</option>
+            <option value="vendido">Vendido</option>
+          </select>
+        </div>
+        <div class="adm-fr"><label>Descrição</label><textarea id="adm-f-desc" placeholder="Descrição completa do produto..."></textarea></div>
+        <div class="adm-m-actions">
+          <button class="adm-btn-ghost" id="adm-m-cancel">Cancelar</button>
+          <button class="adm-btn-add" id="adm-m-save"><i class="ti ti-check"></i> Salvar</button>
+        </div>
+      </div>
+    </div>
 
-</section><!-- /adminSection -->
+    <div id="adm-toast"></div>
+  </div><!-- /adm-root -->
+
+</div><!-- /adminOverlay -->
 
 <!-- Modais -->
 <!-- Modal do produto -->
