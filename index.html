@@ -47,16 +47,7 @@
                 <button class="filter-btn cat-btn" data-cat="calcados">CALÇADOS</button>
                 <button class="filter-btn cat-btn" data-cat="lifestyle">LIFESTYLE</button>
             </div>
-            <div class="size-filter-group">
-                <span class="size-filter-label">Tamanho:</span>
-                <button class="size-filter-btn" data-size="XXS">XXS</button>
-                <button class="size-filter-btn" data-size="XS">XS</button>
-                <button class="size-filter-btn" data-size="S">S</button>
-                <button class="size-filter-btn" data-size="M">M</button>
-                <button class="size-filter-btn" data-size="L">L</button>
-                <button class="size-filter-btn" data-size="XL">XL</button>
-                <button class="size-filter-btn" data-size="XXL">XXL</button>
-            </div>
+            <!-- Filtro de tamanhos removido conforme solicitado -->
             <div class="result-info" id="result-info"></div>
         </div>
 
@@ -104,7 +95,7 @@
 <div id="adminOverlay" style="display:none; position:fixed; inset:0; background:#0a0a0a; z-index:2000; overflow-y:auto; padding:20px;">
 
   <!-- Botão sair flutuante -->
-  <button id="logoutAdminBtn" style="position:fixed;top:16px;right:16px;z-index:2100;background:#1a1a1a;border:1px solid #333;color:#aaa;padding:7px 16px;border-radius:30px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='#b88b4a';this.style.color='#b88b4a'" onmouseout="this.style.borderColor='#333';this.style.color='#aaa'">✕ Sair do Admin</button>
+  <button id="logoutAdminBtn" style="position:fixed;top:72px;right:24px;z-index:2050;background:#1a1a1a;border:1px solid #333;color:#aaa;padding:7px 16px;border-radius:30px;font-size:0.8rem;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='#b88b4a';this.style.color='#b88b4a'" onmouseout="this.style.borderColor='#333';this.style.color='#aaa'">✕ Sair do Admin</button>
 
   <!-- Também precisa manter os campos de add produto ocultos para o script.js existente -->
   <div style="display:none">
@@ -357,6 +348,11 @@
             <option value="vendido">Vendido</option>
           </select>
         </div>
+        <div class="adm-fr"><label>Quantidade</label><input type="number" id="adm-f-quantidade" min="0" value="1"></div>
+        <div class="adm-fr"><label>Numeração (calçados)</label><input type="text" id="adm-f-numeracao" placeholder="Ex: 38,39,40"></div>
+        <div class="adm-fr"><label>Tamanhos (vestuário/shorts)</label><input type="text" id="adm-f-tamanhos" placeholder="Ex: S,M,L"></div>
+        <div class="adm-fr"><label>Imagens</label><input type="file" id="adm-f-images" accept="image/*" multiple></div>
+        <div class="adm-fr"><label>Preview imagens</label><div class="adm-image-hint">Arraste para reordenar, clique no ✕ para remover</div><div id="adm-f-images-preview" class="adm-image-preview"></div></div>
         <div class="adm-fr"><label>Descrição</label><textarea id="adm-f-desc" placeholder="Descrição completa do produto..."></textarea></div>
         <div class="adm-m-actions">
           <button class="adm-btn-ghost" id="adm-m-cancel">Cancelar</button>
@@ -417,6 +413,7 @@
         <div class="edit-form-group"><label>Nome</label><input type="text" id="editNome" placeholder="Nome do produto"></div>
         <div class="edit-form-group"><label>Descrição</label><textarea id="editDesc" rows="3" placeholder="Descrição completa"></textarea></div>
         <div class="edit-form-group"><label>Preço (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00"></div>
+        <div class="edit-form-group"><label>Quantidade</label><input type="number" id="editQuantidade" min="0" placeholder="0"></div>
         <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select></div>
         <div class="edit-form-group" id="editSizeContainer"></div>
         <div class="edit-form-group"><label>Status</label><select id="editStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option><option value="vendido">Vendido</option></select></div>

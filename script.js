@@ -55,10 +55,55 @@
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     let produtos = [];
     let filtroCategoria = 'todos';
-    let filtroTamanhos = []; // filtro de tamanho: array de tamanhos selecionados
     let termoBusca = '';
     let adminVisible = false;
     let currentEditId = null;
+
+    // Normalização de status/categorias para evitar valores inconsistentes do backend
+    function stripAccents(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim(); }
+    function normalizeStatus(s){
+        const v = stripAccents(s);
+        if(!v) return 'disponiveis';
+        if(['vendido','vendida','vendidos'].includes(v)) return 'vendido';
+        if(['lancamento','lancamentos','lancamento'].includes(v)) return 'lancamentos';
+        if(['em breve','embreve','em_breve'].includes(v)) return 'embreve';
+        return 'disponiveis';
+    }
+    function normalizeCategoria(c){
+        const v = stripAccents(c);
+        if(['vestuario','vestuarios','vestuario'].includes(v)) return 'vestuario';
+        if(['shorts'].includes(v)) return 'shorts';
+        if(['calcados','calcados','calcado','calcados'].includes(v)) return 'calcados';
+        if(['lifestyle'].includes(v)) return 'lifestyle';
+        return v || 'outros';
+    }
+    function normalizeProduct(p){
+        if(!p) return p;
+        const np = { ...p };
+        np.categoria = normalizeCategoria(p.categoria);
+        np.status = normalizeStatus(p.status);
+        // garante arrays definidos
+        if(!Array.isArray(np.images)) np.images = Array.isArray(p.images)?p.images:[];
+        if(!Array.isArray(np.tamanhos) && np.tamanhos) np.tamanhos = String(np.tamanhos).split(',').map(x=>x.trim()).filter(Boolean);
+        return np;
+    }
+
+    // Histórico simples de vendas no localStorage
+    function addSaleRecord(prod){
+        try{
+            const key = 'fb_sales_history';
+            const list = JSON.parse(localStorage.getItem(key) || '[]');
+            list.unshift({ id: prod.id, nome: prod.nome, preco: prod.preco, categoria: prod.categoria, date: new Date().toISOString() });
+            localStorage.setItem(key, JSON.stringify(list.slice(0,200)));
+        }catch(e){ console.warn('sale record failed', e); }
+    }
+    function removeSaleRecord(prodId){
+        try{
+            const key = 'fb_sales_history';
+            const list = JSON.parse(localStorage.getItem(key) || '[]').filter(r=>r.id!==prodId);
+            localStorage.setItem(key, JSON.stringify(list));
+        }catch(e){ console.warn('remove sale record failed', e); }
+    }
 
     // ─── TOAST ────────────────────────────────────────────────────────────────
     const toast = document.getElementById('toastNotification');
@@ -162,7 +207,7 @@
     async function carregarProdutos() {
         try {
             const data = await dbGetAll();
-            produtos = Array.isArray(data) ? data : [];
+            produtos = Array.isArray(data) ? data.map(normalizeProduct) : [];
             renderizarCatalogo();
             renderizarSecoesCuradas();
             if (adminVisible) renderizarAdminLista();
@@ -201,6 +246,7 @@
         let sizeHtml = '';
         if ((prod.categoria==='vestuario'||prod.categoria==='shorts') && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
         else if (prod.categoria==='calcados' && prod.numeracao) sizeHtml = `<div class="product-size-info">Numeração: ${prod.numeracao}</div>`;
+        const quantHtml = (prod.quantidade!==undefined && prod.quantidade!==null) ? `<div class="product-quantity">Qtd: ${prod.quantidade}</div>` : '';
         const descHtml = prod.descricao_completa ? `<p class="product-desc-preview">${escapeHtml(prod.descricao_completa)}</p>` : '';
         card.innerHTML = `
             <div class="product-image-container">
@@ -214,6 +260,7 @@
                 <p class="product-price">${prod.preco}</p>
                 ${descHtml}
                 ${sizeHtml}
+                ${quantHtml}
                 <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}><i class="fas fa-cart-plus"></i> ${isSold?'Indisponível':'Adicionar'}</button>
                 <button class="btn-details"><i class="fas fa-expand-alt"></i> Detalhes</button>
             </div>`;
@@ -230,7 +277,11 @@
         let idx = parseInt(card.dataset.currentIndex||'0');
         idx = dir==='prev' ? (idx-1+imgs.length)%imgs.length : (idx+1)%imgs.length;
         card.dataset.currentIndex = idx;
-        card.querySelector('.product-image').src = imgs[idx];
+        const imgEl = card.querySelector('.product-image');
+        if(imgEl){
+            imgEl.style.opacity = '0';
+            const tmp = new Image(); tmp.onload = () => { imgEl.src = imgs[idx]; imgEl.style.opacity = '1'; }; tmp.src = imgs[idx];
+        }
     }
 
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
@@ -241,18 +292,10 @@
             const b = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
             f = f.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(b));
         }
-        // Filtro de tamanho
-        if (filtroTamanhos.length > 0) {
-            f = f.filter(p => {
-                if ((p.categoria==='vestuario'||p.categoria==='shorts') && p.tamanhos) {
-                    return filtroTamanhos.some(sel => p.tamanhos.includes(sel));
-                }
-                return false;
-            });
-        }
+        // (Filtro de tamanhos removido — filtragem por botão não está disponível)
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
         grid.innerHTML = '';
-        if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto disponível neste tamanho ✦</div>';
+        if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
     }
 
@@ -273,13 +316,18 @@
         function goToImg(idx) {
             if (!imgs.length) return;
             currentIdx = (idx + imgs.length) % imgs.length;
-            mainImg.src = imgs[currentIdx];
+            const newSrc = imgs[currentIdx];
+            // preload then fade in
+            mainImg.style.opacity = '0';
+            const tmp = new Image();
+            tmp.onload = () => { mainImg.src = newSrc; mainImg.style.opacity = '1'; };
+            tmp.src = newSrc;
             thumbsDiv.querySelectorAll('.modal-thumb').forEach((t,i) => t.classList.toggle('active', i===currentIdx));
         }
-        mainImg.src = imgs[0]||'';
+        if(imgs.length) { mainImg.style.opacity='0'; const tmp0=new Image(); tmp0.onload=()=>{ mainImg.src=imgs[0]; mainImg.style.opacity='1'; }; tmp0.src=imgs[0]; }
         thumbsDiv.innerHTML = '';
         imgs.forEach((img,i) => {
-            const t = document.createElement('img'); t.src=img; t.className='modal-thumb'; if(i===0) t.classList.add('active');
+            const t = document.createElement('img'); t.src=img; t.loading='lazy'; t.className='modal-thumb'; if(i===0) t.classList.add('active');
             t.addEventListener('click', () => goToImg(i));
             thumbsDiv.appendChild(t);
         });
@@ -322,10 +370,15 @@
     async function atualizarProduto(id, updates) {
         try {
             const updated = await dbUpdate(id, updates);
+            // atualiza local e normaliza
             const i = produtos.findIndex(p => p.id === id);
-            if (i !== -1) produtos[i] = updated || { ...produtos[i], ...updates };
+            if (i !== -1) produtos[i] = normalizeProduct(updated || { ...produtos[i], ...updates });
             renderizarCatalogo(); renderizarSecoesCuradas();
-            if (adminVisible) renderizarAdminLista();
+            if (adminVisible) {
+                // recarrega os dados do admin para manter consistência
+                if(typeof admLoadData === 'function') await admLoadData();
+                renderizarAdminLista();
+            }
             return true;
         } catch(e) { console.error(e); showToast('Erro ao atualizar: '+e.message, true); return false; }
     }
@@ -342,7 +395,13 @@
     }
 
     async function alternarVendido(id, statusAtual) {
-        await atualizarProduto(id, { status: statusAtual==='vendido' ? 'disponiveis' : 'vendido' });
+        const novo = statusAtual==='vendido' ? 'disponiveis' : 'vendido';
+        const ok = await atualizarProduto(id, { status: novo });
+        if(ok){
+            const p = produtos.find(x=>x.id===id);
+            if(novo==='vendido' && p) addSaleRecord(p);
+            if(novo!=='vendido') removeSaleRecord(id);
+        }
     }
 
     // ─── ADMIN: LISTA ─────────────────────────────────────────────────────────
@@ -411,9 +470,9 @@
 
         try {
             const result = await dbInsert(data);
-            if (result) produtos.unshift(result);
+            if (result) produtos.unshift(normalizeProduct(result));
             renderizarCatalogo(); renderizarSecoesCuradas();
-            if (adminVisible) renderizarAdminLista();
+            if (adminVisible && typeof admLoadData === 'function') await admLoadData();
             document.getElementById('prodNome').value = '';
             document.getElementById('prodDesc').value = '';
             document.getElementById('prodPreco').value = 'R$ 0,00';
@@ -430,6 +489,7 @@
         document.getElementById('editNome').value = prod.nome;
         document.getElementById('editDesc').value = prod.descricao_completa||'';
         document.getElementById('editPreco').value = prod.preco;
+        document.getElementById('editQuantidade').value = prod.quantidade||0;
         document.getElementById('editCategoria').value = prod.categoria;
         document.getElementById('editStatus').value = prod.status;
         updateEditSizeFields(prod);
@@ -437,7 +497,22 @@
         c.innerHTML = '';
         (prod.images||[]).forEach((img,idx) => {
             const d = document.createElement('div'); d.className='image-preview-item';
-            d.innerHTML = `<img src="${img}"><button class="remove-image-btn" data-index="${idx}" data-removed="false">✕</button>`;
+            d.draggable = true;
+            d.dataset.origIndex = idx;
+            d.innerHTML = `<img src="${img}"><button class="remove-image-btn" data-orig-index="${idx}" data-removed="false">✕</button>`;
+            // drag handlers
+            d.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', String(idx)); d.classList.add('dragging'); });
+            d.addEventListener('dragend', () => { d.classList.remove('dragging'); document.querySelectorAll('#editImagesContainer .image-preview-item').forEach(x=>x.classList.remove('drag-over')); });
+            d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('drag-over'); });
+            d.addEventListener('dragleave', () => d.classList.remove('drag-over'));
+            d.addEventListener('drop', e => {
+                e.preventDefault(); d.classList.remove('drag-over');
+                const srcIdx = e.dataTransfer.getData('text/plain');
+                if(!srcIdx) return;
+                const srcEl = Array.from(c.children).find(x=>x.dataset.origIndex===String(srcIdx));
+                if(!srcEl || srcEl===d) return;
+                c.insertBefore(srcEl, d.nextSibling);
+            });
             c.appendChild(d);
         });
         document.getElementById('editNewImages').value = '';
@@ -466,7 +541,7 @@
         const removed = btn.dataset.removed === 'true';
         btn.dataset.removed = String(!removed);
         btn.textContent = !removed ? '↩' : '✕';
-        btn.previousElementSibling.style.opacity = !removed ? '0.25' : '1';
+        const img = btn.previousElementSibling; if(img) img.style.opacity = !removed ? '0.25' : '1';
     });
 
     document.getElementById('editSaveBtn').addEventListener('click', async () => {
@@ -487,9 +562,18 @@
         }
 
         const prodAtual = produtos.find(p=>p.id===currentEditId);
-        const removidos = new Set(Array.from(document.querySelectorAll('#editImagesContainer .remove-image-btn[data-removed="true"]')).map(b=>parseInt(b.dataset.index)));
-        let imgs = (prodAtual.images||[]).filter((_,i)=>!removidos.has(i));
-
+        // build images array following DOM order and excluding removed
+        const container = document.getElementById('editImagesContainer');
+        const imgs = [];
+        const origImgs = prodAtual.images || [];
+        Array.from(container.querySelectorAll('.image-preview-item')).forEach(item => {
+            const btn = item.querySelector('.remove-image-btn');
+            const isRemoved = btn && btn.dataset.removed === 'true';
+            if (!isRemoved){
+                const oi = item.dataset.origIndex ? parseInt(item.dataset.origIndex,10) : null;
+                if (oi !== null && origImgs[oi]) imgs.push(origImgs[oi]);
+            }
+        });
         const newFiles = document.getElementById('editNewImages').files;
         if (newFiles&&newFiles.length) {
             showToast('Fazendo upload...');
@@ -499,7 +583,9 @@
             }
         }
 
+        const quantidade = parseInt(document.getElementById('editQuantidade')?.value,10);
         const updates = { nome, descricao_completa:desc, preco, categoria, status, images:imgs, tamanhos, numeracao };
+        if(!isNaN(quantidade)) updates.quantidade = quantidade;
         const ok = await atualizarProduto(currentEditId, updates);
         if (ok) { document.getElementById('editModal').style.display='none'; document.body.style.overflow='auto'; showToast('Produto atualizado!'); }
     });
@@ -559,6 +645,7 @@
 
     // ─── DASHBOARD v2 ────────────────────────────────────────────────────────
     let admProds = [], admEditId = null, admRevChart = null, admTab = 'dashboard', admDragSrcId = null;
+    let admNewFiles = []; // arquivos selecionados no modal admin (preview)
     let admInited = false;
 
     const ADM_CATS = {vestuario:'Vestuário',shorts:'Shorts',calcados:'Calçados',lifestyle:'Lifestyle'};
@@ -577,8 +664,9 @@
 
     async function admLoadData() {
         try { admProds = await dbGetAll(); } catch { admProds = []; }
-        // Sync back to main produtos array so catalog stays in sync
-        produtos = admProds;
+        // Normaliza os produtos e sincroniza com a visão pública
+        admProds = Array.isArray(admProds) ? admProds.map(normalizeProduct) : [];
+        produtos = admProds.slice();
         renderizarCatalogo();
         renderizarSecoesCuradas();
     }
@@ -626,6 +714,34 @@
             if(!nome){admToast('Nome obrigatório');return;}
             const payload = {nome, preco:admEl('adm-f-preco').value.trim(), categoria:admEl('adm-f-cat').value, status:admEl('adm-f-status').value, descricao_completa:admEl('adm-f-desc').value.trim()};
             if(!admEditId) payload.images=[];
+            // quantidade
+            const quant = parseInt(admEl('adm-f-quantidade')?.value,10);
+            if(!isNaN(quant)) payload.quantidade = quant;
+            // numeracao / tamanhos
+            const numer = admEl('adm-f-numeracao')?.value.trim(); if(numer) payload.numeracao = numer;
+            const tstr = admEl('adm-f-tamanhos')?.value.trim(); if(tstr) payload.tamanhos = tstr.split(',').map(x=>x.trim()).filter(Boolean);
+            // imagens: se houver preview (adm-f-images-preview), respeitar ordem/remoção e fazer upload dos novos arquivos
+            const pv = admEl('adm-f-images-preview');
+            if(pv){
+                // upload new files first (admNewFiles)
+                let newUrls = [];
+                if(admNewFiles && admNewFiles.length){
+                    admToast('Fazendo upload das imagens...');
+                    for(const f of admNewFiles){
+                        try{ newUrls.push(await uploadImage(f)); }
+                        catch(e){ admToast('Erro no upload: '+e.message); return; }
+                    }
+                }
+                const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
+                const finalImgs = [];
+                Array.from(pv.children).forEach(child=>{
+                    const btn = child.querySelector('.remove-image-btn');
+                    if(btn && btn.dataset.removed==='true') return; // skip removed
+                    if(child.dataset.origIndex!==undefined){ const oi = parseInt(child.dataset.origIndex,10); if(existing[oi]) finalImgs.push(existing[oi]); }
+                    else if(child.dataset.newIndex!==undefined){ const ni = parseInt(child.dataset.newIndex,10); if(newUrls[ni]) finalImgs.push(newUrls[ni]); }
+                });
+                payload.images = finalImgs;
+            }
             try {
                 if(admEditId){await dbUpdate(admEditId,payload);admToast('Produto atualizado');}
                 else{await dbInsert(payload);admToast('Produto adicionado');}
@@ -633,7 +749,7 @@
                 await admLoadData();
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='dashboard') admRenderDash();
-            } catch(e){admToast('Erro: '+e.message);}
+            } catch(e){admToast('Erro: '+e.message);}        
         });
 
         // Filtros estoque
@@ -644,17 +760,76 @@
         });
 
         admLoadData().then(() => { admRenderDash(); admRenderStock(); });
+
+        // Preview de imagens no modal admin (arrastável, com remoção)
+        const admFilesEl = admEl('adm-f-images');
+        if(admFilesEl){
+            admFilesEl.addEventListener('change', () => {
+                admNewFiles = Array.from(admFilesEl.files||[]);
+                const pv = admEl('adm-f-images-preview'); pv.innerHTML='';
+                admNewFiles.forEach((f,idx)=>{
+                    const wrapper = document.createElement('div'); wrapper.className='image-preview-item draggable';
+                    wrapper.dataset.newIndex = idx;
+                    const img = document.createElement('img'); img.src = URL.createObjectURL(f); wrapper.appendChild(img);
+                    const btn = document.createElement('button'); btn.className='remove-image-btn'; btn.textContent='✕'; btn.dataset.removed='false'; btn.addEventListener('click', () => { btn.dataset.removed = String(btn.dataset.removed!=='true'); img.style.opacity = btn.dataset.removed==='true' ? '0.25' : '1'; });
+                    wrapper.appendChild(btn);
+                    // drag
+                    wrapper.draggable = true;
+                    wrapper.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', 'new:'+idx); wrapper.classList.add('dragging'); });
+                    wrapper.addEventListener('dragend', ()=>wrapper.classList.remove('dragging'));
+                    wrapper.addEventListener('dragover', e=>{ e.preventDefault(); wrapper.classList.add('drag-over'); });
+                    wrapper.addEventListener('dragleave', ()=>wrapper.classList.remove('drag-over'));
+                    wrapper.addEventListener('drop', e=>{ e.preventDefault(); wrapper.classList.remove('drag-over'); const data = e.dataTransfer.getData('text/plain'); handleAdmDrop(pv, data, wrapper); });
+                    pv.appendChild(wrapper);
+                });
+            });
+        }
     }
 
     function admOpenModal(p) {
         admEditId = p?p.id:null;
+        admNewFiles = [];
         admEl('adm-m-title').textContent = p?'Editar produto':'Novo produto';
         admEl('adm-f-nome').value = p?p.nome||'':'';
         admEl('adm-f-preco').value = p?p.preco||'':'';
         admEl('adm-f-cat').value = p?p.categoria||'vestuario':'vestuario';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
+        // campos novos
+        admEl('adm-f-quantidade').value = p? (p.quantidade||0) : 1;
+        admEl('adm-f-numeracao').value = p? (p.numeracao||'') : '';
+        admEl('adm-f-tamanhos').value = p? (Array.isArray(p.tamanhos)?p.tamanhos.join(','):(p.tamanhos||'')) : '';
+        // preview imagens existentes (wrappers arrastáveis)
+        const pv = admEl('adm-f-images-preview'); if(pv){ pv.innerHTML=''; const existing = (p?.images||[]);
+            existing.forEach((u,idx)=>{
+                const wrapper = document.createElement('div'); wrapper.className='image-preview-item draggable'; wrapper.dataset.origIndex = idx;
+                const img = document.createElement('img'); img.src = u; wrapper.appendChild(img);
+                const btn = document.createElement('button'); btn.className='remove-image-btn'; btn.textContent='✕'; btn.dataset.removed='false'; btn.addEventListener('click', ()=>{ btn.dataset.removed = String(btn.dataset.removed!=='true'); img.style.opacity = btn.dataset.removed==='true' ? '0.25' : '1'; });
+                wrapper.appendChild(btn);
+                // drag handlers
+                wrapper.draggable = true;
+                wrapper.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', 'orig:'+idx); wrapper.classList.add('dragging'); });
+                wrapper.addEventListener('dragend', ()=>wrapper.classList.remove('dragging'));
+                wrapper.addEventListener('dragover', e=>{ e.preventDefault(); wrapper.classList.add('drag-over'); });
+                wrapper.addEventListener('dragleave', ()=>wrapper.classList.remove('drag-over'));
+                wrapper.addEventListener('drop', e=>{ e.preventDefault(); wrapper.classList.remove('drag-over'); const data = e.dataTransfer.getData('text/plain'); handleAdmDrop(pv, data, wrapper); });
+                pv.appendChild(wrapper);
+            }); }
         admEl('adm-modal-bg').classList.add('open');
+    }
+    
+    // Helper to handle drop in admin preview: data format 'orig:idx' or 'new:idx'
+    function handleAdmDrop(container, data, targetEl){
+        if(!data) return;
+        const [type, idxStr] = data.split(':');
+        const idx = parseInt(idxStr,10);
+        if(isNaN(idx)) return;
+        // find source element
+        const srcSelector = type==='orig' ? `[data-orig-index="${idx}"]` : `[data-new-index="${idx}"]`;
+        const src = container.querySelector(srcSelector);
+        if(!src || src===targetEl) return;
+        // insert src after targetEl
+        container.insertBefore(src, targetEl.nextSibling);
     }
     function admCloseModal() { admEl('adm-modal-bg').classList.remove('open'); }
 
@@ -771,7 +946,7 @@
                     </div>
                 </td>
                 <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span></td>
-                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}</td>
+                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}<div style="font-size:11px;color:#777;margin-top:6px">Qtd: ${p.quantidade||0}</div></td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="adm-pill ${sCls}">${sLbl}</span>
@@ -855,20 +1030,7 @@
     }));
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
 
-    // Filtro de tamanho
-    document.querySelectorAll('.size-filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tam = btn.dataset.size;
-            if (filtroTamanhos.includes(tam)) {
-                filtroTamanhos = filtroTamanhos.filter(t => t !== tam);
-                btn.classList.remove('active');
-            } else {
-                filtroTamanhos.push(tam);
-                btn.classList.add('active');
-            }
-            renderizarCatalogo();
-        });
-    });
+    // Filtro de tamanho removido — sem botões de tamanho na UI
 
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display='flex'; });
