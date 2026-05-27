@@ -197,7 +197,7 @@ body {
 
 .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 500px; }
 .modal-gallery { background: #151515; padding: 20px; border-radius: 24px 0 0 24px; display: flex; flex-direction: column; align-items:center; }
-.modal-img-wrap { position: relative; margin-bottom: 12px; width:100%; display:flex; align-items:center; justify-content:center; }
+.modal-img-wrap { position: relative; margin-bottom: 12px; width:100%; display:flex; align-items:center; justify-content:center; min-height: 200px; }
 .modal-main-img { max-width: 100%; max-height: 80vh; width: auto; height: auto; object-fit: contain; border-radius: 16px; cursor: default; display: block; transition: opacity .28s ease; }
 .modal-nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); color: #fff; width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; opacity: 0.9; z-index: 50; }
 .modal-img-wrap .modal-nav-arrow { opacity: 0.9; }
@@ -416,13 +416,23 @@ body {
         padding: 14px 14px 8px !important;
         border-radius: 20px 20px 0 0 !important;
     }
+    #productModal .modal-img-wrap {
+        width: 100% !important;
+        min-height: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow: hidden !important;
+    }
     #productModal .modal-main-img {
+        display: block !important;
         max-width: 100% !important;
-        width: auto !important;
+        width: 100% !important;
         height: auto !important;
-        max-height: 70vh !important;
+        max-height: 65vw !important;
         object-fit: contain !important;
-        margin-bottom: 10px !important;
+        object-position: center center !important;
+        margin: 0 auto 10px !important;
         border-radius: 14px !important;
         cursor: grab !important;
         transition: opacity .22s ease !important;
