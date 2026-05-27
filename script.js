@@ -489,7 +489,6 @@
         document.getElementById('editNome').value = prod.nome;
         document.getElementById('editDesc').value = prod.descricao_completa||'';
         document.getElementById('editPreco').value = prod.preco;
-        document.getElementById('editQuantidade').value = prod.quantidade||0;
         document.getElementById('editCategoria').value = prod.categoria;
         document.getElementById('editStatus').value = prod.status;
         updateEditSizeFields(prod);
@@ -583,9 +582,7 @@
             }
         }
 
-        const quantidade = parseInt(document.getElementById('editQuantidade')?.value,10);
         const updates = { nome, descricao_completa:desc, preco, categoria, status, images:imgs, tamanhos, numeracao };
-        if(!isNaN(quantidade)) updates.quantidade = quantidade;
         const ok = await atualizarProduto(currentEditId, updates);
         if (ok) { document.getElementById('editModal').style.display='none'; document.body.style.overflow='auto'; showToast('Produto atualizado!'); }
     });
@@ -714,9 +711,6 @@
             if(!nome){admToast('Nome obrigatório');return;}
             const payload = {nome, preco:admEl('adm-f-preco').value.trim(), categoria:admEl('adm-f-cat').value, status:admEl('adm-f-status').value, descricao_completa:admEl('adm-f-desc').value.trim()};
             if(!admEditId) payload.images=[];
-            // quantidade
-            const quant = parseInt(admEl('adm-f-quantidade')?.value,10);
-            if(!isNaN(quant)) payload.quantidade = quant;
             // numeracao / tamanhos
             const numer = admEl('adm-f-numeracao')?.value.trim(); if(numer) payload.numeracao = numer;
             const tstr = admEl('adm-f-tamanhos')?.value.trim(); if(tstr) payload.tamanhos = tstr.split(',').map(x=>x.trim()).filter(Boolean);
@@ -751,6 +745,39 @@
                 if(admTab==='dashboard') admRenderDash();
             } catch(e){admToast('Erro: '+e.message);}        
         });
+
+        // Inicializa seletor de tamanhos e lógica de visibilidade para numeração/tamanhos
+        function syncSizesToInput(){
+            const sel = Array.from(document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt.active')).map(b=>b.dataset.size);
+            admEl('adm-f-tamanhos').value = sel.join(',');
+        }
+        function updateSizeButtonsFromValue(val){
+            const arr = String(val||'').split(',').map(x=>x.trim()).filter(Boolean);
+            document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
+                b.classList.toggle('active', arr.includes(b.dataset.size));
+            });
+        }
+        // attach click handlers
+        document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
+            b.addEventListener('click', ()=>{ b.classList.toggle('active'); syncSizesToInput(); });
+        });
+        // show/hide rows based on category
+        function refreshNumSizeVisibility(){
+            const cat = admEl('adm-f-cat').value;
+            const rowNum = admEl('adm-row-numeracao');
+            const rowSizes = admEl('adm-row-tamanhos');
+            if(cat==='calcados'){
+                if(rowNum) rowNum.style.display='block';
+                if(rowSizes) rowSizes.style.display='none';
+            } else if(cat==='vestuario' || cat==='shorts'){
+                if(rowNum) rowNum.style.display='none';
+                if(rowSizes) rowSizes.style.display='block';
+            } else {
+                if(rowNum) rowNum.style.display='none';
+                if(rowSizes) rowSizes.style.display='none';
+            }
+        }
+        admEl('adm-f-cat').addEventListener('change', ()=>{ refreshNumSizeVisibility(); });
 
         // Filtros estoque
         ['adm-s-search','adm-s-cat','adm-s-status','adm-s-sort'].forEach(id => {
@@ -796,9 +823,11 @@
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
         // campos novos
-        admEl('adm-f-quantidade').value = p? (p.quantidade||0) : 1;
         admEl('adm-f-numeracao').value = p? (p.numeracao||'') : '';
         admEl('adm-f-tamanhos').value = p? (Array.isArray(p.tamanhos)?p.tamanhos.join(','):(p.tamanhos||'')) : '';
+        // atualizar botões e visibilidade
+        updateSizeButtonsFromValue(admEl('adm-f-tamanhos').value);
+        refreshNumSizeVisibility();
         // preview imagens existentes (wrappers arrastáveis)
         const pv = admEl('adm-f-images-preview'); if(pv){ pv.innerHTML=''; const existing = (p?.images||[]);
             existing.forEach((u,idx)=>{
@@ -816,6 +845,8 @@
                 pv.appendChild(wrapper);
             }); }
         admEl('adm-modal-bg').classList.add('open');
+        // ensure on mobile the admin overlay is scrolled to top so modal appears immediately at top
+        const admOverlayEl = document.getElementById('adminOverlay'); if(admOverlayEl) admOverlayEl.scrollTop = 0;
     }
     
     // Helper to handle drop in admin preview: data format 'orig:idx' or 'new:idx'
@@ -946,7 +977,7 @@
                     </div>
                 </td>
                 <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span></td>
-                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}<div style="font-size:11px;color:#777;margin-top:6px">Qtd: ${p.quantidade||0}</div></td>
+                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="adm-pill ${sCls}">${sLbl}</span>

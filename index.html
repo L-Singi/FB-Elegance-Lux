@@ -162,6 +162,9 @@
   .adm-sbox:focus{border-color:#b88b4a}
   .adm-fsel{padding:7px 9px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;cursor:pointer;outline:none;font-family:inherit}
   .adm-fsel:focus{border-color:#b88b4a}
+  .size-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .size-opt{padding:6px 10px;border-radius:8px;border:1px solid #2a2a2a;background:transparent;color:#ddd;cursor:pointer;font-size:13px}
+  .size-opt.active{background:#b88b4a;color:#000;border-color:#b88b4a}
   .adm-twrap{background:#151515;border:1px solid #1e1e1e;border-radius:12px;overflow:hidden}
   .adm-stbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
   .adm-stbl th{padding:9px 10px;text-align:left;font-weight:500;font-size:11px;color:#555;border-bottom:1px solid #1e1e1e;background:#111;white-space:nowrap}
@@ -184,6 +187,8 @@
   #adm-modal-bg{display:none;position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:50;align-items:center;justify-content:center}
   #adm-modal-bg.open{display:flex}
   .adm-modal{background:#151515;border-radius:12px;border:1px solid #2a2a2a;padding:20px;width:350px;max-height:520px;overflow-y:auto;position:relative}
+  #adm-topbar{position:sticky;top:0;z-index:20;background:#0d0d0d}
+  .adm-toolbar{position:sticky;top:52px;z-index:15;background:#111;padding-top:10px}
   .adm-modal h3{font-size:15px;font-weight:500;margin-bottom:14px;color:#fff}
   .adm-fr{margin-bottom:10px}
   .adm-fr label{display:block;font-size:11px;color:#666;margin-bottom:4px}
@@ -200,13 +205,19 @@
   #adm-toast.show{display:block}
   @media(max-width:600px){
     #adm-root{height:auto;min-height:calc(100vh - 40px);flex-direction:column}
-    #adm-sidebar{width:100%;flex-direction:row;height:48px;overflow-x:auto}
+    #adm-sidebar{position:sticky;top:0;width:100%;flex-direction:row;height:48px;overflow-x:auto;z-index:25;background:#0d0d0d}
     .adm-logo{display:none}
     .adm-nav{flex-direction:row;padding:6px 8px;gap:4px;overflow-x:auto;overflow-y:hidden}
     .adm-n{padding:6px 10px;white-space:nowrap}
     .adm-sep{display:none}
     .adm-crow,.adm-brow{grid-template-columns:1fr}
-    .adm-kgrid{grid-template-columns:1fr 1fr}
+    .adm-kgrid{grid-template-columns:1fr}
+    /* Ajustes mobile: abrir modal no topo e espaçamento entre painéis */
+    #adm-modal-bg.open{align-items:flex-start;padding-top:18px}
+    .adm-modal{width:calc(100% - 28px);max-height:calc(100vh - 40px);margin:8px 14px}
+    .adm-panel{padding-bottom:18px}
+    .adm-toolbar{gap:10px}
+    .adm-kgrid{gap:12px}
   }
   </style>
 
@@ -348,9 +359,20 @@
             <option value="vendido">Vendido</option>
           </select>
         </div>
-        <div class="adm-fr"><label>Quantidade</label><input type="number" id="adm-f-quantidade" min="0" value="1"></div>
-        <div class="adm-fr"><label>Numeração (calçados)</label><input type="text" id="adm-f-numeracao" placeholder="Ex: 38,39,40"></div>
-        <div class="adm-fr"><label>Tamanhos (vestuário/shorts)</label><input type="text" id="adm-f-tamanhos" placeholder="Ex: S,M,L"></div>
+        <div class="adm-fr" id="adm-row-numeracao"><label>Numeração (calçados)</label><input type="text" id="adm-f-numeracao" placeholder="Ex: 38,39,40"></div>
+        <div class="adm-fr" id="adm-row-tamanhos">
+          <label>Tamanhos (vestuário/shorts)</label>
+          <input type="hidden" id="adm-f-tamanhos" placeholder="Ex: S,M,L">
+          <div id="adm-f-tamanhos-buttons" class="size-buttons">
+            <button type="button" class="size-opt" data-size="XXS">XXS</button>
+            <button type="button" class="size-opt" data-size="XS">XS</button>
+            <button type="button" class="size-opt" data-size="S">S</button>
+            <button type="button" class="size-opt" data-size="M">M</button>
+            <button type="button" class="size-opt" data-size="L">L</button>
+            <button type="button" class="size-opt" data-size="XL">XL</button>
+            <button type="button" class="size-opt" data-size="XXL">XXL</button>
+          </div>
+        </div>
         <div class="adm-fr"><label>Imagens</label><input type="file" id="adm-f-images" accept="image/*" multiple></div>
         <div class="adm-fr"><label>Preview imagens</label><div class="adm-image-hint">Arraste para reordenar, clique no ✕ para remover</div><div id="adm-f-images-preview" class="adm-image-preview"></div></div>
         <div class="adm-fr"><label>Descrição</label><textarea id="adm-f-desc" placeholder="Descrição completa do produto..."></textarea></div>
@@ -413,7 +435,6 @@
         <div class="edit-form-group"><label>Nome</label><input type="text" id="editNome" placeholder="Nome do produto"></div>
         <div class="edit-form-group"><label>Descrição</label><textarea id="editDesc" rows="3" placeholder="Descrição completa"></textarea></div>
         <div class="edit-form-group"><label>Preço (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00"></div>
-        <div class="edit-form-group"><label>Quantidade</label><input type="number" id="editQuantidade" min="0" placeholder="0"></div>
         <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select></div>
         <div class="edit-form-group" id="editSizeContainer"></div>
         <div class="edit-form-group"><label>Status</label><select id="editStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option><option value="vendido">Vendido</option></select></div>
