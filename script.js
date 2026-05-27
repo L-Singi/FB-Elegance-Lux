@@ -683,7 +683,7 @@
                 const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias'};
                 admEl('adm-tb-title').textContent = titles[admTab]||admTab;
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
-                admEl('adm-btn-add').style.display = admTab==='estoque'?'flex':'none';
+                admEl('adm-btn-add').style.display = admTab==='categorias'?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
                 if(admTab==='categorias') admRenderCats();
                 if(admTab==='estoque') admRenderStock();
@@ -699,7 +699,11 @@
         });
 
         // Botão novo item
-        admEl('adm-btn-add').addEventListener('click', () => admOpenModal(null));
+        const admAddBtn = admEl('adm-btn-add');
+        if (admAddBtn) {
+            admAddBtn.addEventListener('click', () => admOpenModal(null));
+            admAddBtn.type = 'button';
+        }
 
         // Modal
         admEl('adm-m-close').addEventListener('click', admCloseModal);
