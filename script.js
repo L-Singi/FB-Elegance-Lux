@@ -521,9 +521,9 @@
                 </div>`;
             c.appendChild(div);
         });
-        c.querySelectorAll('.edit-ad').forEach(b => b.addEventListener('click', () => { const p=produtos.find(x=>x.id===b.dataset.id); if(p) abrirEdicao(p); }));
-        c.querySelectorAll('.mark-sold').forEach(b => b.addEventListener('click', () => alternarVendido(b.dataset.id, b.dataset.status)));
-        c.querySelectorAll('.delete-prod').forEach(b => b.addEventListener('click', () => excluirProduto(b.dataset.id)));
+        c.querySelectorAll('.edit-ad').forEach(b => b.addEventListener('click', () => { const p=produtos.find(x=>x.id===Number(b.dataset.id)); if(p) abrirEdicao(p); }));
+        c.querySelectorAll('.mark-sold').forEach(b => b.addEventListener('click', () => alternarVendido(Number(b.dataset.id), b.dataset.status)));
+        c.querySelectorAll('.delete-prod').forEach(b => b.addEventListener('click', () => excluirProduto(Number(b.dataset.id))));
     }
 
     // ─── ADMIN: ADICIONAR ─────────────────────────────────────────────────────
@@ -1103,11 +1103,11 @@
         }).join('');
 
         body.querySelectorAll('[data-edit]').forEach(btn=>{
-            btn.addEventListener('click',()=>{const p=admProds.find(x=>x.id===btn.dataset.edit);if(p)admOpenModal(p);});
+            btn.addEventListener('click',()=>{const p=admProds.find(x=>x.id===Number(btn.dataset.edit));if(p)admOpenModal(p);});
         });
         body.querySelectorAll('[data-del]').forEach(btn=>{
             btn.addEventListener('click',async()=>{
-                const p=admProds.find(x=>x.id===btn.dataset.del);
+                const p=admProds.find(x=>x.id===Number(btn.dataset.del));
                 if(!p||!confirm(`Excluir "${p.nome}"?`))return;
                 try{await dbDelete(p.id);admToast('Produto excluído');await admLoadData();admRenderStock();}
                 catch(e){admToast('Erro: '+e.message);}
@@ -1123,14 +1123,15 @@
 
         // Drag & drop
         body.querySelectorAll('tr[draggable]').forEach(row=>{
-            row.addEventListener('dragstart',e=>{admDragSrcId=row.dataset.id;e.dataTransfer.effectAllowed='move';});
+            row.addEventListener('dragstart',e=>{admDragSrcId=Number(row.dataset.id);e.dataTransfer.effectAllowed='move';});
             row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over');});
             row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
             row.addEventListener('drop',e=>{
                 e.preventDefault();row.classList.remove('drag-over');
-                if(!admDragSrcId||admDragSrcId===row.dataset.id)return;
+                const targetId=Number(row.dataset.id);
+                if(!admDragSrcId||admDragSrcId===targetId)return;
                 const si=admProds.findIndex(x=>x.id===admDragSrcId);
-                const ti=admProds.findIndex(x=>x.id===row.dataset.id);
+                const ti=admProds.findIndex(x=>x.id===targetId);
                 if(si<0||ti<0)return;
                 const [item]=admProds.splice(si,1);
                 admProds.splice(ti,0,item);
