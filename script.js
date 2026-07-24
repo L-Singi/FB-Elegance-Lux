@@ -1,55 +1,40 @@
 (function(){
-    // ─── CONFIGURAÇÃO SUPABASE ────────────────────────────────────────────────
-    // A anon key do Supabase é SEGURA para ficar no frontend — é pública por design.
-    // A proteção real vem do RLS configurado no Supabase (execute o disable_rls.sql).
-    const SUPABASE_URL = "https://bachgtlwmaroytvhhvfn.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhY2hndGx3bWFyb3l0dmhodmZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0OTQ4MDAsImV4cCI6MjA5MDA3MDgwMH0.J8ajqwCRrAPLkfYMuXYWs82eO6x6s4A_HteoqOtNFFI";
+    // ─── CONFIGURAÇÃO API ─────────────────────────────────────────────────────
+    const API_BASE = "https://api.fbelegancelux.com.br";
 
-    // ─── CLIENTE SUPABASE (fetch nativo, sem npm) ─────────────────────────────
-    async function sbFetch(method, path, body) {
-        const opts = {
-            method,
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=representation'
-            }
-        };
-        if (body !== undefined) opts.body = JSON.stringify(body);
-        const res = await fetch(SUPABASE_URL + path, opts);
+    // ─── CLIENTE API (fetch nativo) ──────────────────────────────────────────
+    async function apiFetch(method, path, body) {
+        const opts = { method, headers: {} };
+        if (body !== undefined && !(body instanceof FormData)) {
+            opts.headers['Content-Type'] = 'application/json';
+            opts.body = JSON.stringify(body);
+        } else if (body instanceof FormData) {
+            opts.body = body;
+        }
+        const res = await fetch(API_BASE + path, opts);
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || err.hint || res.statusText);
+            throw new Error(err.message || res.statusText);
         }
-        const text = await res.text();
-        return text ? JSON.parse(text) : [];
+        return res.json();
     }
 
-    async function dbGetAll()        { return sbFetch('GET',    '/rest/v1/produtos?select=*&order=created_at.desc'); }
-    async function dbInsert(data)    { const r = await sbFetch('POST',  '/rest/v1/produtos', data); return Array.isArray(r) ? r[0] : r; }
-    async function dbUpdate(id, data){ const r = await sbFetch('PATCH', `/rest/v1/produtos?id=eq.${id}`, data); return Array.isArray(r) ? r[0] : r; }
-    async function dbDelete(id)      { await sbFetch('DELETE', `/rest/v1/produtos?id=eq.${id}`); }
+    async function dbGetAll()        { return apiFetch('GET', '/api/produtos'); }
+    async function dbInsert(data)    { return apiFetch('POST', '/api/produtos', data); }
+    async function dbUpdate(id, data){ return apiFetch('PUT', `/api/produtos/${id}`, data); }
+    async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
 
-    // Upload de imagem pro Storage do Supabase
+    // Upload de imagem para o servidor
     async function uploadImage(file) {
-        const ext = file.name.split('.').pop();
-        const fileName = Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
-        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/produtos/${fileName}`, {
-            method: 'POST',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-                'Content-Type': file.type,
-                'x-upsert': 'false'
-            },
-            body: file
-        });
+        const fd = new FormData();
+        fd.append('imagem', file);
+        const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error('Upload falhou: ' + (err.message || res.statusText));
         }
-        return `${SUPABASE_URL}/storage/v1/object/public/produtos/${fileName}`;
+        const data = await res.json();
+        return data.url;
     }
 
     // ─── ESTADO ───────────────────────────────────────────────────────────────
@@ -847,36 +832,48 @@
         admEl('adm-m-save').addEventListener('click', async () => {
             const nome = admEl('adm-f-nome').value.trim();
             if(!nome){admToast('Nome obrigatório');return;}
-            const payload = {nome, preco:admEl('adm-f-preco').value.trim(), categoria:admEl('adm-f-cat').value, status:admEl('adm-f-status').value, descricao_completa:admEl('adm-f-desc').value.trim()};
-            if(!admEditId) payload.images=[];
-            // numeracao / tamanhos
-            const numer = admEl('adm-f-numeracao')?.value.trim(); if(numer) payload.numeracao = numer;
-            const tstr = admEl('adm-f-tamanhos')?.value.trim(); if(tstr) payload.tamanhos = tstr.split(',').map(x=>x.trim()).filter(Boolean);
-            // imagens: se houver preview (adm-f-images-preview), respeitar ordem/remoção e fazer upload dos novos arquivos
+            const preco = admEl('adm-f-preco').value.trim();
+            const categoria = admEl('adm-f-cat').value;
+            const status = admEl('adm-f-status').value;
+            const descricao_completa = admEl('adm-f-desc').value.trim();
+            const numeracao = admEl('adm-f-numeracao')?.value.trim() || '';
+            const tamanhosStr = admEl('adm-f-tamanhos')?.value.trim() || '';
+            const tamanhos = tamanhosStr ? tamanhosStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
+
             const pv = admEl('adm-f-images-preview');
+            const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
+            let finalImgs = [];
             if(pv){
-                // upload new files first (admNewFiles)
-                let newUrls = [];
-                if(admNewFiles && admNewFiles.length){
-                    admToast('Fazendo upload das imagens...');
-                    for(const f of admNewFiles){
-                        try{ newUrls.push(await uploadImage(f)); }
-                        catch(e){ admToast('Erro no upload: '+e.message); return; }
-                    }
-                }
-                const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
-                const finalImgs = [];
                 Array.from(pv.children).forEach(child=>{
                     const btn = child.querySelector('.remove-image-btn');
-                    if(btn && btn.dataset.removed==='true') return; // skip removed
+                    if(btn && btn.dataset.removed==='true') return;
                     if(child.dataset.origIndex!==undefined){ const oi = parseInt(child.dataset.origIndex,10); if(existing[oi]) finalImgs.push(existing[oi]); }
-                    else if(child.dataset.newIndex!==undefined){ const ni = parseInt(child.dataset.newIndex,10); if(newUrls[ni]) finalImgs.push(newUrls[ni]); }
                 });
-                payload.images = finalImgs;
             }
+
+            const fd = new FormData();
+            fd.append('nome', nome);
+            fd.append('preco', preco);
+            fd.append('categoria', categoria);
+            fd.append('status', status);
+            fd.append('descricao_completa', descricao_completa);
+            if(numeracao) fd.append('numeracao', numeracao);
+            if(tamanhos.length) fd.append('tamanhos', JSON.stringify(tamanhos));
+
+            if(admEditId){
+                fd.append('existingImages', JSON.stringify(finalImgs));
+                if(admNewFiles && admNewFiles.length){
+                    admToast('Fazendo upload das imagens...');
+                    for(const f of admNewFiles){ fd.append('newImages', f); }
+                }
+            } else {
+                if(!admNewFiles || !admNewFiles.length){admToast('Pelo menos uma imagem é obrigatória');return;}
+                for(const f of admNewFiles){ fd.append('images', f); }
+            }
+
             try {
-                if(admEditId){await dbUpdate(admEditId,payload);admToast('Produto atualizado');}
-                else{await dbInsert(payload);admToast('Produto adicionado');}
+                if(admEditId){await apiFetch('PUT', `/api/produtos/${admEditId}`, fd);admToast('Produto atualizado');}
+                else{await apiFetch('POST', '/api/produtos', fd);admToast('Produto adicionado');}
                 admCloseModal();
                 await admLoadData();
                 if(admTab==='estoque') admRenderStock();
