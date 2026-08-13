@@ -39,10 +39,24 @@
 
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     let produtos = [];
-    let filtroCategoria = 'todos';
+    let filtroCategoria = 'casacos';
+    let filtroTamanho = [];
+    let filtroNumero = [];
+    let filtroMarca = [];
     let termoBusca = '';
     let adminVisible = false;
     let currentEditId = null;
+
+    // Categorias que usam grade de tamanhos (P/M/G) vs. numeração (calçados) vs. nenhuma (acessórios/perfumes)
+    const TAMANHO_CATS = ['casacos','camisetas','shorts'];
+    const SIZES = ['XXS','XS','S','M','L','XL','XXL'];
+    const NUMEROS = ['34','35','36','37','38','39','40','41','42','43','44','45'];
+    const BRANDS_BY_CAT = {
+        casacos: ['AllSaints','Off-White','Palm Angels','Ralph Lauren','Moncler','Diesel'],
+        camisetas: ['AllSaints','Off-White','Palm Angels','Ralph Lauren','Moncler','Diesel','Boss'],
+        shorts: ['Vilebrequin','Sundek'],
+        calcados: ['Golden Goose','Off-White','Zegna','Gucci','Bottega Veneta','Louis Vuitton']
+    };
 
     // Normalização de status/categorias para evitar valores inconsistentes do backend
     function stripAccents(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim(); }
@@ -56,11 +70,35 @@
     }
     function normalizeCategoria(c){
         const v = stripAccents(c);
-        if(['vestuario','vestuarios','vestuario'].includes(v)) return 'vestuario';
+        if(['casacos','casaco'].includes(v)) return 'casacos';
+        if(['camisetas','camiseta'].includes(v)) return 'camisetas';
         if(['shorts'].includes(v)) return 'shorts';
-        if(['calcados','calcados','calcado','calcados'].includes(v)) return 'calcados';
+        if(['calcados','calcado'].includes(v)) return 'calcados';
+        if(['acessorios','acessorio'].includes(v)) return 'acessorios';
+        if(['perfumes','perfume'].includes(v)) return 'perfumes';
+        // Categorias legadas: mantidas para não quebrar produtos antigos ainda não reclassificados.
+        // Não aparecem mais nas abas — reclassifique-os no admin em Casacos/Camisetas/Acessórios/Perfumes.
+        if(['vestuario','vestuarios'].includes(v)) return 'vestuario';
         if(['lifestyle'].includes(v)) return 'lifestyle';
         return v || 'outros';
+    }
+    function parseNumeracao(str){
+        const out = new Set();
+        String(str||'').split(',').forEach(tok => {
+            tok = tok.trim();
+            if (!tok) return;
+            const m = tok.match(/^(\d+)\s*-\s*(\d+)$/);
+            if (m) {
+                let a = parseInt(m[1],10), b = parseInt(m[2],10);
+                if (a > b) { const t=a; a=b; b=t; }
+                for (let n=a; n<=b; n++) out.add(String(n));
+            } else out.add(tok);
+        });
+        return out;
+    }
+    function numeroMatches(numeracaoStr, selecionados){
+        const set = parseNumeracao(numeracaoStr);
+        return selecionados.some(n => set.has(n));
     }
     function normalizeProduct(p){
         if(!p) return p;
@@ -179,7 +217,7 @@
         let msg = "🛍️ *Meu pedido:*%0A";
         cart.forEach(item => {
             let extra = '';
-            if ((item.categoria==='vestuario'||item.categoria==='shorts') && item.tamanhos) extra = ` (Tam: ${item.tamanhos.join(',')})`;
+            if (TAMANHO_CATS.includes(item.categoria) && item.tamanhos) extra = ` (Tam: ${item.tamanhos.join(',')})`;
             if (item.categoria==='calcados'  && item.numeracao) extra = ` (Num: ${item.numeracao})`;
             msg += `- ${item.nome}${extra} - ${item.preco} x ${item.quantity}%0A`;
         });
@@ -219,7 +257,7 @@
 
     // ─── CARD ─────────────────────────────────────────────────────────────────
     const STATUS = { disponiveis:['DISPONÍVEL','disponivel'], lancamentos:['LANÇAMENTO','lancamento'], embreve:['EM BREVE','embreve'], vendido:['VENDIDO','vendido'] };
-    const CAT_LABEL = { calcados:'CALÇADOS', vestuario:'VESTUÁRIO', lifestyle:'LIFESTYLE', shorts:'SHORTS' };
+    const CAT_LABEL = { casacos:'CASACOS', camisetas:'CAMISETAS', shorts:'SHORTS', calcados:'CALÇADOS', acessorios:'ACESSÓRIOS', perfumes:'PERFUMES', vestuario:'VESTUÁRIO', lifestyle:'LIFESTYLE' };
 
     function criarCard(prod) {
         const card = document.createElement('div');
@@ -229,10 +267,11 @@
         const images = prod.images || [];
         const isSold = prod.status === 'vendido';
         let sizeHtml = '';
-        if ((prod.categoria==='vestuario'||prod.categoria==='shorts') && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
+        if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
         else if (prod.categoria==='calcados' && prod.numeracao) sizeHtml = `<div class="product-size-info">Numeração: ${prod.numeracao}</div>`;
         const quantHtml = (prod.quantidade!==undefined && prod.quantidade!==null) ? `<div class="product-quantity">Qtd: ${prod.quantidade}</div>` : '';
         const descHtml = prod.descricao_completa ? `<p class="product-desc-preview">${escapeHtml(prod.descricao_completa)}</p>` : '';
+        const brandHtml = prod.marca ? `<div class="product-brand">${escapeHtml(prod.marca)}</div>` : '';
         card.innerHTML = `
             <div class="product-image-container">
                 <span class="status-badge ${sClass}">${sLabel}</span>
@@ -241,6 +280,7 @@
             </div>
             <div class="product-info">
                 <div class="product-category">${catLabel}</div>
+                ${brandHtml}
                 <h3 class="product-title">${escapeHtml(prod.nome)}</h3>
                 <p class="product-price">${prod.preco}</p>
                 ${descHtml}
@@ -272,16 +312,62 @@
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
-        let f = produtos.filter(p => filtroCategoria==='todos' || p.categoria===filtroCategoria);
+        let f = produtos.filter(p => p.categoria===filtroCategoria);
         if (termoBusca.trim()) {
             const b = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
             f = f.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(b));
         }
-        // (Filtro de tamanhos removido — filtragem por botão não está disponível)
+        if (TAMANHO_CATS.includes(filtroCategoria) && filtroTamanho.length) {
+            f = f.filter(p => Array.isArray(p.tamanhos) && p.tamanhos.some(t => filtroTamanho.includes(t)));
+        }
+        if (filtroCategoria==='calcados' && filtroNumero.length) {
+            f = f.filter(p => numeroMatches(p.numeracao, filtroNumero));
+        }
+        if (BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
+            f = f.filter(p => filtroMarca.includes(p.marca));
+        }
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
+        renderizarSubFiltros();
+    }
+
+    // ─── SUBFILTROS: tamanho / número / marca ─────────────────────────────────
+    function subfilterGroup(label, options, ativos, group) {
+        return `<div class="subfilter-group">
+            <span class="subfilter-label">${label}</span>
+            <div class="chip-row">${options.map(o => `<button type="button" class="chip-btn${ativos.includes(o)?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('')}</div>
+        </div>`;
+    }
+    function renderizarSubFiltros() {
+        const wrap = document.getElementById('subfilters');
+        if (!wrap) return;
+        let html = '';
+        if (TAMANHO_CATS.includes(filtroCategoria)) {
+            html += subfilterGroup('Tamanho', SIZES, filtroTamanho, 'tamanho');
+        } else if (filtroCategoria === 'calcados') {
+            html += subfilterGroup('Número', NUMEROS, filtroNumero, 'numero');
+        }
+        if (BRANDS_BY_CAT[filtroCategoria]) {
+            html += subfilterGroup('Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
+        }
+        if (filtroTamanho.length || filtroNumero.length || filtroMarca.length) {
+            html += `<button type="button" class="chip-clear" id="chipClearBtn">Limpar filtros</button>`;
+        }
+        wrap.innerHTML = html;
+        wrap.querySelectorAll('.chip-btn').forEach(btn => btn.addEventListener('click', () => {
+            const group = btn.dataset.group, val = btn.dataset.val;
+            const arr = group==='tamanho' ? filtroTamanho : group==='numero' ? filtroNumero : filtroMarca;
+            const idx = arr.indexOf(val);
+            if (idx===-1) arr.push(val); else arr.splice(idx,1);
+            renderizarCatalogo();
+        }));
+        const clearBtn = document.getElementById('chipClearBtn');
+        if (clearBtn) clearBtn.addEventListener('click', () => {
+            filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+            renderizarCatalogo();
+        });
     }
 
     // ─── DISPATCHER: mobile sheet ou modal desktop ────────────────────────────
@@ -307,13 +393,13 @@
         document.getElementById('mobileSheetDesc').innerText     = prod.descricao_completa || '';
 
         let st = '';
-        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
+        if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
         else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         const sizeEl = document.getElementById('mobileSheetSize');
         sizeEl.innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
 
         let extra = '';
-        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
+        if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
         document.getElementById('mobileSheetWhatsapp').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
 
@@ -399,7 +485,7 @@
         document.getElementById('modalPrice').innerText = prod.preco;
         document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
         let st = '';
-        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
+        if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
         else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         document.getElementById('modalSize').innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
         const imgs = prod.images||[];
@@ -449,7 +535,7 @@
             if (Math.abs(dx) > 35) goToImg(dx < 0 ? currentIdx + 1 : currentIdx - 1);
         }, { passive: true });
         let extra = '';
-        if ((prod.categoria==='vestuario'||prod.categoria==='shorts')&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
+        if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
         document.getElementById('modalWhatsappBtn').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
         document.getElementById('productModal').style.display = 'flex';
@@ -551,7 +637,7 @@
         }
 
         const data = { nome, descricao_completa:desc, preco, images, categoria, status };
-        if (categoria==='vestuario'||categoria==='shorts') {
+        if (TAMANHO_CATS.includes(categoria)) {
             const t = Array.from(document.querySelectorAll('#dynamicFieldsContainer input[type=checkbox]:checked')).map(cb=>cb.value);
             if (!t.length) { alert('Selecione pelo menos um tamanho.'); return; }
             data.tamanhos = t;
@@ -615,7 +701,7 @@
     function updateEditSizeFields(prod) {
         const c = document.getElementById('editSizeContainer');
         c.innerHTML = '';
-        if (prod.categoria==='vestuario'||prod.categoria==='shorts') {
+        if (TAMANHO_CATS.includes(prod.categoria)) {
             c.innerHTML = `<label>Tamanhos:</label><div class="edit-checkbox-group" id="editTamanhosGroup">${['XXS','XS','S','M','L','XL','XXL'].map(t=>`<label><input type="checkbox" value="${t}" ${prod.tamanhos?.includes(t)?'checked':''}> ${t}</label>`).join('')}</div>`;
         } else if (prod.categoria==='calcados') {
             c.innerHTML = `<label>Numeração</label><input type="text" id="editNumeracao" value="${prod.numeracao||''}" placeholder="Ex: 35, 36, 37-40">`;
@@ -645,7 +731,7 @@
         if (!nome||!preco) { alert('Nome e preço são obrigatórios'); return; }
 
         let tamanhos=null, numeracao=null;
-        if (categoria==='vestuario'||categoria==='shorts') {
+        if (TAMANHO_CATS.includes(categoria)) {
             tamanhos = Array.from(document.querySelectorAll('#editTamanhosGroup input:checked')).map(cb=>cb.value);
             if (!tamanhos.length) { alert('Selecione pelo menos um tamanho'); return; }
         } else if (categoria==='calcados') {
@@ -688,7 +774,7 @@
         const cat = document.getElementById('prodCategoria').value;
         const c = document.getElementById('dynamicFieldsContainer');
         c.innerHTML = '';
-        if (cat==='vestuario'||cat==='shorts') c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="XXS"> XXS</label><label><input type="checkbox" value="XS"> XS</label><label><input type="checkbox" value="S"> S</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="L"> L</label><label><input type="checkbox" value="XL"> XL</label><label><input type="checkbox" value="XXL"> XXL</label></div></div>`;
+        if (TAMANHO_CATS.includes(cat)) c.innerHTML = `<div class="dynamic-field"><label>Tamanhos:</label><div class="size-checkbox-group"><label><input type="checkbox" value="XXS"> XXS</label><label><input type="checkbox" value="XS"> XS</label><label><input type="checkbox" value="S"> S</label><label><input type="checkbox" value="M"> M</label><label><input type="checkbox" value="L"> L</label><label><input type="checkbox" value="XL"> XL</label><label><input type="checkbox" value="XXL"> XXL</label></div></div>`;
         else if (cat==='calcados') c.innerHTML = `<div class="dynamic-field"><input type="text" id="numeracaoInput" placeholder="Numeração (ex: 35, 36, 37-40)"></div>`;
     }
 
@@ -738,9 +824,9 @@
     let admNewFiles = []; // arquivos selecionados no modal admin (preview)
     let admInited = false;
 
-    const ADM_CATS = {vestuario:'Vestuário',shorts:'Shorts',calcados:'Calçados',lifestyle:'Lifestyle'};
-    const ADM_ICONS = {vestuario:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',lifestyle:'ti-sparkles'};
-    const ADM_COLORS = ['#b88b4a','#7a5c2e','#d4a85a','#c8a87a'];
+    const ADM_CATS = {casacos:'Casacos',camisetas:'Camisetas',shorts:'Shorts',calcados:'Calçados',acessorios:'Acessórios',perfumes:'Perfumes'};
+    const ADM_ICONS = {casacos:'ti-hanger',camisetas:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',acessorios:'ti-diamond',perfumes:'ti-spray'};
+    const ADM_COLORS = ['#b88b4a','#7a5c2e','#d4a85a','#c8a87a','#8f6a35','#e0c48a'];
     const ADM_STATUS_OPTS = {disponiveis:'Disponível',lancamentos:'Lançamento',vendido:'Vendido',embreve:'Em breve'};
     const ADM_STATUS_CLS = {disponiveis:'adm-p-disp',lancamentos:'adm-p-lanc',vendido:'adm-p-vend',embreve:'adm-p-brev'};
 
@@ -775,15 +861,29 @@
         const cat = admEl('adm-f-cat').value;
         const rowNum = admEl('adm-row-numeracao');
         const rowSizes = admEl('adm-row-tamanhos');
+        const rowMarca = admEl('adm-row-marca');
         if(cat==='calcados'){
             if(rowNum) rowNum.style.display='block';
             if(rowSizes) rowSizes.style.display='none';
-        } else if(cat==='vestuario' || cat==='shorts'){
+        } else if(TAMANHO_CATS.includes(cat)){
             if(rowNum) rowNum.style.display='none';
             if(rowSizes) rowSizes.style.display='block';
         } else {
             if(rowNum) rowNum.style.display='none';
             if(rowSizes) rowSizes.style.display='none';
+        }
+        if (rowMarca) {
+            const brands = BRANDS_BY_CAT[cat];
+            const sel = admEl('adm-f-marca');
+            if (brands) {
+                rowMarca.style.display = 'block';
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">Selecione</option>' + brands.map(b=>`<option value="${b}">${b}</option>`).join('');
+                if (brands.includes(currentVal)) sel.value = currentVal;
+            } else {
+                rowMarca.style.display = 'none';
+                sel.innerHTML = '<option value="">Selecione</option>';
+            }
         }
     }
 
@@ -839,6 +939,7 @@
             const numeracao = admEl('adm-f-numeracao')?.value.trim() || '';
             const tamanhosStr = admEl('adm-f-tamanhos')?.value.trim() || '';
             const tamanhos = tamanhosStr ? tamanhosStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
+            const marca = admEl('adm-f-marca')?.value.trim() || '';
 
             const pv = admEl('adm-f-images-preview');
             const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
@@ -859,6 +960,7 @@
             fd.append('descricao_completa', descricao_completa);
             if(numeracao) fd.append('numeracao', numeracao);
             if(tamanhos.length) fd.append('tamanhos', JSON.stringify(tamanhos));
+            if(marca) fd.append('marca', marca);
 
             if(admEditId){
                 fd.append('existingImages', JSON.stringify(finalImgs));
@@ -927,7 +1029,7 @@
         admEl('adm-m-title').textContent = p?'Editar produto':'Novo produto';
         admEl('adm-f-nome').value = p?p.nome||'':'';
         admEl('adm-f-preco').value = p?p.preco||'R$ 0,00':'R$ 0,00';
-        admEl('adm-f-cat').value = p?p.categoria||'vestuario':'vestuario';
+        admEl('adm-f-cat').value = p?p.categoria||'casacos':'casacos';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
         // campos novos
@@ -936,6 +1038,7 @@
         // atualizar botões e visibilidade
         updateSizeButtonsFromValue(admEl('adm-f-tamanhos').value);
         refreshNumSizeVisibility();
+        if (admEl('adm-f-marca')) admEl('adm-f-marca').value = p ? (p.marca||'') : '';
         // preview imagens existentes (wrappers arrastáveis)
         const pv = admEl('adm-f-images-preview'); if(pv){ pv.innerHTML=''; const existing = (p?.images||[]);
             existing.forEach((u,idx)=>{
@@ -1007,7 +1110,7 @@
         admEl('adm-k-vend-d').className='adm-kdelta up';
         admEl('adm-k-vend-d').textContent = all.length?Math.round(vend.length/all.length*100)+'% do acervo':'';
 
-        const cats=['vestuario','shorts','calcados','lifestyle'];
+        const cats=Object.keys(ADM_CATS);
         const cd=cats.map((c,i)=>({
             c,label:ADM_CATS[c],color:ADM_COLORS[i],
             total:all.filter(p=>p.categoria===c).length,
@@ -1084,7 +1187,7 @@
                         </div>
                     </div>
                 </td>
-                <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span></td>
+                <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span>${p.marca?`<div style="font-size:10px;color:#555;margin-top:2px">${admEsc(p.marca)}</div>`:''}</td>
                 <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px">
@@ -1143,7 +1246,7 @@
     }
 
     function admRenderCats() {
-        const cats=['vestuario','shorts','calcados','lifestyle'];
+        const cats=Object.keys(ADM_CATS);
         admEl('adm-cat-cards').innerHTML=cats.map(cat=>{
             const list=admProds.filter(p=>p.categoria===cat);
             const vd=list.filter(p=>p.status==='vendido');
@@ -1164,13 +1267,12 @@
     }
     document.querySelectorAll('.cat-btn').forEach(btn => btn.addEventListener('click', () => {
         filtroCategoria = btn.dataset.cat;
+        filtroTamanho = []; filtroNumero = []; filtroMarca = [];
         document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         renderizarCatalogo();
     }));
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
-
-    // Filtro de tamanho removido — sem botões de tamanho na UI
 
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display='flex'; });

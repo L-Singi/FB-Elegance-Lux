@@ -41,13 +41,14 @@
     <div class="container">
         <div class="filters-section">
             <div class="filter-group">
-                <button class="filter-btn cat-btn active" data-cat="todos">READY TO WEAR</button>
-                <button class="filter-btn cat-btn" data-cat="vestuario">VESTUÁRIO</button>
+                <button class="filter-btn cat-btn active" data-cat="casacos">CASACOS</button>
+                <button class="filter-btn cat-btn" data-cat="camisetas">CAMISETAS</button>
                 <button class="filter-btn cat-btn" data-cat="shorts">SHORTS</button>
                 <button class="filter-btn cat-btn" data-cat="calcados">CALÇADOS</button>
-                <button class="filter-btn cat-btn" data-cat="lifestyle">LIFESTYLE</button>
+                <button class="filter-btn cat-btn" data-cat="acessorios">ACESSÓRIOS</button>
+                <button class="filter-btn cat-btn" data-cat="perfumes">PERFUMES</button>
             </div>
-            <!-- Filtro de tamanhos removido conforme solicitado -->
+            <div class="subfilters" id="subfilters"></div>
             <div class="result-info" id="result-info"></div>
         </div>
 
@@ -96,7 +97,7 @@
 
   <!-- Também precisa manter os campos de add produto ocultos para o script.js existente -->
   <div style="display:none">
-    <input type="text" id="prodNome"><textarea id="prodDesc"></textarea><input type="text" id="prodPreco" value="R$ 0,00"><textarea id="prodImagens"></textarea><input type="file" id="prodImageFiles" accept="image/*" multiple><select id="prodCategoria"><option value="vestuario">Vestuário</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="lifestyle">Lifestyle</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto"></button><div id="adminListaContainer"></div>
+    <input type="text" id="prodNome"><textarea id="prodDesc"></textarea><input type="text" id="prodPreco" value="R$ 0,00"><textarea id="prodImagens"></textarea><input type="file" id="prodImageFiles" accept="image/*" multiple><select id="prodCategoria"><option value="casacos">Casacos</option><option value="camisetas">Camisetas</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="acessorios">Acessórios</option><option value="perfumes">Perfumes</option></select><div id="dynamicFieldsContainer"></div><select id="prodStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option></select><button id="btnAdicionarProduto"></button><div id="adminListaContainer"></div>
   </div>
 
   <style>
@@ -491,10 +492,12 @@
             <input class="adm-sbox" id="adm-s-search" placeholder="Buscar produto..." type="search" autocomplete="off">
             <select class="adm-fsel" id="adm-s-cat">
               <option value="">Todas categorias</option>
-              <option value="vestuario">Vestuário</option>
+              <option value="casacos">Casacos</option>
+              <option value="camisetas">Camisetas</option>
               <option value="shorts">Shorts</option>
               <option value="calcados">Calçados</option>
-              <option value="lifestyle">Lifestyle</option>
+              <option value="acessorios">Acessórios</option>
+              <option value="perfumes">Perfumes</option>
             </select>
             <select class="adm-fsel" id="adm-s-status">
               <option value="">Todos status</option>
@@ -543,10 +546,12 @@
           <div class="adm-fr"><label>Preço</label><input type="text" id="adm-f-preco" placeholder="R$ 0,00" value="R$ 0,00"></div>
           <div class="adm-fr"><label>Categoria</label>
             <select id="adm-f-cat">
-              <option value="vestuario">Vestuário</option>
+              <option value="casacos">Casacos</option>
+              <option value="camisetas">Camisetas</option>
               <option value="shorts">Shorts</option>
               <option value="calcados">Calçados</option>
-              <option value="lifestyle">Lifestyle</option>
+              <option value="acessorios">Acessórios</option>
+              <option value="perfumes">Perfumes</option>
             </select>
           </div>
         </div>
@@ -558,9 +563,10 @@
             <option value="vendido">Vendido</option>
           </select>
         </div>
+        <div class="adm-fr" id="adm-row-marca"><label>Marca</label><select id="adm-f-marca"><option value="">Selecione</option></select></div>
         <div class="adm-fr" id="adm-row-numeracao"><label>Numeração (calçados)</label><input type="text" id="adm-f-numeracao" placeholder="Ex: 38,39,40"></div>
         <div class="adm-fr" id="adm-row-tamanhos">
-          <label>Tamanhos (vestuário/shorts)</label>
+          <label>Tamanhos (casacos/camisetas/shorts)</label>
           <input type="hidden" id="adm-f-tamanhos" placeholder="Ex: S,M,L">
           <div id="adm-f-tamanhos-buttons" class="size-buttons">
             <button type="button" class="size-opt" data-size="XXS">XXS</button>
@@ -634,7 +640,7 @@
         <div class="edit-form-group"><label>Nome</label><input type="text" id="editNome" placeholder="Nome do produto"></div>
         <div class="edit-form-group"><label>Descrição</label><textarea id="editDesc" rows="3" placeholder="Descrição completa"></textarea></div>
         <div class="edit-form-group"><label>Preço (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00"></div>
-        <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="calcados">Calçados</option><option value="vestuario">Vestuário</option><option value="lifestyle">Lifestyle</option><option value="shorts">Shorts</option></select></div>
+        <div class="edit-form-group"><label>Categoria</label><select id="editCategoria"><option value="casacos">Casacos</option><option value="camisetas">Camisetas</option><option value="shorts">Shorts</option><option value="calcados">Calçados</option><option value="acessorios">Acessórios</option><option value="perfumes">Perfumes</option></select></div>
         <div class="edit-form-group" id="editSizeContainer"></div>
         <div class="edit-form-group"><label>Status</label><select id="editStatus"><option value="disponiveis">Disponível</option><option value="lancamentos">Lançamento</option><option value="embreve">Em breve</option><option value="vendido">Vendido</option></select></div>
         <div class="edit-form-group"><label>Imagens atuais</label><div id="editImagesContainer" class="current-images"></div><label>Adicionar novas imagens</label><input type="file" id="editNewImages" accept="image/*" multiple></div>

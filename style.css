@@ -92,6 +92,17 @@ body {
 .filter-btn.active { color: #fff; font-weight: 500; border-bottom: 1px solid #b88b4a; padding-bottom: 4px; }
 .result-info { display: none; }
 
+.subfilters { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-bottom: 18px; }
+.subfilter-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.subfilter-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; color: #777; flex-shrink: 0; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip-btn { background: transparent; border: 1px solid #2a2a2a; color: #ccc; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+.chip-btn:hover { border-color: #b88b4a; color: #fff; }
+.chip-btn.active { background: #b88b4a; color: #000; border-color: #b88b4a; font-weight: 500; }
+.chip-clear { background: none; border: none; color: #777; font-size: 0.7rem; letter-spacing: 0.5px; text-decoration: underline; cursor: pointer; padding: 4px; font-family: inherit; }
+.chip-clear:hover { color: #fff; }
+.product-brand { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: -4px; margin-bottom: 6px; }
+
 /* ========== FILTRO DE TAMANHO ========== */
 .size-filter-group {
     display: flex;
@@ -329,6 +340,10 @@ body {
     .search-header { max-width: 100%; margin: 8px 0; }
     .header-actions { justify-content: center; }
     .filter-group { gap: 12px; }
+    .subfilters { align-items: stretch; }
+    .subfilter-group { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .chip-row { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
+    .chip-btn { flex-shrink: 0; }
     .modal-grid { grid-template-columns: 1fr; }
     .cart-item-img { width: 40px; height: 40px; }
 
