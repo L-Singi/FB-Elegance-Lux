@@ -19,22 +19,18 @@
 <header class="header">
     <div class="container header-inner">
         <div class="logo-area" id="adminTriggerLogo">
-            <img src="logo.png" alt="FB Elegance Lux" class="logo-img">
-            <div class="tagline">Elevando seu estilo de vida ao patamar mais alto. <br><span>Somente produtos originais, Enviamos para todo BR</span></div>
+            <img src="logo.png" alt="FB" class="logo-mark">
+            <span class="logo-line"></span>
+            <span class="logo-word">Elegance Lux</span>
         </div>
         <div class="search-header">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar produto...">
-            </div>
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="Buscar">
         </div>
         <div class="header-actions">
             <a href="https://www.instagram.com/fb.elegancelux/" target="_blank" class="social-icon"><i class="fab fa-instagram"></i></a>
             <a href="https://wa.me/5543996179533" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>
-            <div class="cart-icon" id="cartIcon">
-                <i class="fas fa-shopping-bag"></i>
-                <span class="cart-count" id="cartCount">0</span>
-            </div>
+            <button type="button" class="cart-btn" id="cartIcon">Sacola · <span id="cartCount">0</span></button>
         </div>
     </div>
 </header>
@@ -44,7 +40,7 @@
         <div class="hero-copy">
             <div class="hero-eyebrow">Coleção 2026 · Importados</div>
             <h1 class="hero-title">Streetwear<br>importado,<br><em>sem réplica.</em></h1>
-            <p class="hero-desc">Off-White, Diesel, AllSaints e outras — peças conferidas uma a uma, com procedência garantida e envio para todo o Brasil.</p>
+            <p class="hero-desc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com procedência garantida e envio para todo o Brasil.</p>
             <div class="hero-actions">
                 <a href="#product-grid" class="hero-btn hero-btn-primary">Ver acervo</a>
                 <a href="https://wa.me/5543996179533" target="_blank" class="hero-btn hero-btn-ghost">WhatsApp</a>
@@ -52,6 +48,10 @@
         </div>
         <div class="hero-media">
             <img class="hero-img" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG" alt="FB Elegance Lux">
+            <div class="hero-tag">
+                <div class="hero-tag-eyebrow">Peça do drop</div>
+                <div class="hero-tag-title">Moletom Off-White</div>
+            </div>
         </div>
     </div>
 </section>
@@ -65,14 +65,17 @@
 <main>
     <div class="container">
         <div class="filters-section">
-            <div class="filter-menu-wrap">
-                <button type="button" class="filter-menu-toggle" id="filterMenuToggle">
-                    <i class="fas fa-sliders-h"></i>
-                    <span id="filterMenuLabel">Casacos</span>
-                    <i class="fas fa-chevron-down filter-menu-chevron"></i>
-                    <span class="filter-menu-badge" id="filterMenuBadge" style="display:none">0</span>
-                </button>
-                <div class="filter-menu-panel" id="filterMenuPanel"></div>
+            <div class="grid-header">
+                <h2 id="filterMenuLabel">Casacos</h2>
+                <div class="filter-menu-wrap">
+                    <button type="button" class="filter-menu-toggle" id="filterMenuToggle">
+                        <i class="fas fa-sliders-h"></i>
+                        Filtros
+                        <i class="fas fa-chevron-down filter-menu-chevron"></i>
+                        <span class="filter-menu-badge" id="filterMenuBadge" style="display:none">0</span>
+                    </button>
+                    <div class="filter-menu-panel" id="filterMenuPanel"></div>
+                </div>
             </div>
             <div class="result-info" id="result-info"></div>
         </div>
@@ -80,37 +83,41 @@
         <div class="product-grid" id="product-grid"></div>
 
         <div class="curated-section" id="lancamentosSection" style="display: none;">
-            <h2 class="curated-title">✦ LANÇAMENTOS ✦</h2>
+            <div class="grid-header"><h2>Lançamentos</h2><span class="grid-header-label">Recém chegados</span></div>
             <div class="curated-grid" id="lancamentosGrid"></div>
         </div>
 
         <div class="curated-section" id="procuradosSection" style="display: none;">
-            <h2 class="curated-title">✦ MAIS PROCURADOS ✦</h2>
+            <div class="grid-header"><h2>Mais procurados</h2><span class="grid-header-label">Reposição semanal</span></div>
             <div class="curated-grid" id="procuradosGrid"></div>
         </div>
     </div>
 
     <div class="feature-section">
         <div class="container feature-grid">
-            <div class="feature-item"><div class="feature-icon"><i class="fas fa-check-circle"></i></div><div class="feature-title">100% ORIGINAL</div><div class="feature-desc">Peças autênticas com procedência garantida</div></div>
-            <div class="feature-item"><div class="feature-icon"><i class="fas fa-truck"></i></div><div class="feature-title">ENTREGA NACIONAL</div><div class="feature-desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div></div>
-            <div class="feature-item"><div class="feature-icon"><i class="fab fa-whatsapp"></i></div><div class="feature-title">COMPRA SEGURA</div><div class="feature-desc">Atendimento personalizado e acompanhamento via WhatsApp</div></div>
+            <div class="feature-item feature-item-first"><div class="feature-title">100% Original</div><div class="feature-desc">Peças autênticas com procedência garantida</div></div>
+            <div class="feature-item"><div class="feature-title">Entrega nacional</div><div class="feature-desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div></div>
+            <div class="feature-item"><div class="feature-title">Compra segura</div><div class="feature-desc">Atendimento personalizado e acompanhamento via WhatsApp</div></div>
         </div>
     </div>
 </main>
 
 <footer class="footer">
-    <div class="container">
-        <div class="footer-row"><div class="footer-social"><a href="https://www.instagram.com/fb.elegancelux/" target="_blank"><i class="fab fa-instagram"></i> @fb.elegancelux</a><a href="https://wa.me/5543996179533" target="_blank"><i class="fab fa-whatsapp"></i> (43) 99617-9533</a></div></div>
-        <div class="footer-row">
-            <div class="payment-methods">
-                <span class="payment-item"><i class="fas fa-credit-card"></i> Cartão de Crédito</span>
-                <span class="payment-item"><i class="fas fa-credit-card"></i> Cartão de Débito</span>
-                <span class="payment-item"><i class="fas fa-qrcode"></i> Pix</span>
-                <span class="payment-item"><i class="fas fa-money-bill-wave"></i> Dinheiro</span>
-            </div>
+    <div class="container footer-inner">
+        <span>© 2026 FB Elegance Lux</span>
+        <div class="footer-social">
+            <a href="https://www.instagram.com/fb.elegancelux/" target="_blank">@fb.elegancelux</a>
+            <a href="https://wa.me/5543996179533" target="_blank">(43) 99617-9533</a>
         </div>
-        <div class="copyright">© 2026 FB Elegance Lux. All rights reserved. Developed by <a href="https://www.instagram.com/luccasingi" target="_blank">L.Singi</a></div>
+    </div>
+    <div class="container">
+        <div class="payment-methods">
+            <span class="payment-item"><i class="fas fa-credit-card"></i> Crédito</span>
+            <span class="payment-item"><i class="fas fa-credit-card"></i> Débito</span>
+            <span class="payment-item"><i class="fas fa-qrcode"></i> Pix</span>
+            <span class="payment-item"><i class="fas fa-money-bill-wave"></i> Dinheiro</span>
+        </div>
+        <div class="copyright">Developed by <a href="https://www.instagram.com/luccasingi" target="_blank">L.Singi</a></div>
     </div>
 </footer>
 
@@ -455,6 +462,7 @@
         <div class="adm-n" data-adm-tab="estoque"><i class="ti ti-stack-2"></i><span>Estoque</span></div>
         <div class="adm-sep"></div>
         <div class="adm-n" data-adm-tab="categorias"><i class="ti ti-tag"></i><span>Categorias</span></div>
+        <div class="adm-n" data-adm-tab="site"><i class="ti ti-photo"></i><span>Site</span></div>
         <div class="adm-sep"></div>
         <div class="adm-n adm-n-logout" id="logoutAdminBtn"><i class="ti ti-logout"></i><span>Sair</span></div>
       </div>
@@ -557,6 +565,19 @@
         <!-- CATEGORIAS -->
         <div class="adm-panel" id="adm-tab-categorias">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px" id="adm-cat-cards"></div>
+        </div>
+
+        <!-- SITE -->
+        <div class="adm-panel" id="adm-tab-site">
+          <div class="adm-dc" style="max-width:420px">
+            <div class="adm-dc-title">Foto de capa do site</div>
+            <div class="adm-dc-sub">Aparece no topo da loja, para todos os visitantes</div>
+            <div id="adm-site-preview" style="margin:14px 0;width:100%;aspect-ratio:16/10;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">
+              <img id="adm-site-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+            </div>
+            <input type="file" id="adm-site-cover" accept="image/*" style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;margin-bottom:12px">
+            <button type="button" class="adm-btn-add" id="adm-site-save"><i class="ti ti-check"></i> Salvar capa</button>
+          </div>
         </div>
       </div>
     </div>

@@ -23,6 +23,7 @@
     async function dbInsert(data)    { return apiFetch('POST', '/api/produtos', data); }
     async function dbUpdate(id, data){ return apiFetch('PUT', `/api/produtos/${id}`, data); }
     async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
+    async function dbGetConfig()     { return apiFetch('GET', '/api/config'); }
 
     // Upload de imagem para o servidor
     async function uploadImage(file) {
@@ -252,6 +253,14 @@
         }
     }
 
+    async function carregarCapaDoSite() {
+        try {
+            const cfg = await dbGetConfig();
+            const heroImg = document.querySelector('.hero-img');
+            if (heroImg && cfg && cfg.hero_image) heroImg.src = cfg.hero_image;
+        } catch(err) { console.warn('capa do site: usando imagem padrão', err); }
+    }
+
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
     function renderizarSecoesCuradas() {
         const lancs = produtos.filter(p => p.status === 'lancamentos');
@@ -275,30 +284,28 @@
         card.className = 'product-card';
         const [sLabel, sClass] = STATUS[prod.status] || ['',''];
         const catLabel = CAT_LABEL[prod.categoria] || prod.categoria.toUpperCase();
+        const tagLabel = prod.marca || catLabel;
         const images = prod.images || [];
         const isSold = prod.status === 'vendido';
-        let sizeHtml = '';
-        if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeHtml = `<div class="product-size-info">Tamanhos: ${prod.tamanhos.join(', ')}</div>`;
-        else if (prod.categoria==='calcados' && prod.numeracao) sizeHtml = `<div class="product-size-info">Numeração: ${prod.numeracao}</div>`;
-        const quantHtml = (prod.quantidade!==undefined && prod.quantidade!==null) ? `<div class="product-quantity">Qtd: ${prod.quantidade}</div>` : '';
-        const descHtml = prod.descricao_completa ? `<p class="product-desc-preview">${escapeHtml(prod.descricao_completa)}</p>` : '';
-        const brandHtml = prod.marca ? `<div class="product-brand">${escapeHtml(prod.marca)}</div>` : '';
+        let sizeLabel = '';
+        if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeLabel = prod.tamanhos.join(' · ');
+        else if (prod.categoria==='calcados' && prod.numeracao) sizeLabel = prod.numeracao;
+        const statusHtml = prod.status !== 'disponiveis' ? `<span class="status-badge ${sClass}">${sLabel}</span>` : '';
         card.innerHTML = `
             <div class="product-image-container">
-                <span class="status-badge ${sClass}">${sLabel}</span>
+                <span class="product-tag">${escapeHtml(tagLabel)}</span>
+                ${statusHtml}
                 <img class="product-image" src="${images[0]||'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" onerror="this.src='https://placehold.co/600x800?text=Indisponível'">
                 ${images.length>1 ? `<div class="nav-arrow nav-arrow-left" data-dir="prev"><i class="fas fa-chevron-left"></i></div><div class="nav-arrow nav-arrow-right" data-dir="next"><i class="fas fa-chevron-right"></i></div>` : ''}
+                <button class="btn-details" title="Detalhes"><i class="fas fa-expand-alt"></i></button>
+                <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}>${isSold?'Indisponível':'Adicionar à sacola'}</button>
             </div>
             <div class="product-info">
-                <div class="product-category">${catLabel}</div>
-                ${brandHtml}
-                <h3 class="product-title">${escapeHtml(prod.nome)}</h3>
-                <p class="product-price">${prod.preco}</p>
-                ${descHtml}
-                ${sizeHtml}
-                ${quantHtml}
-                <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}><i class="fas fa-cart-plus"></i> ${isSold?'Indisponível':'Adicionar'}</button>
-                <button class="btn-details"><i class="fas fa-expand-alt"></i> Detalhes</button>
+                <div class="product-info-main">
+                    <h3 class="product-title">${escapeHtml(prod.nome)}</h3>
+                    <div class="product-size-info">${sizeLabel}</div>
+                </div>
+                <div class="product-price">${prod.preco}</div>
             </div>`;
         card.querySelector('.btn-add-cart').addEventListener('click', e => { e.stopPropagation(); isSold ? showToast('❌ Item já vendido', true) : addToCart(prod); });
         card.querySelector('.btn-details').addEventListener('click', e => { e.stopPropagation(); abrirProduto(prod); });
@@ -933,13 +940,14 @@
                 admTab = el.dataset.admTab;
                 document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
                 admEl('adm-tab-'+admTab).classList.add('active');
-                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias'};
+                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site'};
                 admEl('adm-tb-title').textContent = titles[admTab]||admTab;
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
-                admEl('adm-btn-add').style.display = admTab==='categorias'?'none':'flex';
+                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
                 if(admTab==='categorias') admRenderCats();
                 if(admTab==='estoque') admRenderStock();
+                if(admTab==='site') admRenderSite();
             });
         });
 
@@ -1299,6 +1307,38 @@
             </div>`;
         }).join('');
     }
+
+    let admSiteNewFile = null;
+    async function admRenderSite() {
+        const img = admEl('adm-site-preview-img');
+        try {
+            const cfg = await dbGetConfig();
+            if (cfg && cfg.hero_image) { img.src = cfg.hero_image; img.style.display = 'block'; }
+            else { img.style.display = 'none'; }
+        } catch(e) { img.style.display = 'none'; }
+    }
+    admEl('adm-site-cover').addEventListener('change', () => {
+        const f = admEl('adm-site-cover').files[0];
+        admSiteNewFile = f || null;
+        if (f) {
+            const img = admEl('adm-site-preview-img');
+            img.src = URL.createObjectURL(f);
+            img.style.display = 'block';
+        }
+    });
+    admEl('adm-site-save').addEventListener('click', async () => {
+        if (!admSiteNewFile) { admToast('Escolha uma imagem primeiro'); return; }
+        const fd = new FormData();
+        fd.append('hero_image', admSiteNewFile);
+        try {
+            await apiFetch('PUT', '/api/config', fd);
+            admToast('Capa do site atualizada');
+            admSiteNewFile = null;
+            admEl('adm-site-cover').value = '';
+            carregarCapaDoSite();
+        } catch(e) { admToast('Erro: ' + e.message); }
+    });
+
     document.getElementById('filterMenuToggle').addEventListener('click', (e) => {
         e.stopPropagation();
         filterMenuOpen = !filterMenuOpen;
@@ -1332,5 +1372,6 @@
     bindPreco(document.getElementById('adm-f-preco'));
     bindPreco(document.getElementById('editPreco'));
     carregarProdutos();
+    carregarCapaDoSite();
     updateCartUI();
 })();
