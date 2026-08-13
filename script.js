@@ -47,6 +47,17 @@
     let adminVisible = false;
     let currentEditId = null;
 
+    let filterMenuOpen = false;
+
+    const CATS = [
+        { value: "casacos", label: "Casacos" },
+        { value: "camisetas", label: "Camisetas" },
+        { value: "shorts", label: "Shorts" },
+        { value: "calcados", label: "Calçados" },
+        { value: "acessorios", label: "Acessórios" },
+        { value: "perfumes", label: "Perfumes" }
+    ];
+
     // Categorias que usam grade de tamanhos (P/M/G) vs. numeração (calçados) vs. nenhuma (acessórios/perfumes)
     const TAMANHO_CATS = ['casacos','camisetas','shorts'];
     const SIZES = ['XXS','XS','S','M','L','XL','XXL'];
@@ -133,7 +144,7 @@
     const toastMsg = document.getElementById('toastMessage');
     function showToast(msg, isError) {
         toastMsg.innerText = msg;
-        toast.style.borderLeftColor = isError ? '#c0392b' : '#b88b4a';
+        toast.style.borderLeftColor = isError ? '#c0392b' : '#B8924F';
         toast.querySelector('i').className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
         toast.classList.add('show');
         setTimeout(() => toast.classList.remove('show'), 3500);
@@ -330,41 +341,64 @@
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
-        renderizarSubFiltros();
+        renderizarFiltroMenu();
     }
 
-    // ─── SUBFILTROS: tamanho / número / marca ─────────────────────────────────
-    function subfilterGroup(label, options, ativos, group) {
-        return `<div class="subfilter-group">
+    // ─── MENU DE FILTROS: peça / tamanho / número / marca ─────────────────────
+    function filtroMenuGroup(label, options, ativos, group) {
+        return `<div class="filter-menu-section">
             <span class="subfilter-label">${label}</span>
             <div class="chip-row">${options.map(o => `<button type="button" class="chip-btn${ativos.includes(o)?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('')}</div>
         </div>`;
     }
-    function renderizarSubFiltros() {
-        const wrap = document.getElementById('subfilters');
-        if (!wrap) return;
-        let html = '';
+    function renderizarFiltroMenu() {
+        const label = document.getElementById('filterMenuLabel');
+        const panel = document.getElementById('filterMenuPanel');
+        const badge = document.getElementById('filterMenuBadge');
+        if (!label || !panel) return;
+
+        const catObj = CATS.find(c => c.value === filtroCategoria);
+        label.textContent = catObj ? catObj.label : filtroCategoria;
+
+        const activeCount = filtroTamanho.length + filtroNumero.length + filtroMarca.length;
+        if (activeCount) { badge.style.display = 'inline-flex'; badge.textContent = activeCount; }
+        else { badge.style.display = 'none'; }
+
+        let html = `<div class="filter-menu-section">
+            <span class="subfilter-label">Peça</span>
+            <div class="chip-row">${CATS.map(c => `<button type="button" class="chip-btn${c.value===filtroCategoria?' active':''}" data-menu-cat="${c.value}">${c.label}</button>`).join('')}</div>
+        </div>`;
+
         if (TAMANHO_CATS.includes(filtroCategoria)) {
-            html += subfilterGroup('Tamanho', SIZES, filtroTamanho, 'tamanho');
+            html += filtroMenuGroup('Tamanho', SIZES, filtroTamanho, 'tamanho');
         } else if (filtroCategoria === 'calcados') {
-            html += subfilterGroup('Número', NUMEROS, filtroNumero, 'numero');
+            html += filtroMenuGroup('Número', NUMEROS, filtroNumero, 'numero');
         }
         if (BRANDS_BY_CAT[filtroCategoria]) {
-            html += subfilterGroup('Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
+            html += filtroMenuGroup('Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
         }
-        if (filtroTamanho.length || filtroNumero.length || filtroMarca.length) {
-            html += `<button type="button" class="chip-clear" id="chipClearBtn">Limpar filtros</button>`;
+        if (activeCount) {
+            html += `<button type="button" class="chip-clear" id="filterMenuClear">Limpar filtros</button>`;
         }
-        wrap.innerHTML = html;
-        wrap.querySelectorAll('.chip-btn').forEach(btn => btn.addEventListener('click', () => {
+        panel.innerHTML = html;
+
+        panel.querySelectorAll('[data-menu-cat]').forEach(btn => btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filtroCategoria = btn.dataset.menuCat;
+            filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+            renderizarCatalogo();
+        }));
+        panel.querySelectorAll('[data-group]').forEach(btn => btn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const group = btn.dataset.group, val = btn.dataset.val;
             const arr = group==='tamanho' ? filtroTamanho : group==='numero' ? filtroNumero : filtroMarca;
             const idx = arr.indexOf(val);
             if (idx===-1) arr.push(val); else arr.splice(idx,1);
             renderizarCatalogo();
         }));
-        const clearBtn = document.getElementById('chipClearBtn');
-        if (clearBtn) clearBtn.addEventListener('click', () => {
+        const clearBtn = document.getElementById('filterMenuClear');
+        if (clearBtn) clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             filtroTamanho = []; filtroNumero = []; filtroMarca = [];
             renderizarCatalogo();
         });
@@ -595,7 +629,7 @@
             div.innerHTML = `
                 <div class="admin-item-info">
                     <strong>${escapeHtml(prod.nome)}</strong>
-                    <span style="color:#b88b4a">${prod.categoria.toUpperCase()}</span>
+                    <span style="color:#B8924F">${prod.categoria.toUpperCase()}</span>
                     <span>${prod.preco}</span>
                     <span style="font-size:.7rem">📷 ${(prod.images||[]).length}</span>
                     <span style="font-size:.7rem">${ST[prod.status]||prod.status}</span>
@@ -826,7 +860,7 @@
 
     const ADM_CATS = {casacos:'Casacos',camisetas:'Camisetas',shorts:'Shorts',calcados:'Calçados',acessorios:'Acessórios',perfumes:'Perfumes'};
     const ADM_ICONS = {casacos:'ti-hanger',camisetas:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',acessorios:'ti-diamond',perfumes:'ti-spray'};
-    const ADM_COLORS = ['#b88b4a','#7a5c2e','#d4a85a','#c8a87a','#8f6a35','#e0c48a'];
+    const ADM_COLORS = ['#B8924F','#7a5c2e','#d4a85a','#c8a87a','#8f6a35','#e0c48a'];
     const ADM_STATUS_OPTS = {disponiveis:'Disponível',lancamentos:'Lançamento',vendido:'Vendido',embreve:'Em breve'};
     const ADM_STATUS_CLS = {disponiveis:'adm-p-disp',lancamentos:'adm-p-lanc',vendido:'adm-p-vend',embreve:'adm-p-brev'};
 
@@ -1139,11 +1173,11 @@
             <div class="adm-fsub">${x.vend} vendidos · ${x.total?Math.round(x.vend/x.total*100):0}%</div>
         </div>`).join('');
 
-        admEl('adm-dash-tbl').innerHTML=cd.map(x=>`<tr><td>${x.label}</td><td>${x.total}</td><td class="adm-td-g">${x.total-x.vend}</td><td style="color:#b88b4a;font-weight:500">${x.vend}</td></tr>`).join('');
+        admEl('adm-dash-tbl').innerHTML=cd.map(x=>`<tr><td>${x.label}</td><td>${x.total}</td><td class="adm-td-g">${x.total-x.vend}</td><td style="color:#B8924F;font-weight:500">${x.vend}</td></tr>`).join('');
 
         const rec5=[...all].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
         admEl('adm-dash-act').innerHTML=rec5.length?rec5.map(p=>`<div class="adm-ai">
-            <div class="adm-ai-ic"><i class="ti ${ADM_ICONS[p.categoria]||'ti-box'}" style="font-size:14px;color:#b88b4a"></i></div>
+            <div class="adm-ai-ic"><i class="ti ${ADM_ICONS[p.categoria]||'ti-box'}" style="font-size:14px;color:#B8924F"></i></div>
             <div class="adm-ai-body"><div class="adm-ai-name">${admEsc(p.nome)}</div><div class="adm-ai-time">${admRt(p.created_at)} · ${ADM_CATS[p.categoria]||p.categoria}</div></div>
             <div class="adm-ai-price">${p.preco||'—'}</div>
         </div>`).join(''):'<div style="color:#555;font-size:12px;padding:8px 0">Nenhum produto neste período</div>';
@@ -1179,7 +1213,7 @@
                 <td>
                     <div style="display:flex;align-items:center;gap:8px">
                         <div style="width:26px;height:26px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <i class="ti ${icon}" style="font-size:13px;color:#b88b4a"></i>
+                            <i class="ti ${icon}" style="font-size:13px;color:#B8924F"></i>
                         </div>
                         <div style="min-width:0">
                             <div style="font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${admEsc(p.nome)}</div>
@@ -1188,7 +1222,7 @@
                     </div>
                 </td>
                 <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span>${p.marca?`<div style="font-size:10px;color:#555;margin-top:2px">${admEsc(p.marca)}</div>`:''}</td>
-                <td style="font-weight:500;color:#b88b4a">${p.preco||'—'}</td>
+                <td style="font-weight:500;color:#B8924F">${p.preco||'—'}</td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="adm-pill ${sCls}">${sLbl}</span>
@@ -1253,11 +1287,11 @@
             const rec=vd.reduce((s,p)=>s+admPn(p.preco),0);
             return `<div class="adm-dc" style="cursor:pointer" onclick="document.querySelector('[data-adm-tab=estoque]').click();document.getElementById('adm-s-cat').value='${cat}';document.getElementById('adm-s-cat').dispatchEvent(new Event('change'))">
                 <div style="display:flex;align-items:center;gap:9px;margin-bottom:11px">
-                    <div style="width:34px;height:34px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center"><i class="ti ${ADM_ICONS[cat]}" style="font-size:17px;color:#b88b4a"></i></div>
+                    <div style="width:34px;height:34px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center"><i class="ti ${ADM_ICONS[cat]}" style="font-size:17px;color:#B8924F"></i></div>
                     <div><div style="font-weight:500;font-size:13px;color:#fff">${ADM_CATS[cat]}</div><div style="font-size:11px;color:#555">${list.length} produtos</div></div>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-                    <span style="color:#555">Receita</span><span style="color:#b88b4a;font-weight:500">${admFR(rec)}</span>
+                    <span style="color:#555">Receita</span><span style="color:#B8924F;font-weight:500">${admFR(rec)}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;font-size:11px">
                     <span style="color:#555">Vendidos</span><span style="color:#ccc">${vd.length} de ${list.length}</span>
@@ -1265,13 +1299,24 @@
             </div>`;
         }).join('');
     }
-    document.querySelectorAll('.cat-btn').forEach(btn => btn.addEventListener('click', () => {
-        filtroCategoria = btn.dataset.cat;
-        filtroTamanho = []; filtroNumero = []; filtroMarca = [];
-        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        renderizarCatalogo();
-    }));
+    document.getElementById('filterMenuToggle').addEventListener('click', (e) => {
+        e.stopPropagation();
+        filterMenuOpen = !filterMenuOpen;
+        document.getElementById('filterMenuPanel').classList.toggle('open', filterMenuOpen);
+        document.getElementById('filterMenuToggle').classList.toggle('open', filterMenuOpen);
+    });
+    // Impede que cliques dentro do painel (mesmo após o innerHTML ser reconstruído
+    // por renderizarFiltroMenu) borbulhem até o listener de "clique fora" abaixo.
+    document.getElementById('filterMenuPanel').addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', (e) => {
+        if (!filterMenuOpen) return;
+        const wrap = document.querySelector('.filter-menu-wrap');
+        if (wrap && !wrap.contains(e.target)) {
+            filterMenuOpen = false;
+            document.getElementById('filterMenuPanel').classList.remove('open');
+            document.getElementById('filterMenuToggle').classList.remove('open');
+        }
+    });
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
 
     const cartModal = document.getElementById('cartModal');
