@@ -121,8 +121,8 @@ body {
 .header-inner { height: 84px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; transition: height 0.25s ease; }
 .header.shrink .header-inner { height: 62px; }
 .logo-area { display: flex; align-items: center; gap: 13px; cursor: pointer; }
-.logo-mark { height: 44px; width: auto; display: block; filter: brightness(1.1); transition: height 0.25s ease; }
-.header.shrink .logo-mark { height: 34px; }
+.logo-mark { height: 62px; width: auto; display: block; filter: brightness(1.1); transition: height 0.25s ease; }
+.header.shrink .logo-mark { height: 46px; }
 .logo-word { font-size: 0.72rem; letter-spacing: 0.34em; text-transform: uppercase; color: #B4AEA4; white-space: nowrap; }
 
 /* Search na header */
