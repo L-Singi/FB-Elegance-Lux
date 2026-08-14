@@ -28,16 +28,14 @@ body {
     border-bottom: 1px solid rgba(242,239,233,.08);
 }
 .hero-inner {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 0 32px;
+    width: 100%;
     display: grid;
     grid-template-columns: 1fr 1.1fr;
     gap: 60px;
     align-items: center;
     min-height: 560px;
 }
-.hero-copy { padding: 64px 0; min-width: 0; }
+.hero-copy { padding: 64px 0 64px clamp(24px, 5vw, 88px); min-width: 0; }
 .hero-eyebrow {
     font-size: 0.68rem;
     letter-spacing: 0.3em;
@@ -89,24 +87,35 @@ body {
 .hero-tag-eyebrow { font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: #8E8880; }
 .hero-tag-title { font-family: 'Bodoni Moda', serif; font-size: 1.25rem; margin-top: 5px; color: #F2EFE9; }
 
-/* ========== FAIXA DE MARCAS ========== */
-.brand-wall {
+/* ========== ABAS DE CATEGORIA (abaixo do banner) ========== */
+.cat-tabs {
     border-bottom: 1px solid rgba(242,239,233,.08);
     overflow: hidden;
 }
-.brand-wall-inner {
+.cat-tabs-inner {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 22px 32px;
+    padding: 0 32px;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
-    gap: 20px 32px;
-    font-family: 'Bodoni Moda', serif;
-    font-size: 1.1rem;
-    color: #6E6960;
-    letter-spacing: 0.05em;
+    gap: 8px 36px;
 }
+.cat-tab {
+    background: none;
+    border: none;
+    padding: 20px 0;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8E8880;
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s;
+}
+.cat-tab:hover { color: #F2EFE9; }
+.cat-tab.active { color: #F2EFE9; border-bottom-color: #B8924F; }
 
 /* ========== HEADER ========== */
 .header {
@@ -345,6 +354,23 @@ body {
 .product-grid, .curated-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; margin: 0 0 40px; }
 .curated-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
 .curated-section { margin: 76px 0 0; }
+
+/* ========== VITRINE DE CATEGORIAS ========== */
+.cat-showcase { margin: 76px 0 0; }
+.cat-showcase-grid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 16px; }
+.cat-tile { position: relative; background: none; border: none; padding: 0; cursor: pointer; overflow: hidden; aspect-ratio: 3/4; }
+.cat-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.4s; }
+.cat-tile:hover img { transform: scale(1.05); }
+.cat-tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(10,10,11,.85), transparent 55%); }
+.cat-tile-label {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    z-index: 2;
+    font-family: 'Bodoni Moda', serif;
+    font-size: 1.1rem;
+    color: #F2EFE9;
+}
 
 .product-card { background-color: #141416; border-radius: 0; overflow: visible; transition: transform 0.3s; cursor: pointer; }
 .product-card:hover { transform: translateY(-2px); }
@@ -597,7 +623,10 @@ body {
     .hero-tag-title { font-size: 1.05rem; }
     .hero-actions { flex-direction: column; }
     .hero-btn { text-align: center; }
-    .brand-wall-inner { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; gap: 28px; font-size: 0.9rem; padding: 16px; }
+    .cat-tabs-inner { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; gap: 24px; padding: 0 16px; }
+    .cat-tab { flex-shrink: 0; padding: 16px 0; }
+    .cat-showcase-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .cat-tile-label { font-size: 0.9rem; left: 10px; bottom: 10px; }
     .subfilters { align-items: stretch; }
     .subfilter-group { flex-direction: column; align-items: flex-start; gap: 6px; }
     .chip-row { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px; }
@@ -1071,9 +1100,11 @@ body {
 /* Tablet: sidebar vira drawer, grade em 3 colunas sem sidebar ocupando espaço */
 @media (min-width: 861px) and (max-width: 1100px) {
     .curated-grid { grid-template-columns: repeat(3, 1fr); }
+    .cat-showcase-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
 }
 @media (min-width: 769px) and (max-width: 860px) {
     .product-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .cat-showcase-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
 }
 
 /* Sidebar de filtros vira menu lateral (drawer) abaixo de 860px */

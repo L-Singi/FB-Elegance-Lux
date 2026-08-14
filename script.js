@@ -262,9 +262,12 @@
         }
     }
 
+    let siteConfig = {};
     async function carregarCapaDoSite() {
         try {
             const cfg = await dbGetConfig();
+            siteConfig = cfg || {};
+            renderizarCatShowcase(siteConfig);
             if (!cfg) return;
             const heroImg = document.querySelector('.hero-img');
             if (heroImg && cfg.hero_image) heroImg.src = cfg.hero_image;
@@ -276,7 +279,7 @@
             setText('heroDesc', cfg.hero_desc);
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
-        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); }
+        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
     }
 
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
@@ -382,6 +385,41 @@
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
         renderizarFiltroMenu();
+        renderizarCatTabs();
+    }
+
+    function mudarCategoria(cat) {
+        filtroCategoria = cat;
+        filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+        renderizarCatalogo();
+        const grid = document.getElementById('product-grid');
+        if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ─── ABAS DE CATEGORIA (abaixo do banner) ──────────────────────────────────
+    function renderizarCatTabs() {
+        const wrap = document.getElementById('catTabsInner');
+        if (!wrap) return;
+        wrap.innerHTML = CATS.map(c => `<button type="button" class="cat-tab${c.value===filtroCategoria?' active':''}" data-cat-tab="${c.value}">${c.label}</button>`).join('');
+        wrap.querySelectorAll('[data-cat-tab]').forEach(btn => btn.addEventListener('click', () => mudarCategoria(btn.dataset.catTab)));
+    }
+
+    // ─── VITRINE DE CATEGORIAS (abaixo de Mais procurados) ─────────────────────
+    const CAT_IMAGE_FIELDS = {
+        casacos: 'cat_img_casacos', camisetas: 'cat_img_camisetas', shorts: 'cat_img_shorts',
+        calcados: 'cat_img_calcados', acessorios: 'cat_img_acessorios', perfumes: 'cat_img_perfumes'
+    };
+    function renderizarCatShowcase(cfg) {
+        const grid = document.getElementById('catShowcaseGrid');
+        if (!grid) return;
+        grid.innerHTML = CATS.map(c => {
+            const img = (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]) || `https://placehold.co/500x650?text=${encodeURIComponent(c.label)}`;
+            return `<button type="button" class="cat-tile" data-cat-tile="${c.value}">
+                <img src="${img}" alt="${escapeHtml(c.label)}">
+                <span class="cat-tile-label">${c.label}</span>
+            </button>`;
+        }).join('');
+        grid.querySelectorAll('[data-cat-tile]').forEach(btn => btn.addEventListener('click', () => mudarCategoria(btn.dataset.catTile)));
     }
 
     // ─── SIDEBAR DE FILTROS: peça / tamanho / número / marca ──────────────────
@@ -412,10 +450,7 @@
         if (activeCount) { badge.style.display = 'inline-flex'; badge.textContent = activeCount; }
         else { badge.style.display = 'none'; }
 
-        let html = `<div class="plp-group${sidebarGroupsOpen.peca!==false?' open':''}">
-            <div class="plp-group-head" data-toggle-group="peca">Peça<i class="fas fa-chevron-down"></i></div>
-            <div class="plp-group-body">${CATS.map(c => `<button type="button" class="plp-option${c.value===filtroCategoria?' active':''}" data-menu-cat="${c.value}"><span class="plp-option-box">${c.value===filtroCategoria?'<i class="fas fa-check"></i>':''}</span>${c.label}</button>`).join('')}</div>
-        </div>`;
+        let html = '';
 
         if (TAMANHO_CATS.includes(filtroCategoria)) {
             html += sidebarGroup('tamanho', 'Tamanho', SIZES, filtroTamanho, 'tamanho');
@@ -435,12 +470,6 @@
             const key = head.dataset.toggleGroup;
             sidebarGroupsOpen[key] = !(sidebarGroupsOpen[key] !== false);
             head.closest('.plp-group').classList.toggle('open', sidebarGroupsOpen[key]);
-        }));
-        panel.querySelectorAll('[data-menu-cat]').forEach(btn => btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            filtroCategoria = btn.dataset.menuCat;
-            filtroTamanho = []; filtroNumero = []; filtroMarca = [];
-            renderizarCatalogo();
         }));
         panel.querySelectorAll('[data-group]').forEach(btn => btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1356,6 +1385,7 @@
     }
 
     let admSiteNewFile = null;
+    let admCatNewFiles = {};
     async function admRenderSite() {
         const img = admEl('adm-site-preview-img');
         try {
@@ -1369,6 +1399,30 @@
             admEl('adm-site-desc').value = cfg?.hero_desc || '';
             admEl('adm-site-tag-eyebrow').value = cfg?.hero_tag_eyebrow || '';
             admEl('adm-site-tag-title').value = cfg?.hero_tag_title || '';
+
+            admCatNewFiles = {};
+            const catsWrap = admEl('adm-site-cats');
+            catsWrap.innerHTML = CATS.map(c => {
+                const field = CAT_IMAGE_FIELDS[c.value];
+                const url = cfg && cfg[field];
+                return `<div>
+                    <div style="width:100%;aspect-ratio:3/4;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin-bottom:6px">
+                        <img data-cat-preview="${c.value}" src="${url||''}" style="width:100%;height:100%;object-fit:cover;display:${url?'block':'none'}">
+                    </div>
+                    <div style="font-size:11px;color:#aaa;margin-bottom:4px">${c.label}</div>
+                    <input type="file" accept="image/*" data-cat-input="${c.value}" style="width:100%;font-size:10px;color:#eaeaea">
+                </div>`;
+            }).join('');
+            catsWrap.querySelectorAll('[data-cat-input]').forEach(inp => inp.addEventListener('change', () => {
+                const cat = inp.dataset.catInput;
+                const f = inp.files[0];
+                admCatNewFiles[cat] = f || null;
+                if (f) {
+                    const prev = catsWrap.querySelector(`[data-cat-preview="${cat}"]`);
+                    prev.src = URL.createObjectURL(f);
+                    prev.style.display = 'block';
+                }
+            }));
         } catch(e) { img.style.display = 'none'; }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -1390,10 +1444,15 @@
         fd.append('hero_desc', admEl('adm-site-desc').value.trim());
         fd.append('hero_tag_eyebrow', admEl('adm-site-tag-eyebrow').value.trim());
         fd.append('hero_tag_title', admEl('adm-site-tag-title').value.trim());
+        CATS.forEach(c => {
+            const f = admCatNewFiles[c.value];
+            if (f) fd.append(CAT_IMAGE_FIELDS[c.value], f);
+        });
         try {
             await apiFetch('PUT', '/api/config', fd);
             admToast('Capa do site atualizada');
             admSiteNewFile = null;
+            admCatNewFiles = {};
             admEl('adm-site-cover').value = '';
             carregarCapaDoSite();
         } catch(e) { admToast('Erro: ' + e.message); }

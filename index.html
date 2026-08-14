@@ -48,10 +48,6 @@
             id="heroTitle3">sem réplica.</em></h1>
         <p class="hero-desc" id="heroDesc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com
           procedência garantida e envio para todo o Brasil.</p>
-        <div class="hero-actions">
-          <a href="#product-grid" class="hero-btn hero-btn-primary">Ver acervo</a>
-          <a href="https://wa.me/5543996179533" target="_blank" class="hero-btn hero-btn-ghost">WhatsApp</a>
-        </div>
       </div>
       <div class="hero-media">
         <img class="hero-img" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG"
@@ -64,11 +60,8 @@
     </div>
   </section>
 
-  <div class="brand-wall">
-    <div class="brand-wall-inner">
-      <span>OFF-WHITE</span><span>MONCLER</span><span>GOLDEN
-        GOOSE</span><span>DIESEL</span><span>ALLSAINTS</span><span>RALPH LAUREN</span>
-    </div>
+  <div class="cat-tabs">
+    <div class="cat-tabs-inner" id="catTabsInner"></div>
   </div>
 
   <main>
@@ -119,6 +112,11 @@
           <h2>Mais procurados</h2><span class="grid-header-label">Reposição semanal</span>
         </div>
         <div class="curated-grid" id="procuradosGrid"></div>
+      </div>
+
+      <div class="cat-showcase">
+        <div class="grid-header"><h2>Categorias</h2></div>
+        <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
       </div>
     </div>
 
@@ -1482,6 +1480,12 @@
                   placeholder="Ex: Peça do drop"></div>
               <div class="adm-fr"><label>Título da foto</label><input type="text" id="adm-site-tag-title"
                   placeholder="Ex: Moletom Off-White"></div>
+            </div>
+
+            <div class="adm-dc" style="max-width:420px;margin-top:16px">
+              <div class="adm-dc-title">Imagens das categorias</div>
+              <div class="adm-dc-sub">Usadas na vitrine de categorias, na página inicial</div>
+              <div id="adm-site-cats" style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px"></div>
             </div>
 
             <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i
