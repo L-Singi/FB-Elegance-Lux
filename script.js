@@ -186,6 +186,15 @@
         el.setSelectionRange(len, len);
     }
 
+    // ─── FAVORITOS ────────────────────────────────────────────────────────────
+    let favoritos = JSON.parse(localStorage.getItem('fb_favoritos') || '[]');
+    function toggleFavorito(id) {
+        const idx = favoritos.indexOf(id);
+        if (idx === -1) favoritos.push(id); else favoritos.splice(idx, 1);
+        localStorage.setItem('fb_favoritos', JSON.stringify(favoritos));
+        return favoritos.includes(id);
+    }
+
     // ─── CARRINHO ─────────────────────────────────────────────────────────────
     let cart = JSON.parse(localStorage.getItem('fb_cart') || '[]');
 
@@ -256,9 +265,18 @@
     async function carregarCapaDoSite() {
         try {
             const cfg = await dbGetConfig();
+            if (!cfg) return;
             const heroImg = document.querySelector('.hero-img');
-            if (heroImg && cfg && cfg.hero_image) heroImg.src = cfg.hero_image;
-        } catch(err) { console.warn('capa do site: usando imagem padrão', err); }
+            if (heroImg && cfg.hero_image) heroImg.src = cfg.hero_image;
+            const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+            setText('heroEyebrow', cfg.hero_eyebrow);
+            setText('heroTitle1', cfg.hero_title1);
+            setText('heroTitle2', cfg.hero_title2);
+            setText('heroTitle3', cfg.hero_title3);
+            setText('heroDesc', cfg.hero_desc);
+            setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
+            setText('heroTagTitle', cfg.hero_tag_title);
+        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); }
     }
 
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
@@ -287,6 +305,7 @@
         const tagLabel = prod.marca || catLabel;
         const images = prod.images || [];
         const isSold = prod.status === 'vendido';
+        const isFav = favoritos.includes(prod.id);
         let sizeLabel = '';
         if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeLabel = prod.tamanhos.join(' · ');
         else if (prod.categoria==='calcados' && prod.numeracao) sizeLabel = prod.numeracao;
@@ -297,7 +316,7 @@
                 ${statusHtml}
                 <img class="product-image" src="${images[0]||'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" onerror="this.src='https://placehold.co/600x800?text=Indisponível'">
                 ${images.length>1 ? `<div class="nav-arrow nav-arrow-left" data-dir="prev"><i class="fas fa-chevron-left"></i></div><div class="nav-arrow nav-arrow-right" data-dir="next"><i class="fas fa-chevron-right"></i></div>` : ''}
-                <button class="btn-details" title="Detalhes"><i class="fas fa-expand-alt"></i></button>
+                <button class="btn-favorite${isFav?' active':''}" title="Favoritar"><i class="${isFav?'fas':'far'} fa-heart"></i></button>
                 <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}>${isSold?'Indisponível':'Adicionar à sacola'}</button>
             </div>
             <div class="product-info">
@@ -308,9 +327,15 @@
                 <div class="product-price">${prod.preco}</div>
             </div>`;
         card.querySelector('.btn-add-cart').addEventListener('click', e => { e.stopPropagation(); isSold ? showToast('❌ Item já vendido', true) : addToCart(prod); });
-        card.querySelector('.btn-details').addEventListener('click', e => { e.stopPropagation(); abrirProduto(prod); });
+        card.querySelector('.btn-favorite').addEventListener('click', e => {
+            e.stopPropagation();
+            const btn = e.currentTarget;
+            const fav = toggleFavorito(prod.id);
+            btn.classList.toggle('active', fav);
+            btn.querySelector('i').className = fav ? 'fas fa-heart' : 'far fa-heart';
+        });
         card.querySelectorAll('.nav-arrow').forEach(a => a.addEventListener('click', e => { e.stopPropagation(); trocarImagem(prod, a.dataset.dir, card); }));
-        card.addEventListener('click', e => { if (!e.target.closest('.btn-add-cart,.btn-details,.nav-arrow')) abrirProduto(prod); });
+        card.addEventListener('click', e => { if (!e.target.closest('.btn-add-cart,.btn-favorite,.nav-arrow')) abrirProduto(prod); });
         return card;
     }
 
@@ -328,6 +353,7 @@
     }
 
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
+    let ordenacao = 'newest';
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
         let f = produtos.filter(p => p.categoria===filtroCategoria);
@@ -344,51 +370,72 @@
         if (BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
             f = f.filter(p => filtroMarca.includes(p.marca));
         }
+        if (ordenacao==='preco_asc') f.sort((a,b) => precoNum(a.preco)-precoNum(b.preco));
+        else if (ordenacao==='preco_desc') f.sort((a,b) => precoNum(b.preco)-precoNum(a.preco));
+        else f.sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
+
+        const countEl = document.getElementById('plpCount');
+        if (countEl) countEl.textContent = `(${f.length})`;
+
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
         renderizarFiltroMenu();
     }
 
-    // ─── MENU DE FILTROS: peça / tamanho / número / marca ─────────────────────
-    function filtroMenuGroup(label, options, ativos, group) {
-        return `<div class="filter-menu-section">
-            <span class="subfilter-label">${label}</span>
-            <div class="chip-row">${options.map(o => `<button type="button" class="chip-btn${ativos.includes(o)?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('')}</div>
+    // ─── SIDEBAR DE FILTROS: peça / tamanho / número / marca ──────────────────
+    let sidebarGroupsOpen = { peca: true, tamanho: true, marca: true };
+    function sidebarGroup(key, label, options, ativos, group) {
+        const open = sidebarGroupsOpen[key] !== false;
+        return `<div class="plp-group${open?' open':''}">
+            <div class="plp-group-head" data-toggle-group="${key}">${label}<i class="fas fa-chevron-down"></i></div>
+            <div class="plp-group-body">${options.map(o => {
+                const active = ativos.includes(o);
+                return `<button type="button" class="plp-option${active?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}"><span class="plp-option-box">${active?'<i class="fas fa-check"></i>':''}</span>${escapeHtml(o)}</button>`;
+            }).join('')}</div>
         </div>`;
     }
     function renderizarFiltroMenu() {
         const label = document.getElementById('filterMenuLabel');
-        const panel = document.getElementById('filterMenuPanel');
+        const panel = document.getElementById('filterMenuPanelBody');
         const badge = document.getElementById('filterMenuBadge');
+        const breadcrumb = document.getElementById('plpBreadcrumbCat');
         if (!label || !panel) return;
 
         const catObj = CATS.find(c => c.value === filtroCategoria);
-        label.textContent = catObj ? catObj.label : filtroCategoria;
+        const catLabel = catObj ? catObj.label : filtroCategoria;
+        label.childNodes[0].nodeValue = catLabel + ' ';
+        if (breadcrumb) breadcrumb.textContent = catLabel;
 
         const activeCount = filtroTamanho.length + filtroNumero.length + filtroMarca.length;
         if (activeCount) { badge.style.display = 'inline-flex'; badge.textContent = activeCount; }
         else { badge.style.display = 'none'; }
 
-        let html = `<div class="filter-menu-section">
-            <span class="subfilter-label">Peça</span>
-            <div class="chip-row">${CATS.map(c => `<button type="button" class="chip-btn${c.value===filtroCategoria?' active':''}" data-menu-cat="${c.value}">${c.label}</button>`).join('')}</div>
+        let html = `<div class="plp-group${sidebarGroupsOpen.peca!==false?' open':''}">
+            <div class="plp-group-head" data-toggle-group="peca">Peça<i class="fas fa-chevron-down"></i></div>
+            <div class="plp-group-body">${CATS.map(c => `<button type="button" class="plp-option${c.value===filtroCategoria?' active':''}" data-menu-cat="${c.value}"><span class="plp-option-box">${c.value===filtroCategoria?'<i class="fas fa-check"></i>':''}</span>${c.label}</button>`).join('')}</div>
         </div>`;
 
         if (TAMANHO_CATS.includes(filtroCategoria)) {
-            html += filtroMenuGroup('Tamanho', SIZES, filtroTamanho, 'tamanho');
+            html += sidebarGroup('tamanho', 'Tamanho', SIZES, filtroTamanho, 'tamanho');
         } else if (filtroCategoria === 'calcados') {
-            html += filtroMenuGroup('Número', NUMEROS, filtroNumero, 'numero');
+            html += sidebarGroup('tamanho', 'Número', NUMEROS, filtroNumero, 'numero');
         }
         if (BRANDS_BY_CAT[filtroCategoria]) {
-            html += filtroMenuGroup('Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
+            html += sidebarGroup('marca', 'Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
         }
         if (activeCount) {
             html += `<button type="button" class="chip-clear" id="filterMenuClear">Limpar filtros</button>`;
         }
         panel.innerHTML = html;
 
+        panel.querySelectorAll('[data-toggle-group]').forEach(head => head.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const key = head.dataset.toggleGroup;
+            sidebarGroupsOpen[key] = !(sidebarGroupsOpen[key] !== false);
+            head.closest('.plp-group').classList.toggle('open', sidebarGroupsOpen[key]);
+        }));
         panel.querySelectorAll('[data-menu-cat]').forEach(btn => btn.addEventListener('click', (e) => {
             e.stopPropagation();
             filtroCategoria = btn.dataset.menuCat;
@@ -1315,6 +1362,13 @@
             const cfg = await dbGetConfig();
             if (cfg && cfg.hero_image) { img.src = cfg.hero_image; img.style.display = 'block'; }
             else { img.style.display = 'none'; }
+            admEl('adm-site-eyebrow').value = cfg?.hero_eyebrow || '';
+            admEl('adm-site-title1').value = cfg?.hero_title1 || '';
+            admEl('adm-site-title2').value = cfg?.hero_title2 || '';
+            admEl('adm-site-title3').value = cfg?.hero_title3 || '';
+            admEl('adm-site-desc').value = cfg?.hero_desc || '';
+            admEl('adm-site-tag-eyebrow').value = cfg?.hero_tag_eyebrow || '';
+            admEl('adm-site-tag-title').value = cfg?.hero_tag_title || '';
         } catch(e) { img.style.display = 'none'; }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -1327,9 +1381,15 @@
         }
     });
     admEl('adm-site-save').addEventListener('click', async () => {
-        if (!admSiteNewFile) { admToast('Escolha uma imagem primeiro'); return; }
         const fd = new FormData();
-        fd.append('hero_image', admSiteNewFile);
+        if (admSiteNewFile) fd.append('hero_image', admSiteNewFile);
+        fd.append('hero_eyebrow', admEl('adm-site-eyebrow').value.trim());
+        fd.append('hero_title1', admEl('adm-site-title1').value.trim());
+        fd.append('hero_title2', admEl('adm-site-title2').value.trim());
+        fd.append('hero_title3', admEl('adm-site-title3').value.trim());
+        fd.append('hero_desc', admEl('adm-site-desc').value.trim());
+        fd.append('hero_tag_eyebrow', admEl('adm-site-tag-eyebrow').value.trim());
+        fd.append('hero_tag_title', admEl('adm-site-tag-title').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
             admToast('Capa do site atualizada');
@@ -1339,24 +1399,25 @@
         } catch(e) { admToast('Erro: ' + e.message); }
     });
 
+    function abrirMenuFiltros() {
+        filterMenuOpen = true;
+        document.getElementById('filterMenuPanel').classList.add('open');
+        document.getElementById('plpSidebarBackdrop').classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function fecharMenuFiltros() {
+        filterMenuOpen = false;
+        document.getElementById('filterMenuPanel').classList.remove('open');
+        document.getElementById('plpSidebarBackdrop').classList.remove('open');
+        document.body.style.overflow = 'auto';
+    }
     document.getElementById('filterMenuToggle').addEventListener('click', (e) => {
         e.stopPropagation();
-        filterMenuOpen = !filterMenuOpen;
-        document.getElementById('filterMenuPanel').classList.toggle('open', filterMenuOpen);
-        document.getElementById('filterMenuToggle').classList.toggle('open', filterMenuOpen);
+        filterMenuOpen ? fecharMenuFiltros() : abrirMenuFiltros();
     });
-    // Impede que cliques dentro do painel (mesmo após o innerHTML ser reconstruído
-    // por renderizarFiltroMenu) borbulhem até o listener de "clique fora" abaixo.
-    document.getElementById('filterMenuPanel').addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('click', (e) => {
-        if (!filterMenuOpen) return;
-        const wrap = document.querySelector('.filter-menu-wrap');
-        if (wrap && !wrap.contains(e.target)) {
-            filterMenuOpen = false;
-            document.getElementById('filterMenuPanel').classList.remove('open');
-            document.getElementById('filterMenuToggle').classList.remove('open');
-        }
-    });
+    document.getElementById('plpSidebarClose').addEventListener('click', fecharMenuFiltros);
+    document.getElementById('plpSidebarBackdrop').addEventListener('click', fecharMenuFiltros);
+    document.getElementById('plpSort').addEventListener('change', e => { ordenacao = e.target.value; renderizarCatalogo(); });
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
 
     const cartModal = document.getElementById('cartModal');

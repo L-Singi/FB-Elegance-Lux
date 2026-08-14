@@ -38,9 +38,9 @@
 <section class="hero">
     <div class="hero-inner">
         <div class="hero-copy">
-            <div class="hero-eyebrow">Coleção 2026 · Importados</div>
-            <h1 class="hero-title">Streetwear<br>importado,<br><em>sem réplica.</em></h1>
-            <p class="hero-desc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com procedência garantida e envio para todo o Brasil.</p>
+            <div class="hero-eyebrow" id="heroEyebrow">Coleção 2026 · Importados</div>
+            <h1 class="hero-title"><span id="heroTitle1">Streetwear</span><br><span id="heroTitle2">importado,</span><br><em id="heroTitle3">sem réplica.</em></h1>
+            <p class="hero-desc" id="heroDesc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com procedência garantida e envio para todo o Brasil.</p>
             <div class="hero-actions">
                 <a href="#product-grid" class="hero-btn hero-btn-primary">Ver acervo</a>
                 <a href="https://wa.me/5543996179533" target="_blank" class="hero-btn hero-btn-ghost">WhatsApp</a>
@@ -49,8 +49,8 @@
         <div class="hero-media">
             <img class="hero-img" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG" alt="FB Elegance Lux">
             <div class="hero-tag">
-                <div class="hero-tag-eyebrow">Peça do drop</div>
-                <div class="hero-tag-title">Moletom Off-White</div>
+                <div class="hero-tag-eyebrow" id="heroTagEyebrow">Peça do drop</div>
+                <div class="hero-tag-title" id="heroTagTitle">Moletom Off-White</div>
             </div>
         </div>
     </div>
@@ -64,23 +64,39 @@
 
 <main>
     <div class="container">
-        <div class="filters-section">
-            <div class="grid-header">
-                <h2 id="filterMenuLabel">Casacos</h2>
-                <div class="filter-menu-wrap">
-                    <button type="button" class="filter-menu-toggle" id="filterMenuToggle">
-                        <i class="fas fa-sliders-h"></i>
-                        Filtros
-                        <i class="fas fa-chevron-down filter-menu-chevron"></i>
-                        <span class="filter-menu-badge" id="filterMenuBadge" style="display:none">0</span>
-                    </button>
-                    <div class="filter-menu-panel" id="filterMenuPanel"></div>
+        <div class="plp-headrow">
+            <h1 id="filterMenuLabel">Casacos <span id="plpCount">(0)</span></h1>
+            <div class="plp-headrow-right">
+                <div class="plp-sort">
+                    <label for="plpSort">Ordenar por</label>
+                    <select id="plpSort">
+                        <option value="newest">Mais recentes</option>
+                        <option value="preco_asc">Menor preço</option>
+                        <option value="preco_desc">Maior preço</option>
+                    </select>
                 </div>
+                <button type="button" class="filter-menu-toggle" id="filterMenuToggle">
+                    <i class="fas fa-sliders-h"></i>
+                    Filtros
+                    <span class="filter-menu-badge" id="filterMenuBadge" style="display:none">0</span>
+                </button>
             </div>
-            <div class="result-info" id="result-info"></div>
         </div>
 
-        <div class="product-grid" id="product-grid"></div>
+        <div class="plp-body">
+            <div class="plp-sidebar-backdrop" id="plpSidebarBackdrop"></div>
+            <aside class="plp-sidebar" id="filterMenuPanel">
+                <div class="plp-sidebar-head">
+                    <span>Filtros</span>
+                    <button type="button" id="plpSidebarClose" aria-label="Fechar">&times;</button>
+                </div>
+                <div id="filterMenuPanelBody"></div>
+            </aside>
+            <div class="plp-results">
+                <div class="result-info" id="result-info"></div>
+                <div class="product-grid" id="product-grid"></div>
+            </div>
+        </div>
 
         <div class="curated-section" id="lancamentosSection" style="display: none;">
             <div class="grid-header"><h2>Lançamentos</h2><span class="grid-header-label">Recém chegados</span></div>
@@ -576,8 +592,21 @@
               <img id="adm-site-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
             </div>
             <input type="file" id="adm-site-cover" accept="image/*" style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;margin-bottom:12px">
-            <button type="button" class="adm-btn-add" id="adm-site-save"><i class="ti ti-check"></i> Salvar capa</button>
           </div>
+
+          <div class="adm-dc" style="max-width:420px;margin-top:16px">
+            <div class="adm-dc-title">Texto da capa</div>
+            <div class="adm-dc-sub">Frases mostradas por cima da foto de capa</div>
+            <div class="adm-fr" style="margin-top:14px"><label>Selo (acima do título)</label><input type="text" id="adm-site-eyebrow" placeholder="Ex: Coleção 2026 · Importados"></div>
+            <div class="adm-fr"><label>Título — linha 1</label><input type="text" id="adm-site-title1" placeholder="Ex: Streetwear"></div>
+            <div class="adm-fr"><label>Título — linha 2</label><input type="text" id="adm-site-title2" placeholder="Ex: importado,"></div>
+            <div class="adm-fr"><label>Título — linha 3 (destaque)</label><input type="text" id="adm-site-title3" placeholder="Ex: sem réplica."></div>
+            <div class="adm-fr"><label>Descrição</label><textarea id="adm-site-desc" placeholder="Frase de apoio abaixo do título"></textarea></div>
+            <div class="adm-fr"><label>Selo da foto</label><input type="text" id="adm-site-tag-eyebrow" placeholder="Ex: Peça do drop"></div>
+            <div class="adm-fr"><label>Título da foto</label><input type="text" id="adm-site-tag-title" placeholder="Ex: Moletom Off-White"></div>
+          </div>
+
+          <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i class="ti ti-check"></i> Salvar capa</button>
         </div>
       </div>
     </div>
