@@ -299,7 +299,20 @@
         document.getElementById('featuredName').textContent = cfg.feat_name;
         document.getElementById('featuredDesc').textContent = cfg.feat_desc || '';
         const link = document.getElementById('featuredLink');
-        link.href = cfg.feat_link || 'https://wa.me/5543996179533';
+        const fallbackLink = cfg.feat_link || 'https://wa.me/5543996179533';
+        link.href = fallbackLink;
+        link.onclick = async function(e) {
+            e.preventDefault();
+            if (!produtos.length) { try { await carregarProdutos(); } catch(_) {} }
+            const nomeAlvo = (cfg.feat_name || '').trim().toLowerCase();
+            const prod = produtos.find(p => (p.nome || '').trim().toLowerCase() === nomeAlvo);
+            if (prod) {
+                mudarCategoria(prod.categoria);
+                setTimeout(() => abrirProduto(prod), 300);
+            } else {
+                window.open(fallbackLink, '_blank');
+            }
+        };
         section.style.display = 'block';
     }
 
