@@ -145,10 +145,12 @@ body {
     margin-bottom: 20px;
 }
 .featured-copy h2 {
-    font-family: 'Bodoni Moda', serif;
-    font-weight: 400;
-    font-size: 2.6rem;
-    line-height: 1.1;
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    font-size: 2.2rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    line-height: 1.2;
     margin: 0 0 18px;
     color: #F2EFE9;
 }
@@ -675,7 +677,7 @@ body {
     .cat-tab { flex-shrink: 0; padding: 16px 0; }
     .featured-inner { grid-template-columns: 1fr; gap: 24px; padding: 40px 16px; }
     .featured-media { aspect-ratio: 4/3; }
-    .featured-copy h2 { font-size: 1.9rem; }
+    .featured-copy h2 { font-size: 1.6rem; }
     .featured-copy p { max-width: 100%; }
     .cat-showcase-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
     .cat-tile-label { font-size: 0.9rem; left: 10px; bottom: 10px; }
