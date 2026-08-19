@@ -70,9 +70,9 @@
     const NUMEROS = ['34','35','36','37','38','39','40','41','42','43','44','45'];
     const BRANDS_BY_CAT = {
         casacos: ['AllSaints','Off-White','Palm Angels','Ralph Lauren','Moncler','Diesel'],
-        camisetas: ['AllSaints','Off-White','Palm Angels','Ralph Lauren','Moncler','Diesel','Boss'],
+        camisetas: ['AllSaints','Off-White','Golden Goose','Palm Angels','Ralph Lauren','Moncler','Diesel','Boss'],
         shorts: ['Vilebrequin','Sundek'],
-        calcados: ['Golden Goose','Off-White','Zegna','Gucci','Bottega Veneta','Louis Vuitton']
+        calcados: ['Nike','Golden Goose','Off-White','Zegna','Gucci','Bottega Veneta','Louis Vuitton']
     };
 
     // Normalização de status/categorias para evitar valores inconsistentes do backend
