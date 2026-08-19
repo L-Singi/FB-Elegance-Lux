@@ -562,6 +562,50 @@
         border-color: #B8924F
       }
 
+      /* Campos de texto/select do gerenciador de categorias (linhas existentes
+         e formulário "Nova categoria") — sem isso ficam com o estilo branco
+         padrão do navegador, destoando do resto do admin. */
+      #adm-cats-manage-wrap input[type="text"],
+      #adm-cats-manage-wrap select,
+      #adm-newcat-slug,
+      #adm-newcat-label,
+      #adm-newcat-icon,
+      #adm-newcat-mode {
+        padding: 7px 10px;
+        background: #151515;
+        border: 1px solid #1e1e1e;
+        border-radius: 8px;
+        color: #eaeaea;
+        font-size: 12px;
+        outline: none;
+        font-family: inherit;
+        width: 100%;
+      }
+
+      #adm-cats-manage-wrap input[type="text"]:focus,
+      #adm-cats-manage-wrap select:focus,
+      #adm-newcat-slug:focus,
+      #adm-newcat-label:focus,
+      #adm-newcat-icon:focus,
+      #adm-newcat-mode:focus {
+        border-color: #B8924F
+      }
+
+      #adm-cats-manage-wrap select,
+      #adm-newcat-mode {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+      }
+
+      #adm-cats-manage-wrap option,
+      #adm-newcat-mode option {
+        background: #151515;
+        color: #eaeaea;
+      }
+
       .adm-fi {
         margin-bottom: 10px
       }
