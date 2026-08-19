@@ -40,7 +40,7 @@
 
     // ─── ESTADO ───────────────────────────────────────────────────────────────
     let produtos = [];
-    let filtroCategoria = 'casacos';
+    let filtroCategoria = 'procurados';
     let filtroTamanho = [];
     let filtroNumero = [];
     let filtroMarca = [];
@@ -50,6 +50,7 @@
 
     let filterMenuOpen = false;
 
+    // Categorias reais (produtos são cadastrados nelas, usadas em admin/marca/vitrine)
     const CATS = [
         { value: "casacos", label: "Casacos" },
         { value: "camisetas", label: "Camisetas" },
@@ -58,6 +59,10 @@
         { value: "acessorios", label: "Acessórios" },
         { value: "perfumes", label: "Perfumes" }
     ];
+    // Abas de navegação abaixo do banner: "Mais Procurados" é uma vitrine (todos os
+    // produtos, sem filtro de categoria) e vem sempre selecionada por padrão —
+    // nenhuma categoria específica é pré-filtrada ao carregar o site.
+    const NAV_TABS = [{ value: "procurados", label: "Mais Procurados" }, ...CATS];
 
     // Categorias que usam grade de tamanhos (P/M/G) vs. numeração (calçados) vs. nenhuma (acessórios/perfumes)
     const TAMANHO_CATS = ['casacos','camisetas','shorts'];
@@ -281,6 +286,7 @@
             setText('heroDesc', cfg.hero_desc);
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
+            renderizarDestaque(cfg);
         } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
     }
 
@@ -365,18 +371,41 @@
         startAutoplay();
     }
 
+    // ─── DESTAQUE (produto mais vendido) ───────────────────────────────────────
+    function renderizarDestaque(cfg) {
+        const section = document.getElementById('featuredBanner');
+        if (!section) return;
+        if (!cfg || !cfg.feat_image || !cfg.feat_name) { section.style.display = 'none'; return; }
+        document.getElementById('featuredImg').src = cfg.feat_image;
+        document.getElementById('featuredImg').alt = cfg.feat_name;
+        document.getElementById('featuredBadge').textContent = cfg.feat_badge || 'Mais vendido';
+        document.getElementById('featuredName').textContent = cfg.feat_name;
+        document.getElementById('featuredDesc').textContent = cfg.feat_desc || '';
+        const link = document.getElementById('featuredLink');
+        const fallbackLink = cfg.feat_link || 'https://wa.me/5543996179533';
+        link.href = fallbackLink;
+        link.onclick = async function(e) {
+            e.preventDefault();
+            if (!produtos.length) { try { await carregarProdutos(); } catch(_) {} }
+            const nomeAlvo = (cfg.feat_name || '').trim().toLowerCase();
+            const prod = produtos.find(p => (p.nome || '').trim().toLowerCase() === nomeAlvo);
+            if (prod) {
+                mudarCategoria(prod.categoria);
+                setTimeout(() => abrirProduto(prod), 300);
+            } else {
+                window.open(fallbackLink, '_blank');
+            }
+        };
+        section.style.display = 'block';
+    }
+
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
     function renderizarSecoesCuradas() {
         const lancs = produtos.filter(p => p.status === 'lancamentos');
-        const recentes = [...produtos].filter(p => p.status !== 'vendido').sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,6);
         const lancSec = document.getElementById('lancamentosSection');
         const lancGrid = document.getElementById('lancamentosGrid');
-        const procSec = document.getElementById('procuradosSection');
-        const procGrid = document.getElementById('procuradosGrid');
         if (lancs.length) { lancSec.style.display='block'; lancGrid.innerHTML=''; lancs.slice(0,6).forEach(p => lancGrid.appendChild(criarCard(p))); }
         else lancSec.style.display = 'none';
-        if (recentes.length) { procSec.style.display='block'; procGrid.innerHTML=''; recentes.forEach(p => procGrid.appendChild(criarCard(p))); }
-        else procSec.style.display = 'none';
     }
 
     // ─── CARD ─────────────────────────────────────────────────────────────────
@@ -442,7 +471,11 @@
     let ordenacao = 'newest';
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
-        let f = produtos.filter(p => p.categoria===filtroCategoria);
+        // "Mais Procurados" é uma vitrine com produtos de todas as categorias
+        // (sem filtro), diferente das demais abas que filtram por categoria real.
+        let f = filtroCategoria === 'procurados'
+            ? produtos.slice()
+            : produtos.filter(p => p.categoria===filtroCategoria);
         if (termoBusca.trim()) {
             const b = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
             f = f.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(b));
@@ -483,7 +516,7 @@
     function renderizarCatTabs() {
         const wrap = document.getElementById('catTabsInner');
         if (!wrap) return;
-        wrap.innerHTML = CATS.map(c => `<button type="button" class="cat-tab${c.value===filtroCategoria?' active':''}" data-cat-tab="${c.value}">${c.label}</button>`).join('');
+        wrap.innerHTML = NAV_TABS.map(c => `<button type="button" class="cat-tab${c.value===filtroCategoria?' active':''}" data-cat-tab="${c.value}">${c.label}</button>`).join('');
         wrap.querySelectorAll('[data-cat-tab]').forEach(btn => btn.addEventListener('click', () => mudarCategoria(btn.dataset.catTab)));
     }
 
@@ -524,7 +557,7 @@
         const breadcrumb = document.getElementById('plpBreadcrumbCat');
         if (!label || !panel) return;
 
-        const catObj = CATS.find(c => c.value === filtroCategoria);
+        const catObj = NAV_TABS.find(c => c.value === filtroCategoria);
         const catLabel = catObj ? catObj.label : filtroCategoria;
         label.childNodes[0].nodeValue = catLabel + ' ';
         if (breadcrumb) breadcrumb.textContent = catLabel;
@@ -1536,6 +1569,14 @@
                     prev.style.display = 'block';
                 }
             }));
+
+            const featImg = admEl('adm-feat-preview-img');
+            if (cfg && cfg.feat_image) { featImg.src = cfg.feat_image; featImg.style.display = 'block'; }
+            else { featImg.style.display = 'none'; }
+            admEl('adm-feat-badge').value = cfg?.feat_badge || '';
+            admEl('adm-feat-name').value = cfg?.feat_name || '';
+            admEl('adm-feat-desc').value = cfg?.feat_desc || '';
+            admEl('adm-feat-link').value = cfg?.feat_link || '';
         } catch(e) { admRenderHeroPreview([]); }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -1557,6 +1598,16 @@
         // duplicar os que já foram adicionados na lista.
         admEl('adm-site-cover').value = '';
     });
+    let admFeatNewFile = null;
+    admEl('adm-feat-image').addEventListener('change', () => {
+        const f = admEl('adm-feat-image').files[0];
+        admFeatNewFile = f || null;
+        if (f) {
+            const img = admEl('adm-feat-preview-img');
+            img.src = URL.createObjectURL(f);
+            img.style.display = 'block';
+        }
+    });
     admEl('adm-site-save').addEventListener('click', async () => {
         const fd = new FormData();
         fd.append('hero_images_keep', JSON.stringify(admSiteHeroKeptUrls()));
@@ -1575,12 +1626,19 @@
             const f = admCatNewFiles[c.value];
             if (f) fd.append(CAT_IMAGE_FIELDS[c.value], f);
         });
+        if (admFeatNewFile) fd.append('feat_image', admFeatNewFile);
+        fd.append('feat_badge', admEl('adm-feat-badge').value.trim());
+        fd.append('feat_name', admEl('adm-feat-name').value.trim());
+        fd.append('feat_desc', admEl('adm-feat-desc').value.trim());
+        fd.append('feat_link', admEl('adm-feat-link').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
             admToast('Capa do site atualizada');
             admSiteNewFiles = [];
             admCatNewFiles = {};
+            admFeatNewFile = null;
             admEl('adm-site-cover').value = '';
+            admEl('adm-feat-image').value = '';
             carregarCapaDoSite();
         } catch(e) { admToast('Erro: ' + e.message); }
     });

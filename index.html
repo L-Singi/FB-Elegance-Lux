@@ -61,10 +61,6 @@
           <i class="ti ti-chevron-right"></i>
         </button>
         <div class="hero-dots" id="heroDots"></div>
-        <div class="hero-tag">
-          <div class="hero-tag-eyebrow" id="heroTagEyebrow">Peça do drop</div>
-          <div class="hero-tag-title" id="heroTagTitle">Moletom Off-White</div>
-        </div>
       </div>
     </div>
   </section>
@@ -72,6 +68,20 @@
   <div class="cat-tabs">
     <div class="cat-tabs-inner" id="catTabsInner"></div>
   </div>
+
+  <section class="featured-banner" id="featuredBanner" style="display:none">
+    <div class="container featured-inner">
+      <div class="featured-media">
+        <img id="featuredImg" src="" alt="">
+      </div>
+      <div class="featured-copy">
+        <span class="featured-badge" id="featuredBadge">Mais vendido</span>
+        <h2 id="featuredName">WHOOP 5.0 e MG</h2>
+        <p id="featuredDesc"></p>
+        <a href="#" id="featuredLink" class="hero-btn hero-btn-primary" rel="noopener">Ver produto</a>
+      </div>
+    </div>
+  </section>
 
   <main>
     <div class="container">
@@ -116,13 +126,6 @@
         <div class="curated-grid" id="lancamentosGrid"></div>
       </div>
 
-      <div class="curated-section" id="procuradosSection" style="display: none;">
-        <div class="grid-header">
-          <h2>Mais procurados</h2><span class="grid-header-label">Reposição semanal</span>
-        </div>
-        <div class="curated-grid" id="procuradosGrid"></div>
-      </div>
-
       <div class="cat-showcase">
         <div class="grid-header"><h2>Categorias</h2></div>
         <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
@@ -162,6 +165,7 @@
         <span class="payment-item"><i class="fas fa-qrcode"></i> Pix</span>
         <span class="payment-item"><i class="fas fa-money-bill-wave"></i> Dinheiro</span>
       </div>
+      <div class="company-info">FB Elegance Lux Ltda · CNPJ: 68.260.978/0001-26 · Londrina - PR</div>
       <div class="copyright">Developed by <a href="https://www.instagram.com/luccasingi" target="_blank">L.Singi</a>
       </div>
     </div>
@@ -1498,6 +1502,20 @@
               <div class="adm-dc-title">Imagens das categorias</div>
               <div class="adm-dc-sub">Usadas na vitrine de categorias, na página inicial</div>
               <div id="adm-site-cats" style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px"></div>
+            </div>
+
+            <div class="adm-dc" style="max-width:420px;margin-top:16px">
+              <div class="adm-dc-title">Destaque (produto mais vendido)</div>
+              <div class="adm-dc-sub">Card abaixo das abas, na página inicial</div>
+              <div id="adm-feat-preview" style="margin:14px 0;width:100%;aspect-ratio:4/3;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">
+                <img id="adm-feat-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+              </div>
+              <input type="file" id="adm-feat-image" accept="image/*"
+                style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;margin-bottom:12px">
+              <div class="adm-fr"><label>Selo</label><input type="text" id="adm-feat-badge" placeholder="Ex: Mais vendido"></div>
+              <div class="adm-fr"><label>Nome do produto</label><input type="text" id="adm-feat-name" placeholder="Ex: WHOOP 5.0 e MG"></div>
+              <div class="adm-fr"><label>Descrição</label><textarea id="adm-feat-desc" placeholder="Frase curta sobre o produto"></textarea></div>
+              <div class="adm-fr"><label>Link do botão</label><input type="text" id="adm-feat-link" placeholder="Link do WhatsApp ou do produto"></div>
             </div>
 
             <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i
