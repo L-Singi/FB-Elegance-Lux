@@ -274,9 +274,12 @@
             siteConfig = cfg || {};
             renderizarCatShowcase(siteConfig);
             if (!cfg) return;
-            const heroImages = (Array.isArray(cfg.hero_images) && cfg.hero_images.length)
+            const rawHeroImages = (Array.isArray(cfg.hero_images) && cfg.hero_images.length)
                 ? cfg.hero_images
                 : (cfg.hero_image ? [cfg.hero_image] : []);
+            // Defesa extra: nunca deixa uma entrada vazia/nula virar imagem
+            // quebrada no carrossel, não importa a origem do dado.
+            const heroImages = rawHeroImages.filter(Boolean);
             initHeroCarousel(heroImages, { shuffle: !!cfg.hero_shuffle, intervalMs: cfg.hero_interval_ms || 5000 });
             const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
             setText('heroEyebrow', cfg.hero_eyebrow);
@@ -1503,28 +1506,46 @@
     let admSiteNewFiles = [];
     let admCatNewFiles = {};
 
-    // Grade de miniaturas do carrossel — mesmo padrão de "remover" já usado
-    // nas imagens de produto (botão ✕ marca pra remover, sem apagar do DOM
-    // na hora, só na hora de salvar — ver admSiteHeroKeptUrls()).
+    // Grade de miniaturas do carrossel. Clicar em ✕ numa imagem já salva
+    // remove na hora (chama a API e some da tela) — não é só "marcar pra
+    // remover depois", pra nunca ficar uma remoção pendente que o admin
+    // esqueceu de salvar.
     function admRenderHeroPreview(urls) {
         const preview = admEl('adm-site-preview');
         preview.innerHTML = urls.map(url => `<div class="image-preview-item" data-url="${url}">
             <img src="${url}">
-            <button type="button" class="remove-image-btn" data-removed="false">✕</button>
+            <button type="button" class="remove-image-btn">✕</button>
         </div>`).join('');
-        preview.querySelectorAll('.remove-image-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.dataset.removed = String(btn.dataset.removed !== 'true');
-                const item = btn.closest('.image-preview-item');
-                item.style.opacity = btn.dataset.removed === 'true' ? '0.25' : '1';
-            });
+        preview.querySelectorAll('.image-preview-item').forEach(item => {
+            item.querySelector('.remove-image-btn').addEventListener('click', () => admRemoveHeroImage(item.dataset.url, item));
         });
     }
+
+    // IMPORTANTE: só conta como "imagem existente mantida" quem realmente
+    // tem data-url (veio do servidor). As miniaturas de arquivo novo, recém
+    // selecionadas no input (ver listener de 'adm-site-cover' abaixo), não
+    // têm esse atributo — contá-las aqui gerava um "null" no meio da lista
+    // enviada (a imagem corrompida que aparecia no carrossel), porque cada
+    // arquivo novo acabava entrando duas vezes: uma vez certo (via
+    // admSiteNewFiles) e outra errado, como data-url inexistente virando
+    // null no JSON.
     function admSiteHeroKeptUrls() {
         const preview = admEl('adm-site-preview');
-        return Array.from(preview.querySelectorAll('.image-preview-item'))
-            .filter(item => item.querySelector('.remove-image-btn')?.dataset.removed !== 'true')
-            .map(item => item.dataset.url);
+        return Array.from(preview.querySelectorAll('.image-preview-item[data-url]')).map(item => item.dataset.url);
+    }
+
+    async function admRemoveHeroImage(url, item) {
+        if (!confirm('Remover esta imagem do carrossel? Não dá pra desfazer depois.')) return;
+        const keep = admSiteHeroKeptUrls().filter(u => u !== url);
+        try {
+            const fd = new FormData();
+            fd.append('hero_images_keep', JSON.stringify(keep));
+            await apiFetch('PUT', '/api/config', fd);
+            item.remove();
+            admToast('Imagem removida do carrossel');
+        } catch (e) {
+            admToast('Erro ao remover: ' + e.message);
+        }
     }
 
     async function admRenderSite() {
@@ -1532,9 +1553,9 @@
             const cfg = await dbGetConfig();
             admSiteNewFiles = [];
             admEl('adm-site-cover').value = '';
-            const heroImages = (Array.isArray(cfg?.hero_images) && cfg.hero_images.length)
+            const heroImages = ((Array.isArray(cfg?.hero_images) && cfg.hero_images.length)
                 ? cfg.hero_images
-                : (cfg?.hero_image ? [cfg.hero_image] : []);
+                : (cfg?.hero_image ? [cfg.hero_image] : [])).filter(Boolean);
             admRenderHeroPreview(heroImages);
             admEl('adm-site-shuffle').checked = !!cfg?.hero_shuffle;
             admEl('adm-site-interval').value = Math.round((cfg?.hero_interval_ms || 5000) / 1000);
