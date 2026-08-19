@@ -27,6 +27,13 @@
     async function dbGetBrands()          { return apiFetch('GET', '/api/brands'); }
     async function dbAddBrand(categoria, nome) { return apiFetch('POST', '/api/brands', { categoria, nome }); }
     async function dbDeleteBrand(id)      { return apiFetch('DELETE', `/api/brands/${id}`); }
+    async function dbGetCategories()          { return apiFetch('GET', '/api/categories'); }
+    async function dbAddCategory(formData)    { return apiFetch('POST', '/api/categories', formData); }
+    async function dbUpdateCategory(id, formData) { return apiFetch('PUT', `/api/categories/${id}`, formData); }
+    async function dbDeleteCategory(id)       { return apiFetch('DELETE', `/api/categories/${id}`); }
+    async function dbGetSizeOptions()             { return apiFetch('GET', '/api/size-options'); }
+    async function dbAddSizeOption(modo, valor)   { return apiFetch('POST', '/api/size-options', { modo, valor }); }
+    async function dbDeleteSizeOption(id)         { return apiFetch('DELETE', `/api/size-options/${id}`); }
 
     // Upload de imagem para o servidor
     async function uploadImage(file) {
@@ -53,24 +60,37 @@
 
     let filterMenuOpen = false;
 
-    // Categorias reais (produtos são cadastrados nelas, usadas em admin/marca/vitrine)
-    const CATS = [
-        { value: "casacos", label: "Casacos" },
-        { value: "camisetas", label: "Camisetas" },
-        { value: "shorts", label: "Shorts" },
-        { value: "calcados", label: "Calçados" },
-        { value: "acessorios", label: "Acessórios" },
-        { value: "perfumes", label: "Perfumes" }
+    // Categorias reais (produtos são cadastrados nelas, usadas em admin/marca/vitrine).
+    // Agora cadastradas pelo admin (aba Categorias) e carregadas do banco — ver
+    // carregarCategorias(). Esta lista fica só como fallback caso a API de
+    // categorias falhe no carregamento, pra site/formulário nunca ficarem vazios.
+    const CATS_FALLBACK = [
+        { value: "casacos", label: "Casacos", icon: "ti-hanger", size_mode: "tamanho", cover_image: null },
+        { value: "camisetas", label: "Camisetas", icon: "ti-shirt", size_mode: "tamanho", cover_image: null },
+        { value: "shorts", label: "Shorts", icon: "ti-layout-rows", size_mode: "tamanho", cover_image: null },
+        { value: "calcados", label: "Calçados", icon: "ti-shoe", size_mode: "numero", cover_image: null },
+        { value: "acessorios", label: "Acessórios", icon: "ti-diamond", size_mode: "nenhum", cover_image: null },
+        { value: "perfumes", label: "Perfumes", icon: "ti-spray", size_mode: "nenhum", cover_image: null }
     ];
+    let CATS = CATS_FALLBACK.slice();
     // Abas de navegação abaixo do banner: "Mais Procurados" é uma vitrine (todos os
     // produtos, sem filtro de categoria) e vem sempre selecionada por padrão —
     // nenhuma categoria específica é pré-filtrada ao carregar o site.
-    const NAV_TABS = [{ value: "procurados", label: "Mais Procurados" }, ...CATS];
+    let NAV_TABS = [{ value: "procurados", label: "Mais Procurados" }, ...CATS];
 
-    // Categorias que usam grade de tamanhos (P/M/G) vs. numeração (calçados) vs. nenhuma (acessórios/perfumes)
-    const TAMANHO_CATS = ['casacos','camisetas','shorts'];
-    const SIZES = ['XXS','XS','S','M','L','XL','XXL'];
-    const NUMEROS = ['34','35','36','37','38','39','40','41','42','43','44','45'];
+    // Categorias que usam grade de tamanhos (P/M/G) vs. numeração vs. nenhuma —
+    // derivadas do size_mode de cada categoria (ver recalcularDerivadosDeCategorias()).
+    let TAMANHO_CATS = CATS.filter(c => c.size_mode === 'tamanho').map(c => c.value);
+    let NUMERO_CATS = CATS.filter(c => c.size_mode === 'numero').map(c => c.value);
+    // Imagem de capa por categoria (aba Site do admin) — agora vem de
+    // categories.cover_image, não mais de colunas fixas em config.
+    let CAT_COVER_IMAGES = {};
+    // Escalas de tamanho/numeração — cadastradas pelo admin (aba Categorias),
+    // carregadas do banco em carregarSizeOptions(). Fallback igual ao acima.
+    const SIZES_FALLBACK = ['XXS','XS','S','M','L','XL','XXL'];
+    const NUMEROS_FALLBACK = ['34','35','36','37','38','39','40','41','42','43','44','45'];
+    let SIZES = SIZES_FALLBACK.slice();
+    let NUMEROS = NUMEROS_FALLBACK.slice();
     // Marcas agora são cadastradas pelo admin (aba Categorias), não mais fixas
     // aqui — ver carregarBrands(). Esta lista fica só como fallback caso a
     // API de marcas falhe no carregamento, pra sidebar/formulário nunca
@@ -255,7 +275,7 @@
         cart.forEach(item => {
             let extra = '';
             if (TAMANHO_CATS.includes(item.categoria) && item.tamanhos) extra = ` (Tam: ${item.tamanhos.join(',')})`;
-            if (item.categoria==='calcados'  && item.numeracao) extra = ` (Num: ${item.numeracao})`;
+            if (NUMERO_CATS.includes(item.categoria) && item.numeracao) extra = ` (Num: ${item.numeracao})`;
             msg += `- ${item.nome}${extra} - ${item.preco} x ${item.quantity}%0A`;
         });
         const total = cart.reduce((s,i) => s + precoNum(i.preco)*i.quantity, 0);
@@ -276,6 +296,66 @@
             document.getElementById('product-grid').innerHTML = `<div class="empty-message">Erro ao carregar: ${err.message}</div>`;
             showToast('Erro ao carregar estoque: ' + err.message, true);
         }
+    }
+
+    // ─── CATEGORIAS (carregadas do banco, editáveis no admin) ─────────────────
+    // Recalcula todas as listas derivadas de CATS (abas de navegação, quem usa
+    // tamanho/numeração, ícones/labels do admin, imagens de capa) — chamado
+    // sempre que CATS muda (carga inicial ou depois de add/editar/excluir
+    // categoria no admin).
+    function recalcularDerivadosDeCategorias() {
+        NAV_TABS = [{ value: "procurados", label: "Mais Procurados" }, ...CATS];
+        TAMANHO_CATS = CATS.filter(c => c.size_mode === 'tamanho').map(c => c.value);
+        NUMERO_CATS = CATS.filter(c => c.size_mode === 'numero').map(c => c.value);
+        ADM_CATS = Object.fromEntries(CATS.map(c => [c.value, c.label]));
+        ADM_ICONS = Object.fromEntries(CATS.map(c => [c.value, c.icon || 'ti-box']));
+        CAT_COVER_IMAGES = Object.fromEntries(CATS.map(c => [c.value, c.cover_image]));
+    }
+
+    async function carregarCategorias() {
+        try {
+            const rows = await dbGetCategories();
+            if (Array.isArray(rows) && rows.length) {
+                CATS = rows
+                    .slice()
+                    .sort((a, b) => (a.sort_order - b.sort_order) || a.id - b.id)
+                    .map(r => ({ id: r.id, value: r.slug, label: r.label, icon: r.icon, size_mode: r.size_mode, cover_image: r.cover_image }));
+            }
+        } catch (err) {
+            console.warn('categorias: usando lista padrão (falha ao carregar da API)', err);
+            CATS = CATS_FALLBACK.slice();
+        }
+        recalcularDerivadosDeCategorias();
+        // Várias telas já podem ter renderizado com o fallback antes das
+        // categorias reais chegarem — atualiza tudo que depende delas.
+        if (typeof renderizarCatTabs === 'function') renderizarCatTabs();
+        if (typeof renderizarCatalogo === 'function') renderizarCatalogo();
+        if (typeof renderizarCatShowcase === 'function') renderizarCatShowcase(siteConfig);
+        if (typeof renderizarFiltroMenu === 'function') renderizarFiltroMenu();
+        if (typeof refreshNumSizeVisibility === 'function' && adminVisible) refreshNumSizeVisibility();
+        if (typeof admRenderCats === 'function' && admTab === 'categorias') admRenderCats();
+        if (typeof admRenderCatsManage === 'function' && admTab === 'categorias') admRenderCatsManage();
+        if (typeof admRenderBrands === 'function' && admTab === 'categorias') admRenderBrands();
+    }
+
+    async function carregarSizeOptions() {
+        try {
+            const rows = await dbGetSizeOptions();
+            const tamanhos = rows.filter(r => r.modo === 'tamanho').sort((a,b) => (a.sort_order-b.sort_order)||a.id-b.id).map(r => r.valor);
+            const numeros = rows.filter(r => r.modo === 'numero').sort((a,b) => (a.sort_order-b.sort_order)||a.id-b.id).map(r => r.valor);
+            SIZES = tamanhos.length ? tamanhos : SIZES_FALLBACK.slice();
+            NUMEROS = numeros.length ? numeros : NUMEROS_FALLBACK.slice();
+        } catch (err) {
+            console.warn('tamanhos/numeração: usando lista padrão (falha ao carregar da API)', err);
+            SIZES = SIZES_FALLBACK.slice();
+            NUMEROS = NUMEROS_FALLBACK.slice();
+        }
+        if (typeof renderSizeButtonGroup === 'function') {
+            renderSizeButtonGroup('adm-f-tamanhos-buttons', SIZES, syncSizesToInput);
+            renderSizeButtonGroup('adm-f-numeracao-buttons', NUMEROS, syncNumerosToInput);
+        }
+        if (typeof renderizarFiltroMenu === 'function') renderizarFiltroMenu();
+        if (typeof admRenderSizeOpts === 'function' && admTab === 'categorias') admRenderSizeOpts();
     }
 
     // ─── MARCAS (carregadas do banco, editáveis no admin) ─────────────────────
@@ -463,7 +543,7 @@
         const isFav = favoritos.includes(prod.id);
         let sizeLabel = '';
         if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeLabel = prod.tamanhos.join(' · ');
-        else if (prod.categoria==='calcados' && prod.numeracao) sizeLabel = prod.numeracao;
+        else if (NUMERO_CATS.includes(prod.categoria) && prod.numeracao) sizeLabel = prod.numeracao;
         const statusHtml = prod.status !== 'disponiveis' ? `<span class="status-badge ${sClass}">${sLabel}</span>` : '';
         card.innerHTML = `
             <div class="product-image-container">
@@ -523,7 +603,7 @@
         if (TAMANHO_CATS.includes(filtroCategoria) && filtroTamanho.length) {
             f = f.filter(p => Array.isArray(p.tamanhos) && p.tamanhos.some(t => filtroTamanho.includes(t)));
         }
-        if (filtroCategoria==='calcados' && filtroNumero.length) {
+        if (NUMERO_CATS.includes(filtroCategoria) && filtroNumero.length) {
             f = f.filter(p => numeroMatches(p.numeracao, filtroNumero));
         }
         if (BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
@@ -561,6 +641,10 @@
     }
 
     // ─── VITRINE DE CATEGORIAS (abaixo de Mais procurados) ─────────────────────
+    // Legado: antes de categories.cover_image existir, a imagem de cada categoria
+    // vinha de uma coluna fixa em config (cat_img_*). Mantido só como fallback
+    // para nunca deixar a vitrine sem imagem se a categoria ainda não tiver
+    // cover_image cadastrado.
     const CAT_IMAGE_FIELDS = {
         casacos: 'cat_img_casacos', camisetas: 'cat_img_camisetas', shorts: 'cat_img_shorts',
         calcados: 'cat_img_calcados', acessorios: 'cat_img_acessorios', perfumes: 'cat_img_perfumes'
@@ -569,7 +653,7 @@
         const grid = document.getElementById('catShowcaseGrid');
         if (!grid) return;
         grid.innerHTML = CATS.map(c => {
-            const img = (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]) || `https://placehold.co/500x650?text=${encodeURIComponent(c.label)}`;
+            const img = CAT_COVER_IMAGES[c.value] || (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]) || `https://placehold.co/500x650?text=${encodeURIComponent(c.label)}`;
             return `<button type="button" class="cat-tile" data-cat-tile="${c.value}">
                 <img src="${img}" alt="${escapeHtml(c.label)}">
                 <span class="cat-tile-label">${c.label}</span>
@@ -610,7 +694,7 @@
 
         if (TAMANHO_CATS.includes(filtroCategoria)) {
             html += sidebarGroup('tamanho', 'Tamanho', SIZES, filtroTamanho, 'tamanho');
-        } else if (filtroCategoria === 'calcados') {
+        } else if (NUMERO_CATS.includes(filtroCategoria)) {
             html += sidebarGroup('tamanho', 'Número', NUMEROS, filtroNumero, 'numero');
         }
         if (BRANDS_BY_CAT[filtroCategoria]) {
@@ -667,13 +751,13 @@
 
         let st = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
-        else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
+        else if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         const sizeEl = document.getElementById('mobileSheetSize');
         sizeEl.innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
 
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
-        if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
+        if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
         document.getElementById('mobileSheetWhatsapp').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
 
         const imgs = prod.images || [];
@@ -759,7 +843,7 @@
         document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
         let st = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
-        else if (prod.categoria==='calcados'&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
+        else if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
         document.getElementById('modalSize').innerHTML = st ? `<i class="fas fa-ruler"></i> ${st}` : '';
         const imgs = prod.images||[];
         const mainImg = document.getElementById('modalMainImg');
@@ -809,7 +893,7 @@
         }, { passive: true });
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
-        if (prod.categoria==='calcados'&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
+        if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
         document.getElementById('modalWhatsappBtn').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
         document.getElementById('productModal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -1097,8 +1181,10 @@
     let admNewFiles = []; // arquivos selecionados no modal admin (preview)
     let admInited = false;
 
-    const ADM_CATS = {casacos:'Casacos',camisetas:'Camisetas',shorts:'Shorts',calcados:'Calçados',acessorios:'Acessórios',perfumes:'Perfumes'};
-    const ADM_ICONS = {casacos:'ti-hanger',camisetas:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',acessorios:'ti-diamond',perfumes:'ti-spray'};
+    // Derivados de CATS (agora carregada do banco) — recalculados em
+    // recalcularDerivadosDeCategorias() sempre que as categorias mudam.
+    let ADM_CATS = {casacos:'Casacos',camisetas:'Camisetas',shorts:'Shorts',calcados:'Calçados',acessorios:'Acessórios',perfumes:'Perfumes'};
+    let ADM_ICONS = {casacos:'ti-hanger',camisetas:'ti-shirt',shorts:'ti-layout-rows',calcados:'ti-shoe',acessorios:'ti-diamond',perfumes:'ti-spray'};
     const ADM_COLORS = ['#B8924F','#7a5c2e','#d4a85a','#c8a87a','#8f6a35','#e0c48a'];
     const ADM_STATUS_OPTS = {disponiveis:'Disponível',lancamentos:'Lançamento',vendido:'Vendido',embreve:'Em breve'};
     const ADM_STATUS_CLS = {disponiveis:'adm-p-disp',lancamentos:'adm-p-lanc',vendido:'adm-p-vend',embreve:'adm-p-brev'};
@@ -1120,22 +1206,39 @@
         renderizarSecoesCuradas();
     }
 
-    function syncSizesToInput(){
-        const sel = Array.from(document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt.active')).map(b=>b.dataset.size);
-        admEl('adm-f-tamanhos').value = sel.join(',');
+    // Seletor de tamanho/numeração por botões no formulário de produto. Os
+    // botões são renderizados dinamicamente a partir de SIZES/NUMEROS (vindos
+    // do banco — ver carregarSizeOptions()), então adicionar um novo tamanho
+    // ou numeração no admin passa a aparecer aqui sem editar código. Antes só
+    // "Tamanhos" tinha esse seletor; "Numeração" (calçados) era texto livre
+    // e por isso não alimentava o filtro do site corretamente — esse era o
+    // bug relatado.
+    function renderSizeButtonGroup(containerId, values, onToggle){
+        const el = admEl(containerId);
+        if (!el) return;
+        el.innerHTML = values.map(v => `<button type="button" class="size-opt" data-size="${admEsc(v)}">${admEsc(v)}</button>`).join('');
+        el.querySelectorAll('.size-opt').forEach(b => b.addEventListener('click', () => { b.classList.toggle('active'); onToggle(); }));
     }
-    function updateSizeButtonsFromValue(val){
+    function syncButtonGroupToInput(containerId, inputId){
+        const sel = Array.from(document.querySelectorAll(`#${containerId} .size-opt.active`)).map(b=>b.dataset.size);
+        admEl(inputId).value = sel.join(',');
+    }
+    function updateButtonGroupFromValue(containerId, val){
         const arr = String(val||'').split(',').map(x=>x.trim()).filter(Boolean);
-        document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
+        document.querySelectorAll(`#${containerId} .size-opt`).forEach(b=>{
             b.classList.toggle('active', arr.includes(b.dataset.size));
         });
     }
+    function syncSizesToInput(){ syncButtonGroupToInput('adm-f-tamanhos-buttons', 'adm-f-tamanhos'); }
+    function updateSizeButtonsFromValue(val){ updateButtonGroupFromValue('adm-f-tamanhos-buttons', val); }
+    function syncNumerosToInput(){ syncButtonGroupToInput('adm-f-numeracao-buttons', 'adm-f-numeracao'); }
+    function updateNumeroButtonsFromValue(val){ updateButtonGroupFromValue('adm-f-numeracao-buttons', val); }
     function refreshNumSizeVisibility(){
         const cat = admEl('adm-f-cat').value;
         const rowNum = admEl('adm-row-numeracao');
         const rowSizes = admEl('adm-row-tamanhos');
         const rowMarca = admEl('adm-row-marca');
-        if(cat==='calcados'){
+        if(NUMERO_CATS.includes(cat)){
             if(rowNum) rowNum.style.display='block';
             if(rowSizes) rowSizes.style.display='none';
         } else if(TAMANHO_CATS.includes(cat)){
@@ -1177,7 +1280,7 @@
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
                 admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
-                if(admTab==='categorias') { admRenderCats(); admRenderBrands(); }
+                if(admTab==='categorias') { admRenderCats(); admRenderCatsManage(); admRenderSizeOpts(); admRenderBrands(); }
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='site') admRenderSite();
             });
@@ -1257,10 +1360,9 @@
             } catch(e){admToast('Erro: '+e.message);}        
         });
 
-        // Inicializa seletor de tamanhos e lógica de visibilidade para numeração/tamanhos
-        document.querySelectorAll('#adm-f-tamanhos-buttons .size-opt').forEach(b=>{
-            b.addEventListener('click', ()=>{ b.classList.toggle('active'); syncSizesToInput(); });
-        });
+        // Cliques nos botões de tamanho/numeração já são conectados em
+        // renderSizeButtonGroup() (chamado na carga inicial e sempre que
+        // SIZES/NUMEROS são recarregados de carregarSizeOptions()).
         admEl('adm-f-cat').addEventListener('change', ()=>{ refreshNumSizeVisibility(); });
 
         // Filtros estoque
@@ -1309,8 +1411,13 @@
         // campos novos
         admEl('adm-f-numeracao').value = p? (p.numeracao||'') : '';
         admEl('adm-f-tamanhos').value = p? (Array.isArray(p.tamanhos)?p.tamanhos.join(','):(p.tamanhos||'')) : '';
-        // atualizar botões e visibilidade
+        // atualizar botões e visibilidade. Numeração legada em texto livre
+        // (ex: "41BR", "42 ITÁLIA / 41 BR") não bate com nenhum botão — fica
+        // sem nenhum marcado, mas o valor original é preservado no campo
+        // oculto até o admin realmente clicar em algum número (só então o
+        // valor é substituído pela seleção limpa, compatível com o filtro).
         updateSizeButtonsFromValue(admEl('adm-f-tamanhos').value);
+        updateNumeroButtonsFromValue(admEl('adm-f-numeracao').value);
         refreshNumSizeVisibility();
         if (admEl('adm-f-marca')) admEl('adm-f-marca').value = p ? (p.marca||'') : '';
         // preview imagens existentes (wrappers arrastáveis)
@@ -1540,6 +1647,123 @@
         }).join('');
     }
 
+    // ─── GERENCIAR CATEGORIAS (add/editar/excluir — não mexe em produtos) ─────
+    // Categorias eram fixas no código (CATS/ADM_CATS/ADM_ICONS/TAMANHO_CATS);
+    // agora vivem em categories no banco e são administráveis aqui. Excluir é
+    // bloqueado pelo backend se algum produto ainda usa a categoria — ver
+    // DELETE /api/categories/:id no server.js.
+    function admRenderCatsManage() {
+        const wrap = admEl('adm-cats-manage-wrap');
+        if (!wrap) return;
+        wrap.innerHTML = CATS.map(c => `<div class="adm-dc" data-catrow="${admEsc(c.value)}">
+            <div style="display:grid;grid-template-columns:auto 1fr 1fr 1fr auto auto;gap:8px;align-items:center">
+                <div style="width:30px;height:30px;border-radius:7px;background:#1a1a1a;display:flex;align-items:center;justify-content:center"><i class="ti ${admEsc(c.icon||'ti-tag')}" style="font-size:15px;color:#B8924F"></i></div>
+                <input type="text" data-cat-field="label" value="${admEsc(c.label)}" placeholder="Nome exibido">
+                <input type="text" data-cat-field="icon" value="${admEsc(c.icon||'')}" placeholder="Ícone Tabler">
+                <select data-cat-field="size_mode">
+                    <option value="nenhum" ${c.size_mode==='nenhum'?'selected':''}>Sem seletor</option>
+                    <option value="tamanho" ${c.size_mode==='tamanho'?'selected':''}>Tamanho</option>
+                    <option value="numero" ${c.size_mode==='numero'?'selected':''}>Numeração</option>
+                </select>
+                <button type="button" class="adm-btn-ghost" data-cat-save="${admEsc(c.value)}">Salvar</button>
+                <button type="button" class="adm-btn-ghost" data-cat-del="${admEsc(c.value)}" title="Excluir categoria">✕</button>
+            </div>
+            <div style="font-size:10px;color:#555;margin-top:6px">slug: ${admEsc(c.value)}</div>
+        </div>`).join('');
+
+        wrap.querySelectorAll('[data-cat-save]').forEach(btn => btn.addEventListener('click', () => admSaveCategory(btn.dataset.catSave)));
+        wrap.querySelectorAll('[data-cat-del]').forEach(btn => btn.addEventListener('click', () => admDeleteCategory(btn.dataset.catDel)));
+    }
+
+    async function admSaveCategory(slug) {
+        const c = CATS.find(x => x.value === slug);
+        if (!c || !c.id) return;
+        const row = admEl('adm-cats-manage-wrap').querySelector(`[data-catrow="${slug}"]`);
+        const label = row.querySelector('[data-cat-field="label"]').value.trim();
+        const icon = row.querySelector('[data-cat-field="icon"]').value.trim() || 'ti-tag';
+        const size_mode = row.querySelector('[data-cat-field="size_mode"]').value;
+        if (!label) { admToast('Nome da categoria é obrigatório'); return; }
+        try {
+            await dbUpdateCategory(c.id, (() => { const fd = new FormData(); fd.append('label', label); fd.append('icon', icon); fd.append('size_mode', size_mode); return fd; })());
+            await carregarCategorias();
+            admToast('Categoria atualizada');
+        } catch (e) { admToast('Erro ao salvar categoria: ' + e.message); }
+    }
+
+    async function admDeleteCategory(slug) {
+        const c = CATS.find(x => x.value === slug);
+        if (!c || !c.id) return;
+        if (!confirm(`Excluir a categoria "${c.label}"? Só é permitido se nenhum produto estiver usando ela.`)) return;
+        try {
+            await dbDeleteCategory(c.id);
+            await carregarCategorias();
+            admToast('Categoria excluída');
+        } catch (e) { admToast('Erro: ' + e.message); }
+    }
+
+    admEl('adm-newcat-add')?.addEventListener('click', async () => {
+        const slug = admEl('adm-newcat-slug').value.trim().toLowerCase().replace(/\s+/g, '-');
+        const label = admEl('adm-newcat-label').value.trim();
+        const icon = admEl('adm-newcat-icon').value.trim() || 'ti-tag';
+        const size_mode = admEl('adm-newcat-mode').value;
+        if (!slug || !label) { admToast('Preencha slug e nome da categoria'); return; }
+        try {
+            const fd = new FormData();
+            fd.append('slug', slug); fd.append('label', label); fd.append('icon', icon); fd.append('size_mode', size_mode);
+            fd.append('sort_order', String(CATS.length));
+            await dbAddCategory(fd);
+            await carregarCategorias();
+            admEl('adm-newcat-slug').value = ''; admEl('adm-newcat-label').value = ''; admEl('adm-newcat-icon').value = ''; admEl('adm-newcat-mode').value = 'nenhum';
+            admToast(`Categoria "${label}" adicionada`);
+        } catch (e) { admToast('Erro ao adicionar categoria: ' + e.message); }
+    });
+
+    // ─── GERENCIAR ESCALAS DE TAMANHO/NUMERAÇÃO ────────────────────────────────
+    function admRenderSizeOpts() {
+        const renderGroup = (containerId, values, modo) => {
+            const wrap = admEl(containerId);
+            if (!wrap) return;
+            wrap.innerHTML = values.map(v => `<span class="adm-chip">${admEsc(v)}<button type="button" class="adm-chip-x" data-sizeopt-del="${admEsc(modo)}" data-valor="${admEsc(v)}" title="Remover">✕</button></span>`).join('') || '<span style="color:#555;font-size:11px">Nenhum valor cadastrado</span>';
+            wrap.querySelectorAll('[data-sizeopt-del]').forEach(btn => btn.addEventListener('click', () => admDeleteSizeOption(btn.dataset.sizeoptDel, btn.dataset.valor)));
+        };
+        renderGroup('adm-sizeopts-tamanho', SIZES, 'tamanho');
+        renderGroup('adm-sizeopts-numero', NUMEROS, 'numero');
+    }
+
+    async function admAddSizeOption(modo, inputId) {
+        const inp = admEl(inputId);
+        const valor = inp.value.trim();
+        if (!valor) return;
+        try {
+            await dbAddSizeOption(modo, valor);
+            await carregarSizeOptions();
+            admRenderSizeOpts();
+            inp.value = '';
+            admToast(`"${valor}" adicionado`);
+        } catch (e) { admToast('Erro ao adicionar: ' + e.message); }
+    }
+
+    async function admDeleteSizeOption(modo, valor) {
+        if (!confirm(`Remover "${valor}"? Produtos já cadastrados com esse valor não são alterados.`)) return;
+        // A API só aceita exclusão por id — o carregamento mais recente
+        // (carregarSizeOptions) não guarda os ids localmente, então busca de
+        // novo antes de excluir, pra sempre remover o registro certo.
+        try {
+            const rows = await dbGetSizeOptions();
+            const row = rows.find(r => r.modo === modo && r.valor === valor);
+            if (!row) { admToast('Valor não encontrado — recarregue e tente de novo'); return; }
+            await dbDeleteSizeOption(row.id);
+            await carregarSizeOptions();
+            admRenderSizeOpts();
+            admToast('Removido');
+        } catch (e) { admToast('Erro ao remover: ' + e.message); }
+    }
+
+    admEl('adm-sizeopt-tamanho-add')?.addEventListener('click', () => admAddSizeOption('tamanho', 'adm-sizeopt-tamanho-input'));
+    admEl('adm-sizeopt-numero-add')?.addEventListener('click', () => admAddSizeOption('numero', 'adm-sizeopt-numero-input'));
+    admEl('adm-sizeopt-tamanho-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); admAddSizeOption('tamanho', 'adm-sizeopt-tamanho-input'); } });
+    admEl('adm-sizeopt-numero-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); admAddSizeOption('numero', 'adm-sizeopt-numero-input'); } });
+
     // ─── MARCAS (gerenciadas aqui, não mexem em produto/categoria nenhum) ─────
     function admRenderBrands() {
         const wrap = admEl('adm-brands-wrap');
@@ -1663,8 +1887,7 @@
             admCatNewFiles = {};
             const catsWrap = admEl('adm-site-cats');
             catsWrap.innerHTML = CATS.map(c => {
-                const field = CAT_IMAGE_FIELDS[c.value];
-                const url = cfg && cfg[field];
+                const url = CAT_COVER_IMAGES[c.value] || (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]);
                 return `<div>
                     <div style="width:100%;aspect-ratio:3/4;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:8px;overflow:hidden;margin-bottom:6px">
                         <img data-cat-preview="${c.value}" src="${url||''}" style="width:100%;height:100%;object-fit:cover;display:${url?'block':'none'}">
@@ -1736,10 +1959,6 @@
         fd.append('hero_desc', admEl('adm-site-desc').value.trim());
         fd.append('hero_tag_eyebrow', admEl('adm-site-tag-eyebrow').value.trim());
         fd.append('hero_tag_title', admEl('adm-site-tag-title').value.trim());
-        CATS.forEach(c => {
-            const f = admCatNewFiles[c.value];
-            if (f) fd.append(CAT_IMAGE_FIELDS[c.value], f);
-        });
         if (admFeatNewFile) fd.append('feat_image', admFeatNewFile);
         fd.append('feat_badge', admEl('adm-feat-badge').value.trim());
         fd.append('feat_name', admEl('adm-feat-name').value.trim());
@@ -1747,6 +1966,15 @@
         fd.append('feat_link', admEl('adm-feat-link').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
+            // Imagem de capa por categoria agora é campo próprio de cada
+            // categoria (categories.cover_image), não mais de config — uma
+            // chamada PUT /api/categories/:id por categoria com arquivo novo.
+            const catUpdates = CATS.filter(c => admCatNewFiles[c.value] && c.id).map(c => {
+                const catFd = new FormData();
+                catFd.append('cover_image', admCatNewFiles[c.value]);
+                return dbUpdateCategory(c.id, catFd);
+            });
+            if (catUpdates.length) await Promise.all(catUpdates);
             admToast('Capa do site atualizada');
             admSiteNewFiles = [];
             admCatNewFiles = {};
@@ -1754,6 +1982,7 @@
             admEl('adm-site-cover').value = '';
             admEl('adm-feat-image').value = '';
             carregarCapaDoSite();
+            carregarCategorias();
         } catch(e) { admToast('Erro: ' + e.message); }
     });
 
@@ -1790,6 +2019,12 @@
     bindPreco(document.getElementById('prodPreco'));
     bindPreco(document.getElementById('adm-f-preco'));
     bindPreco(document.getElementById('editPreco'));
+    if (typeof renderSizeButtonGroup === 'function') {
+        renderSizeButtonGroup('adm-f-tamanhos-buttons', SIZES, syncSizesToInput);
+        renderSizeButtonGroup('adm-f-numeracao-buttons', NUMEROS, syncNumerosToInput);
+    }
+    carregarCategorias();
+    carregarSizeOptions();
     carregarProdutos();
     carregarCapaDoSite();
     carregarBrands();

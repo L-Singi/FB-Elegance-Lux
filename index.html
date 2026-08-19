@@ -1543,6 +1543,52 @@
               id="adm-cat-cards"></div>
 
             <div class="adm-section-head">
+              <h2>Categorias</h2>
+              <p>Categorias do site — controlam as abas de navegação, os filtros e se o produto usa seletor de
+                tamanho, de numeração ou nenhum. Excluir só é permitido se nenhum produto estiver usando a categoria.</p>
+            </div>
+            <div id="adm-cats-manage-wrap" style="display:flex;flex-direction:column;gap:10px"></div>
+            <div class="adm-dc" style="max-width:520px;margin-top:10px">
+              <div class="adm-dc-title">Nova categoria</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+                <input type="text" id="adm-newcat-slug" placeholder="slug (ex: bolsas)" maxlength="40">
+                <input type="text" id="adm-newcat-label" placeholder="Nome exibido (ex: Bolsas)" maxlength="60">
+                <input type="text" id="adm-newcat-icon" placeholder="Ícone Tabler (ex: ti-briefcase)" maxlength="40">
+                <select id="adm-newcat-mode">
+                  <option value="nenhum">Sem seletor</option>
+                  <option value="tamanho">Seletor de tamanho (P/M/G)</option>
+                  <option value="numero">Seletor de numeração</option>
+                </select>
+              </div>
+              <button type="button" class="adm-btn-add" id="adm-newcat-add" style="margin-top:8px">+ Adicionar
+                categoria</button>
+            </div>
+
+            <div class="adm-section-head">
+              <h2>Escalas de tamanho e numeração</h2>
+              <p>Valores disponíveis nos seletores do formulário de produto. Remover um valor não altera produtos já
+                cadastrados com ele.</p>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+              <div class="adm-dc">
+                <div class="adm-dc-title">Tamanhos (P/M/G)</div>
+                <div class="adm-brand-chips" id="adm-sizeopts-tamanho"></div>
+                <div class="adm-brand-add-row">
+                  <input type="text" id="adm-sizeopt-tamanho-input" placeholder="Novo tamanho (ex: 3XL)" maxlength="10">
+                  <button type="button" class="adm-btn-ghost" id="adm-sizeopt-tamanho-add">+ Adicionar</button>
+                </div>
+              </div>
+              <div class="adm-dc">
+                <div class="adm-dc-title">Numeração (calçados)</div>
+                <div class="adm-brand-chips" id="adm-sizeopts-numero"></div>
+                <div class="adm-brand-add-row">
+                  <input type="text" id="adm-sizeopt-numero-input" placeholder="Novo número (ex: 46)" maxlength="10">
+                  <button type="button" class="adm-btn-ghost" id="adm-sizeopt-numero-add">+ Adicionar</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="adm-section-head">
               <h2>Marcas por categoria</h2>
               <p>Aparecem no filtro do site e no campo "Marca" ao cadastrar um produto. Adicionar ou remover aqui não
                 altera produtos já cadastrados.</p>
@@ -1644,20 +1690,15 @@
           <div class="adm-fr" id="adm-row-marca"><label>Marca</label><select id="adm-f-marca">
               <option value="">Selecione</option>
             </select></div>
-          <div class="adm-fr" id="adm-row-numeracao"><label>Numeração (calçados)</label><input type="text"
-              id="adm-f-numeracao" placeholder="Ex: 38,39,40"></div>
+          <div class="adm-fr" id="adm-row-numeracao">
+            <label>Numeração (calçados)</label>
+            <input type="hidden" id="adm-f-numeracao" placeholder="Ex: 38,39,40">
+            <div id="adm-f-numeracao-buttons" class="size-buttons"></div>
+          </div>
           <div class="adm-fr" id="adm-row-tamanhos">
             <label>Tamanhos (casacos/camisetas/shorts)</label>
             <input type="hidden" id="adm-f-tamanhos" placeholder="Ex: S,M,L">
-            <div id="adm-f-tamanhos-buttons" class="size-buttons">
-              <button type="button" class="size-opt" data-size="XXS">XXS</button>
-              <button type="button" class="size-opt" data-size="XS">XS</button>
-              <button type="button" class="size-opt" data-size="S">S</button>
-              <button type="button" class="size-opt" data-size="M">M</button>
-              <button type="button" class="size-opt" data-size="L">L</button>
-              <button type="button" class="size-opt" data-size="XL">XL</button>
-              <button type="button" class="size-opt" data-size="XXL">XXL</button>
-            </div>
+            <div id="adm-f-tamanhos-buttons" class="size-buttons"></div>
           </div>
           <div class="adm-fr"><label>Imagens</label><input type="file" id="adm-f-images" accept="image/*" multiple>
           </div>
