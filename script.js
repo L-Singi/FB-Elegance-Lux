@@ -692,18 +692,31 @@
 
         let html = '';
 
-        if (TAMANHO_CATS.includes(filtroCategoria)) {
+        const temTamanho = TAMANHO_CATS.includes(filtroCategoria);
+        const temNumero = !temTamanho && NUMERO_CATS.includes(filtroCategoria);
+        const temMarca = !!BRANDS_BY_CAT[filtroCategoria];
+        if (temTamanho) {
             html += sidebarGroup('tamanho', 'Tamanho', SIZES, filtroTamanho, 'tamanho');
-        } else if (NUMERO_CATS.includes(filtroCategoria)) {
+        } else if (temNumero) {
             html += sidebarGroup('tamanho', 'Número', NUMEROS, filtroNumero, 'numero');
         }
-        if (BRANDS_BY_CAT[filtroCategoria]) {
+        if (temMarca) {
             html += sidebarGroup('marca', 'Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
         }
         if (activeCount) {
             html += `<button type="button" class="chip-clear" id="filterMenuClear">Limpar filtros</button>`;
         }
         panel.innerHTML = html;
+
+        // Categoria sem nenhum filtro disponível (ex: "Mais Procurados") —
+        // não faz sentido reservar a coluna da sidebar nem deixar os produtos
+        // grudados à esquerda quando a última linha não fecha; centraliza a
+        // grade inteira (ver CSS .plp-body.no-filter / .product-grid.is-centered).
+        const semFiltro = !temTamanho && !temNumero && !temMarca;
+        const plpBody = document.querySelector('.plp-body');
+        const grid = document.getElementById('product-grid');
+        if (plpBody) plpBody.classList.toggle('no-filter', semFiltro);
+        if (grid) grid.classList.toggle('is-centered', semFiltro);
 
         panel.querySelectorAll('[data-toggle-group]').forEach(head => head.addEventListener('click', (e) => {
             e.stopPropagation();

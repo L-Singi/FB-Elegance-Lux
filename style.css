@@ -371,6 +371,17 @@ body {
 .plp-sidebar-backdrop { display: none; }
 .plp-sidebar-head { display: none; }
 
+/* Categorias sem filtro (ex: "Mais Procurados") não têm nada pra mostrar na
+   sidebar — sem isso, a coluna de 240px ficava reservada vazia e a grade de
+   produtos parecia deslocada pra direita em vez de centralizada. Só se
+   aplica no desktop: no mobile a sidebar já é um menu off-canvas (não ocupa
+   espaço no layout), então não há nada pra corrigir ali. Classe alternada
+   em renderizarFiltroMenu(). */
+@media (min-width: 861px) {
+    .plp-body.no-filter { grid-template-columns: 1fr; }
+    .plp-body.no-filter .plp-sidebar { display: none; }
+}
+
 .plp-group { border-bottom: 1px solid rgba(242,239,233,.1); padding: 18px 0; }
 .plp-group:first-child { padding-top: 0; }
 .plp-group-head {
@@ -461,6 +472,21 @@ body {
 /* ========== CARDS DE PRODUTO ========== */
 .product-grid, .curated-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 24px; margin: 0 0 40px; }
 .curated-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+
+/* Categorias sem filtro (ex: "Mais Procurados"): os produtos ficam
+   centralizados em vez de grudados à esquerda quando a última linha não
+   preenche todas as colunas. Troca de grid pra flex centralizado, com cada
+   card mantendo a mesma largura que teria na grade normal (3 colunas / 24px
+   de gap no desktop). Classe alternada em renderizarFiltroMenu(). */
+.product-grid.is-centered {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.product-grid.is-centered .product-card {
+    flex: 0 1 calc((100% - 2 * 24px) / 3);
+    max-width: calc((100% - 2 * 24px) / 3);
+}
 .curated-section { margin: 76px 0 0; }
 
 /* ========== VITRINE DE CATEGORIAS ========== */
@@ -762,6 +788,11 @@ body {
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
         margin: 20px 0;
+    }
+
+    .product-grid.is-centered .product-card {
+        flex-basis: calc((100% - 12px) / 2);
+        max-width: calc((100% - 12px) / 2);
     }
 
     .product-card {
