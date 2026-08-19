@@ -30,4 +30,4 @@ logs/
 *.log
 
 # Netlify
-.netlify/
+.netlify/check-updates.sh

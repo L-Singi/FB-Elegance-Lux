@@ -49,9 +49,18 @@
         <p class="hero-desc" id="heroDesc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com
           procedência garantida e envio para todo o Brasil.</p>
       </div>
-      <div class="hero-media">
-        <img class="hero-img" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG"
-          alt="FB Elegance Lux">
+      <div class="hero-media" id="heroMedia">
+        <div class="hero-carousel" id="heroCarousel">
+          <img class="hero-img hero-slide is-active" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG"
+            alt="FB Elegance Lux">
+        </div>
+        <button type="button" class="hero-nav hero-nav-prev" id="heroPrev" aria-label="Imagem anterior" style="display:none">
+          <i class="ti ti-chevron-left"></i>
+        </button>
+        <button type="button" class="hero-nav hero-nav-next" id="heroNext" aria-label="Próxima imagem" style="display:none">
+          <i class="ti ti-chevron-right"></i>
+        </button>
+        <div class="hero-dots" id="heroDots"></div>
       </div>
     </div>
   </section>
@@ -1457,14 +1466,17 @@
           <!-- SITE -->
           <div class="adm-panel" id="adm-tab-site">
             <div class="adm-dc" style="max-width:420px">
-              <div class="adm-dc-title">Foto de capa do site</div>
-              <div class="adm-dc-sub">Aparece no topo da loja, para todos os visitantes</div>
-              <div id="adm-site-preview"
-                style="margin:14px 0;width:100%;aspect-ratio:16/10;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">
-                <img id="adm-site-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+              <div class="adm-dc-title">Imagens do carrossel (banner)</div>
+              <div class="adm-dc-sub">Aparecem em rotação automática no topo da loja, para todos os visitantes</div>
+              <div id="adm-site-preview" class="adm-image-preview" style="margin:14px 0"></div>
+              <input type="file" id="adm-site-cover" accept="image/*" multiple
+                style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;margin-bottom:14px">
+              <div class="adm-fr" style="display:flex;align-items:center;gap:8px;flex-direction:row">
+                <input type="checkbox" id="adm-site-shuffle" style="width:auto">
+                <label for="adm-site-shuffle" style="margin:0">Passar as imagens em ordem aleatória</label>
               </div>
-              <input type="file" id="adm-site-cover" accept="image/*"
-                style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px;margin-bottom:12px">
+              <div class="adm-fr"><label>Intervalo entre imagens (segundos)</label>
+                <input type="number" id="adm-site-interval" min="2" max="30" step="1" value="5"></div>
             </div>
 
             <div class="adm-dc" style="max-width:420px;margin-top:16px">

@@ -274,8 +274,10 @@
             siteConfig = cfg || {};
             renderizarCatShowcase(siteConfig);
             if (!cfg) return;
-            const heroImg = document.querySelector('.hero-img');
-            if (heroImg && cfg.hero_image) heroImg.src = cfg.hero_image;
+            const heroImages = (Array.isArray(cfg.hero_images) && cfg.hero_images.length)
+                ? cfg.hero_images
+                : (cfg.hero_image ? [cfg.hero_image] : []);
+            initHeroCarousel(heroImages, { shuffle: !!cfg.hero_shuffle, intervalMs: cfg.hero_interval_ms || 5000 });
             const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
             setText('heroEyebrow', cfg.hero_eyebrow);
             setText('heroTitle1', cfg.hero_title1);
@@ -286,6 +288,87 @@
             setText('heroTagTitle', cfg.hero_tag_title);
             renderizarDestaque(cfg);
         } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
+    }
+
+    // ─── CARROSSEL DO HERO ────────────────────────────────────────────────────
+    // Troca automática de imagens no banner principal, com fade suave, setas,
+    // pontinhos de posição e pausa ao passar o mouse. Todas as imagens ficam
+    // empilhadas (position:absolute) dentro de uma caixa de altura fixa
+    // (.hero-media), então trocar de imagem nunca desloca o layout — só a
+    // opacidade muda (ver .hero-slide no style.css).
+    let heroTimer = null;
+    let heroStopFn = () => {};
+    let heroStartFn = () => {};
+    let heroHoverBound = false;
+    function initHeroCarousel(images, opts) {
+        const track = document.getElementById('heroCarousel');
+        const prevBtn = document.getElementById('heroPrev');
+        const nextBtn = document.getElementById('heroNext');
+        const dotsWrap = document.getElementById('heroDots');
+        const media = document.getElementById('heroMedia');
+        if (!track) return;
+        if (heroTimer) { clearInterval(heroTimer); heroTimer = null; }
+
+        let list = (images && images.length) ? images.slice() : [];
+        if (list.length === 0) return; // mantém a <img> estática original do HTML
+
+        if (opts && opts.shuffle) {
+            for (let i = list.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [list[i], list[j]] = [list[j], list[i]];
+            }
+        }
+
+        track.innerHTML = list.map((src, i) =>
+            `<img class="hero-img hero-slide${i === 0 ? ' is-active' : ''}" src="${src}" alt="FB Elegance Lux" loading="${i === 0 ? 'eager' : 'lazy'}">`
+        ).join('');
+        const slides = Array.from(track.querySelectorAll('.hero-slide'));
+
+        const multiple = slides.length > 1;
+        prevBtn.style.display = multiple ? 'flex' : 'none';
+        nextBtn.style.display = multiple ? 'flex' : 'none';
+        dotsWrap.innerHTML = multiple
+            ? slides.map((_, i) => `<button type="button" class="hero-dot${i === 0 ? ' is-active' : ''}" data-idx="${i}" aria-label="Ir para imagem ${i + 1}"></button>`).join('')
+            : '';
+        const dots = Array.from(dotsWrap.querySelectorAll('.hero-dot'));
+
+        let current = 0;
+        function goTo(idx) {
+            slides[current].classList.remove('is-active');
+            if (dots[current]) dots[current].classList.remove('is-active');
+            current = (idx + slides.length) % slides.length;
+            slides[current].classList.add('is-active');
+            if (dots[current]) dots[current].classList.add('is-active');
+        }
+        function next() { goTo(current + 1); }
+        function prev() { goTo(current - 1); }
+
+        const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function startAutoplay() {
+            if (!multiple || reducedMotion) return;
+            stopAutoplay();
+            heroTimer = setInterval(next, Math.max(1000, opts.intervalMs || 5000));
+        }
+        function stopAutoplay() { if (heroTimer) { clearInterval(heroTimer); heroTimer = null; } }
+
+        if (multiple) {
+            prevBtn.onclick = () => { prev(); startAutoplay(); };
+            nextBtn.onclick = () => { next(); startAutoplay(); };
+            dots.forEach(d => d.onclick = () => { goTo(parseInt(d.dataset.idx, 10)); startAutoplay(); });
+        }
+        // heroStopFn/heroStartFn são indireções pra os listeners de
+        // mouseenter/mouseleave (ligados uma única vez, ver mais abaixo)
+        // sempre chamarem a versão atual de start/stopAutoplay — sem isso,
+        // cada re-render (ex.: admin salvando a capa de novo) acumularia
+        // um novo par de listeners no mesmo #heroMedia.
+        heroStopFn = stopAutoplay;
+        heroStartFn = multiple ? startAutoplay : () => {};
+        if (media && !heroHoverBound) {
+            heroHoverBound = true;
+            media.addEventListener('mouseenter', () => heroStopFn());
+            media.addEventListener('mouseleave', () => heroStartFn());
+        }
+        startAutoplay();
     }
 
     // ─── DESTAQUE (produto mais vendido) ───────────────────────────────────────
@@ -1417,14 +1500,44 @@
         }).join('');
     }
 
-    let admSiteNewFile = null;
+    let admSiteNewFiles = [];
     let admCatNewFiles = {};
+
+    // Grade de miniaturas do carrossel — mesmo padrão de "remover" já usado
+    // nas imagens de produto (botão ✕ marca pra remover, sem apagar do DOM
+    // na hora, só na hora de salvar — ver admSiteHeroKeptUrls()).
+    function admRenderHeroPreview(urls) {
+        const preview = admEl('adm-site-preview');
+        preview.innerHTML = urls.map(url => `<div class="image-preview-item" data-url="${url}">
+            <img src="${url}">
+            <button type="button" class="remove-image-btn" data-removed="false">✕</button>
+        </div>`).join('');
+        preview.querySelectorAll('.remove-image-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.dataset.removed = String(btn.dataset.removed !== 'true');
+                const item = btn.closest('.image-preview-item');
+                item.style.opacity = btn.dataset.removed === 'true' ? '0.25' : '1';
+            });
+        });
+    }
+    function admSiteHeroKeptUrls() {
+        const preview = admEl('adm-site-preview');
+        return Array.from(preview.querySelectorAll('.image-preview-item'))
+            .filter(item => item.querySelector('.remove-image-btn')?.dataset.removed !== 'true')
+            .map(item => item.dataset.url);
+    }
+
     async function admRenderSite() {
-        const img = admEl('adm-site-preview-img');
         try {
             const cfg = await dbGetConfig();
-            if (cfg && cfg.hero_image) { img.src = cfg.hero_image; img.style.display = 'block'; }
-            else { img.style.display = 'none'; }
+            admSiteNewFiles = [];
+            admEl('adm-site-cover').value = '';
+            const heroImages = (Array.isArray(cfg?.hero_images) && cfg.hero_images.length)
+                ? cfg.hero_images
+                : (cfg?.hero_image ? [cfg.hero_image] : []);
+            admRenderHeroPreview(heroImages);
+            admEl('adm-site-shuffle').checked = !!cfg?.hero_shuffle;
+            admEl('adm-site-interval').value = Math.round((cfg?.hero_interval_ms || 5000) / 1000);
             admEl('adm-site-eyebrow').value = cfg?.hero_eyebrow || '';
             admEl('adm-site-title1').value = cfg?.hero_title1 || '';
             admEl('adm-site-title2').value = cfg?.hero_title2 || '';
@@ -1464,16 +1577,26 @@
             admEl('adm-feat-name').value = cfg?.feat_name || '';
             admEl('adm-feat-desc').value = cfg?.feat_desc || '';
             admEl('adm-feat-link').value = cfg?.feat_link || '';
-        } catch(e) { img.style.display = 'none'; }
+        } catch(e) { admRenderHeroPreview([]); }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
-        const f = admEl('adm-site-cover').files[0];
-        admSiteNewFile = f || null;
-        if (f) {
-            const img = admEl('adm-site-preview-img');
-            img.src = URL.createObjectURL(f);
-            img.style.display = 'block';
-        }
+        const files = Array.from(admEl('adm-site-cover').files || []);
+        const preview = admEl('adm-site-preview');
+        files.forEach(f => {
+            admSiteNewFiles.push(f);
+            const div = document.createElement('div');
+            div.className = 'image-preview-item';
+            div.innerHTML = `<img src="${URL.createObjectURL(f)}"><button type="button" class="remove-image-btn">✕</button>`;
+            div.querySelector('.remove-image-btn').addEventListener('click', () => {
+                const idx = admSiteNewFiles.indexOf(f);
+                if (idx > -1) admSiteNewFiles.splice(idx, 1);
+                div.remove();
+            });
+            preview.appendChild(div);
+        });
+        // Limpa o input pra permitir escolher mais arquivos depois sem
+        // duplicar os que já foram adicionados na lista.
+        admEl('adm-site-cover').value = '';
     });
     let admFeatNewFile = null;
     admEl('adm-feat-image').addEventListener('change', () => {
@@ -1487,7 +1610,11 @@
     });
     admEl('adm-site-save').addEventListener('click', async () => {
         const fd = new FormData();
-        if (admSiteNewFile) fd.append('hero_image', admSiteNewFile);
+        fd.append('hero_images_keep', JSON.stringify(admSiteHeroKeptUrls()));
+        admSiteNewFiles.forEach(f => fd.append('hero_images', f));
+        fd.append('hero_shuffle', admEl('adm-site-shuffle').checked ? 'true' : 'false');
+        const intervalSec = Math.max(2, parseInt(admEl('adm-site-interval').value, 10) || 5);
+        fd.append('hero_interval_ms', String(intervalSec * 1000));
         fd.append('hero_eyebrow', admEl('adm-site-eyebrow').value.trim());
         fd.append('hero_title1', admEl('adm-site-title1').value.trim());
         fd.append('hero_title2', admEl('adm-site-title2').value.trim());
@@ -1507,7 +1634,7 @@
         try {
             await apiFetch('PUT', '/api/config', fd);
             admToast('Capa do site atualizada');
-            admSiteNewFile = null;
+            admSiteNewFiles = [];
             admCatNewFiles = {};
             admFeatNewFile = null;
             admEl('adm-site-cover').value = '';
