@@ -82,13 +82,12 @@ body {
     position: absolute;
     left: -40px;
     bottom: 44px;
-    background: #0A0A0B;
     border-left: 2px solid #B8924F;
     padding: 18px 24px;
     pointer-events: none;
 }
-.hero-tag-eyebrow { font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: #8E8880; }
-.hero-tag-title { font-family: 'Bodoni Moda', serif; font-size: 1.25rem; margin-top: 5px; color: #F2EFE9; }
+.hero-tag-eyebrow { font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: #8E8880; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+.hero-tag-title { font-family: 'Bodoni Moda', serif; font-size: 1.25rem; margin-top: 5px; color: #F2EFE9; text-shadow: 0 2px 10px rgba(0,0,0,.7); }
 
 /* ========== ABAS DE CATEGORIA (abaixo do banner) ========== */
 .cat-tabs {
