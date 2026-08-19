@@ -319,7 +319,10 @@
         align-items: center;
         justify-content: space-between;
         background: #0d0d0d;
-        flex-shrink: 0
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 20
       }
 
       .adm-tb-title {
@@ -472,6 +475,93 @@
         margin-bottom: 11px
       }
 
+      /* Separador de seção dentro de uma aba (título + descrição curta) —
+         reaproveitável em qualquer .adm-panel que precise agrupar blocos,
+         em vez de cada seção nova inventar seu próprio espaçamento solto. */
+      .adm-section-head {
+        margin: 22px 0 12px;
+        padding-top: 16px;
+        border-top: 1px solid #1e1e1e
+      }
+
+      .adm-section-head h2 {
+        font-size: 14px;
+        font-weight: 500;
+        color: #fff;
+        margin: 0 0 3px
+      }
+
+      .adm-section-head p {
+        font-size: 11px;
+        color: #666;
+        margin: 0;
+        max-width: 520px;
+        line-height: 1.5
+      }
+
+      /* Marcas por categoria — chips com botão de remover embutido */
+      .adm-brand-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 24px
+      }
+
+      .adm-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 5px 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        background: #1a1a1a;
+        border: 1px solid #2a2a2a;
+        color: #ddd
+      }
+
+      .adm-chip-x {
+        background: none;
+        border: none;
+        color: #666;
+        cursor: pointer;
+        font-size: 11px;
+        width: 16px;
+        height: 16px;
+        line-height: 1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color .12s, background .12s
+      }
+
+      .adm-chip-x:hover {
+        color: #e05252;
+        background: rgba(224, 82, 82, .12)
+      }
+
+      .adm-brand-add-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px
+      }
+
+      .adm-brand-add-row input {
+        flex: 1;
+        padding: 7px 10px;
+        background: #151515;
+        border: 1px solid #1e1e1e;
+        border-radius: 8px;
+        color: #eaeaea;
+        font-size: 12px;
+        outline: none;
+        font-family: inherit
+      }
+
+      .adm-brand-add-row input:focus {
+        border-color: #B8924F
+      }
+
       .adm-fi {
         margin-bottom: 10px
       }
@@ -599,7 +689,12 @@
         align-items: center;
         gap: 8px;
         margin-bottom: 12px;
-        flex-wrap: wrap
+        flex-wrap: wrap;
+        position: sticky;
+        top: 52px;
+        z-index: 15;
+        background: #111;
+        padding-top: 10px
       }
 
       .adm-sbox {
@@ -805,21 +900,6 @@
         max-height: 520px;
         overflow-y: auto;
         position: relative
-      }
-
-      #adm-topbar {
-        position: sticky;
-        top: 0;
-        z-index: 20;
-        background: #0d0d0d
-      }
-
-      .adm-toolbar {
-        position: sticky;
-        top: 52px;
-        z-index: 15;
-        background: #111;
-        padding-top: 10px
       }
 
       .adm-modal h3 {
@@ -1461,6 +1541,14 @@
           <div class="adm-panel" id="adm-tab-categorias">
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px"
               id="adm-cat-cards"></div>
+
+            <div class="adm-section-head">
+              <h2>Marcas por categoria</h2>
+              <p>Aparecem no filtro do site e no campo "Marca" ao cadastrar um produto. Adicionar ou remover aqui não
+                altera produtos já cadastrados.</p>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px"
+              id="adm-brands-wrap"></div>
           </div>
 
           <!-- SITE -->

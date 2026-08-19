@@ -24,6 +24,9 @@
     async function dbUpdate(id, data){ return apiFetch('PUT', `/api/produtos/${id}`, data); }
     async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
     async function dbGetConfig()     { return apiFetch('GET', '/api/config'); }
+    async function dbGetBrands()          { return apiFetch('GET', '/api/brands'); }
+    async function dbAddBrand(categoria, nome) { return apiFetch('POST', '/api/brands', { categoria, nome }); }
+    async function dbDeleteBrand(id)      { return apiFetch('DELETE', `/api/brands/${id}`); }
 
     // Upload de imagem para o servidor
     async function uploadImage(file) {
@@ -68,12 +71,20 @@
     const TAMANHO_CATS = ['casacos','camisetas','shorts'];
     const SIZES = ['XXS','XS','S','M','L','XL','XXL'];
     const NUMEROS = ['34','35','36','37','38','39','40','41','42','43','44','45'];
-    const BRANDS_BY_CAT = {
+    // Marcas agora são cadastradas pelo admin (aba Categorias), não mais fixas
+    // aqui — ver carregarBrands(). Esta lista fica só como fallback caso a
+    // API de marcas falhe no carregamento, pra sidebar/formulário nunca
+    // ficarem vazios por causa de uma falha de rede.
+    const BRANDS_BY_CAT_FALLBACK = {
         casacos: ['AllSaints','Off-White','Palm Angels','Ralph Lauren','Moncler','Diesel'],
         camisetas: ['AllSaints','Off-White','Golden Goose','Palm Angels','Ralph Lauren','Moncler','Diesel','Boss'],
         shorts: ['Vilebrequin','Sundek'],
         calcados: ['Nike','Golden Goose','Off-White','Zegna','Gucci','Bottega Veneta','Louis Vuitton']
     };
+    let BRANDS_BY_CAT = {};
+    // id numérico de cada marca (categoria+nome -> id), pra dar pra excluir
+    // no admin sem precisar de outra chamada — populado junto em carregarBrands().
+    let BRAND_IDS = {};
 
     // Normalização de status/categorias para evitar valores inconsistentes do backend
     function stripAccents(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').trim(); }
@@ -265,6 +276,32 @@
             document.getElementById('product-grid').innerHTML = `<div class="empty-message">Erro ao carregar: ${err.message}</div>`;
             showToast('Erro ao carregar estoque: ' + err.message, true);
         }
+    }
+
+    // ─── MARCAS (carregadas do banco, editáveis no admin) ─────────────────────
+    async function carregarBrands() {
+        try {
+            const rows = await dbGetBrands();
+            const grouped = {};
+            const ids = {};
+            rows.forEach(b => {
+                if (!grouped[b.categoria]) grouped[b.categoria] = [];
+                grouped[b.categoria].push(b.nome);
+                ids[`${b.categoria}::${b.nome}`] = b.id;
+            });
+            BRANDS_BY_CAT = grouped;
+            BRAND_IDS = ids;
+        } catch (err) {
+            console.warn('marcas: usando lista padrão (falha ao carregar da API)', err);
+            BRANDS_BY_CAT = BRANDS_BY_CAT_FALLBACK;
+            BRAND_IDS = {};
+        }
+        // A sidebar de filtros e o formulário de produto no admin já podem
+        // ter renderizado antes das marcas chegarem — atualiza os dois se
+        // já estiverem na tela.
+        if (typeof renderizarFiltroMenu === 'function') renderizarFiltroMenu();
+        if (typeof refreshNumSizeVisibility === 'function' && adminVisible) refreshNumSizeVisibility();
+        if (typeof admRenderBrands === 'function' && admTab === 'categorias') admRenderBrands();
     }
 
     let siteConfig = {};
@@ -1140,7 +1177,7 @@
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
                 admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
-                if(admTab==='categorias') admRenderCats();
+                if(admTab==='categorias') { admRenderCats(); admRenderBrands(); }
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='site') admRenderSite();
             });
@@ -1503,6 +1540,62 @@
         }).join('');
     }
 
+    // ─── MARCAS (gerenciadas aqui, não mexem em produto/categoria nenhum) ─────
+    function admRenderBrands() {
+        const wrap = admEl('adm-brands-wrap');
+        if (!wrap) return;
+        const cats = Object.keys(ADM_CATS);
+        wrap.innerHTML = cats.map(cat => {
+            const brands = (BRANDS_BY_CAT[cat] || []).slice().sort((a,b) => a.localeCompare(b, 'pt-BR'));
+            return `<div class="adm-dc">
+                <div class="adm-dc-title">${ADM_CATS[cat]}</div>
+                <div class="adm-dc-sub">${brands.length ? `${brands.length} marca${brands.length===1?'':'s'}` : 'Nenhuma marca cadastrada'}</div>
+                <div class="adm-brand-chips">
+                    ${brands.map(b => `<span class="adm-chip">${admEsc(b)}<button type="button" class="adm-chip-x" data-cat="${admEsc(cat)}" data-nome="${admEsc(b)}" title="Remover marca">✕</button></span>`).join('')}
+                </div>
+                <div class="adm-brand-add-row">
+                    <input type="text" placeholder="Nova marca" data-brand-input="${cat}" maxlength="60">
+                    <button type="button" class="adm-btn-ghost" data-brand-add="${cat}">+ Adicionar</button>
+                </div>
+            </div>`;
+        }).join('');
+
+        wrap.querySelectorAll('[data-brand-add]').forEach(btn => btn.addEventListener('click', () => admAddBrand(btn.dataset.brandAdd)));
+        wrap.querySelectorAll('[data-brand-input]').forEach(inp => inp.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); admAddBrand(inp.dataset.brandInput); }
+        }));
+        wrap.querySelectorAll('.adm-chip-x').forEach(btn => btn.addEventListener('click', () => admRemoveBrand(btn.dataset.cat, btn.dataset.nome)));
+    }
+
+    async function admAddBrand(cat) {
+        const wrap = admEl('adm-brands-wrap');
+        const inp = wrap.querySelector(`[data-brand-input="${cat}"]`);
+        const nome = inp.value.trim();
+        if (!nome) return;
+        try {
+            await dbAddBrand(cat, nome);
+            await carregarBrands();
+            admRenderBrands();
+            admToast(`Marca "${nome}" adicionada em ${ADM_CATS[cat]}`);
+        } catch (e) {
+            admToast('Erro ao adicionar marca: ' + e.message);
+        }
+    }
+
+    async function admRemoveBrand(cat, nome) {
+        if (!confirm(`Remover a marca "${nome}" de ${ADM_CATS[cat]}?\n\nProdutos já cadastrados com essa marca não são alterados — só deixa de aparecer como opção pra novos cadastros e no filtro do site.`)) return;
+        const id = BRAND_IDS[`${cat}::${nome}`];
+        if (!id) { admToast('Marca não encontrada — recarregue a página e tente de novo'); return; }
+        try {
+            await dbDeleteBrand(id);
+            await carregarBrands();
+            admRenderBrands();
+            admToast('Marca removida');
+        } catch (e) {
+            admToast('Erro ao remover marca: ' + e.message);
+        }
+    }
+
     let admSiteNewFiles = [];
     let admCatNewFiles = {};
 
@@ -1699,5 +1792,6 @@
     bindPreco(document.getElementById('editPreco'));
     carregarProdutos();
     carregarCapaDoSite();
+    carregarBrands();
     updateCartUI();
 })();
