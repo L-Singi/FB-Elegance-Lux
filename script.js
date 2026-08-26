@@ -23,6 +23,7 @@
     async function dbInsert(data)    { return apiFetch('POST', '/api/produtos', data); }
     async function dbUpdate(id, data){ return apiFetch('PUT', `/api/produtos/${id}`, data); }
     async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
+    async function dbReorderProdutos(order) { return apiFetch('PUT', '/api/produtos/reorder', { order }); }
     async function dbGetConfig()     { return apiFetch('GET', '/api/config'); }
     async function dbGetBrands()          { return apiFetch('GET', '/api/brands'); }
     async function dbAddBrand(categoria, nome) { return apiFetch('POST', '/api/brands', { categoria, nome }); }
@@ -636,7 +637,15 @@
         }
         if (ordenacao==='preco_asc') f.sort((a,b) => precoNum(a.preco)-precoNum(b.preco));
         else if (ordenacao==='preco_desc') f.sort((a,b) => precoNum(b.preco)-precoNum(a.preco));
-        else f.sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+        else f.sort((a,b) => {
+            // Ordem manual definida pelo admin (arrastar na aba Estoque) tem
+            // prioridade; produtos sem ordem definida (novos, ainda não
+            // organizados) caem pra depois, ordenados por mais recentes.
+            const ao = Number.isFinite(a.ordem) ? a.ordem : Infinity;
+            const bo = Number.isFinite(b.ordem) ? b.ordem : Infinity;
+            if (ao !== bo) return ao - bo;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
 
         const prevBtn = document.getElementById('procuradosPrev');
@@ -1628,8 +1637,9 @@
             const sCls=ADM_STATUS_CLS[p.status]||'adm-p-brev';
             const sLbl=ADM_STATUS_OPTS[p.status]||p.status;
             const otherOpts=Object.entries(ADM_STATUS_OPTS).filter(([k])=>k!==p.status);
-            return `<tr draggable="true" data-id="${p.id}">
-                <td style="color:#444;text-align:center"><i class="ti ti-grip-vertical" style="font-size:14px"></i></td>
+            const podeArrastar = sort === 'newest' && !srch && !catF && !stF;
+            return `<tr draggable="${podeArrastar}" data-id="${p.id}">
+                <td style="color:#444;text-align:center" ${podeArrastar?'title="Arraste para reordenar"':''}><i class="ti ti-grip-vertical" style="font-size:14px;${podeArrastar?'cursor:grab':'opacity:.25'}"></i></td>
                 <td>
                     <div style="display:flex;align-items:center;gap:8px">
                         <div style="width:26px;height:26px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1678,12 +1688,15 @@
             });
         });
 
-        // Drag & drop
-        body.querySelectorAll('tr[draggable]').forEach(row=>{
+        // Drag & drop — só habilitado com "Mais recentes" e sem filtros ativos
+        // (ver podeArrastar acima), pra posição visual e índice em admProds
+        // sempre baterem. A nova ordem é persistida via PUT /api/produtos/reorder,
+        // e o site público passa a respeitá-la (ver campo "ordem" em renderizarCatalogo()).
+        body.querySelectorAll('tr[draggable="true"]').forEach(row=>{
             row.addEventListener('dragstart',e=>{admDragSrcId=Number(row.dataset.id);e.dataTransfer.effectAllowed='move';});
             row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over');});
             row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
-            row.addEventListener('drop',e=>{
+            row.addEventListener('drop',async e=>{
                 e.preventDefault();row.classList.remove('drag-over');
                 const targetId=Number(row.dataset.id);
                 if(!admDragSrcId||admDragSrcId===targetId)return;
@@ -1693,7 +1706,13 @@
                 const [item]=admProds.splice(si,1);
                 admProds.splice(ti,0,item);
                 admRenderStock();
-                admToast('Ordem atualizada');
+                try {
+                    await dbReorderProdutos(admProds.map(p=>p.id));
+                    admProds.forEach((p,idx)=>{ p.ordem = idx; });
+                    admToast('Ordem atualizada');
+                } catch(err) {
+                    admToast('Erro ao salvar ordem: '+err.message);
+                }
             });
             row.addEventListener('dragend',()=>body.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over')));
         });
