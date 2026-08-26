@@ -407,7 +407,17 @@
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
             renderizarDestaque(cfg);
+            renderizarFeatureBanner(cfg);
         } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
+    }
+
+    // ─── BANNER DE IMAGEM (final da página, acima dos selos de confiança) ─────
+    function renderizarFeatureBanner(cfg) {
+        const wrap = document.getElementById('featureBannerWrap');
+        if (!wrap) return;
+        if (!cfg || !cfg.feature_banner_image) { wrap.style.display = 'none'; return; }
+        document.getElementById('featureBannerImg').src = cfg.feature_banner_image;
+        wrap.style.display = 'block';
     }
 
     // ─── CARROSSEL DO HERO ────────────────────────────────────────────────────
@@ -613,6 +623,8 @@
         else if (ordenacao==='preco_desc') f.sort((a,b) => precoNum(b.preco)-precoNum(a.preco));
         else f.sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
+
+        if (filtroCategoria === 'procurados' && !termoBusca.trim()) f = f.slice(0, 6);
 
         const countEl = document.getElementById('plpCount');
         if (countEl) countEl.textContent = `(${f.length})`;
@@ -1927,6 +1939,10 @@
             admEl('adm-feat-name').value = cfg?.feat_name || '';
             admEl('adm-feat-desc').value = cfg?.feat_desc || '';
             admEl('adm-feat-link').value = cfg?.feat_link || '';
+
+            const featureBannerImg = admEl('adm-feature-banner-preview-img');
+            if (cfg && cfg.feature_banner_image) { featureBannerImg.src = cfg.feature_banner_image; featureBannerImg.style.display = 'block'; }
+            else { featureBannerImg.style.display = 'none'; }
         } catch(e) { admRenderHeroPreview([]); }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -1958,6 +1974,16 @@
             img.style.display = 'block';
         }
     });
+    let admFeatureBannerNewFile = null;
+    admEl('adm-feature-banner-image').addEventListener('change', () => {
+        const f = admEl('adm-feature-banner-image').files[0];
+        admFeatureBannerNewFile = f || null;
+        if (f) {
+            const img = admEl('adm-feature-banner-preview-img');
+            img.src = URL.createObjectURL(f);
+            img.style.display = 'block';
+        }
+    });
     admEl('adm-site-save').addEventListener('click', async () => {
         const fd = new FormData();
         fd.append('hero_images_keep', JSON.stringify(admSiteHeroKeptUrls()));
@@ -1977,6 +2003,7 @@
         fd.append('feat_name', admEl('adm-feat-name').value.trim());
         fd.append('feat_desc', admEl('adm-feat-desc').value.trim());
         fd.append('feat_link', admEl('adm-feat-link').value.trim());
+        if (admFeatureBannerNewFile) fd.append('feature_banner_image', admFeatureBannerNewFile);
         try {
             await apiFetch('PUT', '/api/config', fd);
             // Imagem de capa por categoria agora é campo próprio de cada
@@ -1992,8 +2019,10 @@
             admSiteNewFiles = [];
             admCatNewFiles = {};
             admFeatNewFile = null;
+            admFeatureBannerNewFile = null;
             admEl('adm-site-cover').value = '';
             admEl('adm-feat-image').value = '';
+            admEl('adm-feature-banner-image').value = '';
             carregarCapaDoSite();
             carregarCategorias();
         } catch(e) { admToast('Erro: ' + e.message); }
