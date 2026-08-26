@@ -43,7 +43,6 @@
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-copy">
-        <div class="hero-eyebrow" id="heroEyebrow">Coleção 2026 · Importados</div>
         <h1 class="hero-title"><span id="heroTitle1">Streetwear</span><br><span id="heroTitle2">importado,</span><br><em
             id="heroTitle3">sem réplica.</em></h1>
         <p class="hero-desc" id="heroDesc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com
@@ -120,6 +119,8 @@
         </aside>
         <div class="plp-results">
           <div class="result-info" id="result-info"></div>
+          <button type="button" class="procurados-arrow procurados-arrow-prev" id="procuradosPrev" style="display:none" aria-label="Página anterior"><i class="fas fa-chevron-left"></i></button>
+          <button type="button" class="procurados-arrow procurados-arrow-next" id="procuradosNext" style="display:none" aria-label="Próxima página"><i class="fas fa-chevron-right"></i></button>
           <div class="product-grid" id="product-grid"></div>
         </div>
       </div>
@@ -138,16 +139,16 @@
       </div>
       <div class="container feature-grid">
         <div class="feature-item feature-item-first">
-          <div class="feature-title">100% Original</div>
-          <div class="feature-desc">Peças autênticas com procedência garantida</div>
+          <div class="feature-title" id="feature1Title">100% Original</div>
+          <div class="feature-desc" id="feature1Desc">Peças autênticas com procedência garantida</div>
         </div>
         <div class="feature-item">
-          <div class="feature-title">Entrega nacional</div>
-          <div class="feature-desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div>
+          <div class="feature-title" id="feature2Title">Entrega nacional</div>
+          <div class="feature-desc" id="feature2Desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div>
         </div>
         <div class="feature-item">
-          <div class="feature-title">Compra segura</div>
-          <div class="feature-desc">Atendimento personalizado e acompanhamento via WhatsApp</div>
+          <div class="feature-title" id="feature3Title">Compra segura</div>
+          <div class="feature-desc" id="feature3Desc">Atendimento personalizado e acompanhamento via WhatsApp</div>
         </div>
       </div>
     </div>
@@ -173,6 +174,10 @@
       </div>
     </div>
   </footer>
+
+  <button type="button" id="backToAdminBtn" style="display:none">
+    <i class="ti ti-arrow-back-up"></i> Voltar ao admin
+  </button>
 
   <!-- ── PAINEL ADMIN v2 (oculto por padrão) ── -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
@@ -1457,6 +1462,7 @@
           <div class="adm-n" data-adm-tab="categorias"><i class="ti ti-tag"></i><span>Categorias</span></div>
           <div class="adm-n" data-adm-tab="site"><i class="ti ti-photo"></i><span>Site</span></div>
           <div class="adm-sep"></div>
+          <div class="adm-n" id="viewSiteAdminBtn"><i class="ti ti-eye"></i><span>Ver site</span></div>
           <div class="adm-n adm-n-logout" id="logoutAdminBtn"><i class="ti ti-logout"></i><span>Sair</span></div>
         </div>
       </nav>
@@ -1707,6 +1713,17 @@
               </div>
               <input type="file" id="adm-feature-banner-image" accept="image/*"
                 style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px">
+            </div>
+
+            <div class="adm-dc" style="max-width:420px;margin-top:16px">
+              <div class="adm-dc-title">Selos de confiança</div>
+              <div class="adm-dc-sub">Os 3 itens no final da página ("100% Original", etc.)</div>
+              <div class="adm-fr"><label>Título 1</label><input type="text" id="adm-feature1-title" placeholder="Ex: 100% Original"></div>
+              <div class="adm-fr"><label>Descrição 1</label><input type="text" id="adm-feature1-desc" placeholder="Ex: Peças autênticas com procedência garantida"></div>
+              <div class="adm-fr"><label>Título 2</label><input type="text" id="adm-feature2-title" placeholder="Ex: Entrega nacional"></div>
+              <div class="adm-fr"><label>Descrição 2</label><input type="text" id="adm-feature2-desc" placeholder="Ex: Enviamos para todo o Brasil via SEDEX/PAC com seguro"></div>
+              <div class="adm-fr"><label>Título 3</label><input type="text" id="adm-feature3-title" placeholder="Ex: Compra segura"></div>
+              <div class="adm-fr"><label>Descrição 3</label><input type="text" id="adm-feature3-desc" placeholder="Ex: Atendimento personalizado e acompanhamento via WhatsApp"></div>
             </div>
 
             <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i

@@ -406,6 +406,12 @@
             setText('heroDesc', cfg.hero_desc);
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
+            setText('feature1Title', cfg.feature1_title);
+            setText('feature1Desc', cfg.feature1_desc);
+            setText('feature2Title', cfg.feature2_title);
+            setText('feature2Desc', cfg.feature2_desc);
+            setText('feature3Title', cfg.feature3_title);
+            setText('feature3Desc', cfg.feature3_desc);
             renderizarDestaque(cfg);
             renderizarFeatureBanner(cfg);
         } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
@@ -599,6 +605,15 @@
 
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
     let ordenacao = 'newest';
+    // "Mais Procurados" mostra 18 produtos no total, 6 por vez, navegados
+    // pelas setas ao lado da grade (ver PROCURADOS_POR_PAGINA/PROCURADOS_MAX).
+    const PROCURADOS_POR_PAGINA = 6;
+    const PROCURADOS_MAX = 18;
+    let procuradosPage = 0;
+    function mudarPaginaProcurados(delta) {
+        procuradosPage += delta;
+        renderizarCatalogo();
+    }
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
         // "Mais Procurados" é uma vitrine com produtos de todas as categorias
@@ -624,10 +639,26 @@
         else f.sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
 
-        if (filtroCategoria === 'procurados' && !termoBusca.trim()) f = f.slice(0, 6);
+        const prevBtn = document.getElementById('procuradosPrev');
+        const nextBtn = document.getElementById('procuradosNext');
+        let totalCount = f.length;
+        if (filtroCategoria === 'procurados' && !termoBusca.trim()) {
+            const full = f.slice(0, PROCURADOS_MAX);
+            totalCount = full.length;
+            const totalPages = Math.max(1, Math.ceil(full.length / PROCURADOS_POR_PAGINA));
+            if (procuradosPage >= totalPages) procuradosPage = totalPages - 1;
+            if (procuradosPage < 0) procuradosPage = 0;
+            f = full.slice(procuradosPage * PROCURADOS_POR_PAGINA, procuradosPage * PROCURADOS_POR_PAGINA + PROCURADOS_POR_PAGINA);
+            const showArrows = totalPages > 1;
+            if (prevBtn) { prevBtn.style.display = showArrows ? 'flex' : 'none'; prevBtn.disabled = procuradosPage === 0; }
+            if (nextBtn) { nextBtn.style.display = showArrows ? 'flex' : 'none'; nextBtn.disabled = procuradosPage >= totalPages - 1; }
+        } else {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+        }
 
         const countEl = document.getElementById('plpCount');
-        if (countEl) countEl.textContent = `(${f.length})`;
+        if (countEl) countEl.textContent = `(${totalCount})`;
 
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
@@ -639,6 +670,7 @@
     function mudarCategoria(cat) {
         filtroCategoria = cat;
         filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+        procuradosPage = 0;
         renderizarCatalogo();
         const grid = document.getElementById('product-grid');
         if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1168,12 +1200,16 @@
     // ─── LOGIN ADMIN ──────────────────────────────────────────────────────────
     const loginModal = document.getElementById('loginModal');
     let logoTimer = null;
+    // Sessão de admin ativa: permite reabrir o painel (botão flutuante ou
+    // duplo-clique na logo) sem pedir a senha de novo, até clicar em "Sair".
+    let admSessionActive = false;
     document.getElementById('adminTriggerLogo').addEventListener('click', () => {
         if (logoTimer) clearTimeout(logoTimer);
         logoTimer = setTimeout(() => { logoTimer=null; window.location.reload(); }, 350);
     });
     document.getElementById('adminTriggerLogo').addEventListener('dblclick', () => {
         if (logoTimer) { clearTimeout(logoTimer); logoTimer=null; }
+        if (admSessionActive) { abrirAdminOverlay(); return; }
         loginModal.style.display='flex'; document.body.style.overflow='hidden';
     });
     document.getElementById('loginModalClose').addEventListener('click', () => { loginModal.style.display='none'; document.body.style.overflow='auto'; });
@@ -1183,6 +1219,7 @@
             loginModal.style.display='none';
             document.body.style.overflow='hidden';
             document.getElementById('adminPassword').value='';
+            admSessionActive = true;
             abrirAdminOverlay();
         } else alert('Senha incorreta');
     });
@@ -1191,14 +1228,25 @@
         const overlay = document.getElementById('adminOverlay');
         overlay.style.display = 'block';
         document.body.style.overflow = 'hidden';
+        document.getElementById('backToAdminBtn').style.display = 'none';
         adminVisible = true;
         admInit();
     }
+
+    document.getElementById('viewSiteAdminBtn').addEventListener('click', () => {
+        document.getElementById('adminOverlay').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        adminVisible = false;
+        document.getElementById('backToAdminBtn').style.display = 'flex';
+    });
+    document.getElementById('backToAdminBtn').addEventListener('click', abrirAdminOverlay);
 
     document.getElementById('logoutAdminBtn').addEventListener('click', () => {
         document.getElementById('adminOverlay').style.display = 'none';
         document.body.style.overflow = 'auto';
         adminVisible = false;
+        admSessionActive = false;
+        document.getElementById('backToAdminBtn').style.display = 'none';
     });
 
     // ─── DASHBOARD v2 ────────────────────────────────────────────────────────
@@ -1943,6 +1991,13 @@
             const featureBannerImg = admEl('adm-feature-banner-preview-img');
             if (cfg && cfg.feature_banner_image) { featureBannerImg.src = cfg.feature_banner_image; featureBannerImg.style.display = 'block'; }
             else { featureBannerImg.style.display = 'none'; }
+
+            admEl('adm-feature1-title').value = cfg?.feature1_title || '';
+            admEl('adm-feature1-desc').value = cfg?.feature1_desc || '';
+            admEl('adm-feature2-title').value = cfg?.feature2_title || '';
+            admEl('adm-feature2-desc').value = cfg?.feature2_desc || '';
+            admEl('adm-feature3-title').value = cfg?.feature3_title || '';
+            admEl('adm-feature3-desc').value = cfg?.feature3_desc || '';
         } catch(e) { admRenderHeroPreview([]); }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -2004,6 +2059,12 @@
         fd.append('feat_desc', admEl('adm-feat-desc').value.trim());
         fd.append('feat_link', admEl('adm-feat-link').value.trim());
         if (admFeatureBannerNewFile) fd.append('feature_banner_image', admFeatureBannerNewFile);
+        fd.append('feature1_title', admEl('adm-feature1-title').value.trim());
+        fd.append('feature1_desc', admEl('adm-feature1-desc').value.trim());
+        fd.append('feature2_title', admEl('adm-feature2-title').value.trim());
+        fd.append('feature2_desc', admEl('adm-feature2-desc').value.trim());
+        fd.append('feature3_title', admEl('adm-feature3-title').value.trim());
+        fd.append('feature3_desc', admEl('adm-feature3-desc').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
             // Imagem de capa por categoria agora é campo próprio de cada
@@ -2048,6 +2109,8 @@
     document.getElementById('plpSidebarBackdrop').addEventListener('click', fecharMenuFiltros);
     document.getElementById('plpSort').addEventListener('change', e => { ordenacao = e.target.value; renderizarCatalogo(); });
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
+    document.getElementById('procuradosPrev')?.addEventListener('click', () => mudarPaginaProcurados(-1));
+    document.getElementById('procuradosNext')?.addEventListener('click', () => mudarPaginaProcurados(1));
 
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display='flex'; });
