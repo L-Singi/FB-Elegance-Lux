@@ -1637,7 +1637,11 @@
             const sCls=ADM_STATUS_CLS[p.status]||'adm-p-brev';
             const sLbl=ADM_STATUS_OPTS[p.status]||p.status;
             const otherOpts=Object.entries(ADM_STATUS_OPTS).filter(([k])=>k!==p.status);
-            const podeArrastar = sort === 'newest' && !srch && !catF && !stF;
+            // Filtro de categoria/status/busca não muda a ordem relativa dos itens
+            // (só esconde os que não batem), então não atrapalha o drag — o índice
+            // em admProds continua correto. Só a ORDENAÇÃO (nome/preço) desalinha
+            // a posição visual do índice real, por isso só ela desabilita o arrastar.
+            const podeArrastar = sort === 'newest';
             return `<tr draggable="${podeArrastar}" data-id="${p.id}">
                 <td style="color:#444;text-align:center" ${podeArrastar?'title="Arraste para reordenar"':''}><i class="ti ti-grip-vertical" style="font-size:14px;${podeArrastar?'cursor:grab':'opacity:.25'}"></i></td>
                 <td>
