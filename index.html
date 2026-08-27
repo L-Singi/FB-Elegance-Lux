@@ -1453,6 +1453,7 @@
           <div class="adm-sep"></div>
           <div class="adm-n" data-adm-tab="categorias"><i class="ti ti-tag"></i><span>Categorias</span></div>
           <div class="adm-n" data-adm-tab="site"><i class="ti ti-photo"></i><span>Site</span></div>
+          <div class="adm-n" data-adm-tab="usuarios" id="adm-nav-usuarios" style="display:none"><i class="ti ti-users"></i><span>Usuários</span></div>
           <div class="adm-sep"></div>
           <div class="adm-n adm-n-logout" id="logoutAdminBtn"><i class="ti ti-logout"></i><span>Sair</span></div>
         </div>
@@ -1699,6 +1700,37 @@
             <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i
                 class="ti ti-check"></i> Salvar capa</button>
           </div>
+
+          <div class="adm-panel" id="adm-tab-usuarios">
+            <div class="adm-dc" style="max-width:560px">
+              <div class="adm-dc-title">Novo usuário</div>
+              <div class="adm-dc-sub">Marque abaixo o que esta pessoa poderá acessar no painel</div>
+              <div class="adm-fr" style="margin-top:12px"><label>Nome</label>
+                <input type="text" id="adm-u-nome" placeholder="Ex: Maria Silva"></div>
+              <div class="adm-fr"><label>E-mail</label>
+                <input type="email" id="adm-u-email" placeholder="maria@exemplo.com"></div>
+              <div class="adm-fr"><label>Senha (mínimo 8 caracteres)</label>
+                <input type="password" id="adm-u-senha" placeholder="Senha inicial"></div>
+              <div class="adm-fr"><label>Tipo de acesso</label>
+                <select id="adm-u-papel">
+                  <option value="usuario">Usuário (permissões abaixo)</option>
+                  <option value="admin">Administrador (acesso total)</option>
+                </select>
+              </div>
+              <div class="adm-fr"><label>Permissões</label>
+                <div id="adm-u-perms" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px"></div>
+              </div>
+              <p id="adm-u-erro" style="display:none;color:#ff6b6b;font-size:13px;margin-top:8px"></p>
+              <button type="button" class="adm-btn-add" id="adm-u-criar" style="margin-top:14px">
+                <i class="ti ti-user-plus"></i> Criar usuário</button>
+            </div>
+
+            <div class="adm-dc" style="margin-top:18px">
+              <div class="adm-dc-title">Usuários do sistema</div>
+              <div class="adm-dc-sub">Ative ou desative permissões e acessos a qualquer momento</div>
+              <div id="adm-u-lista" style="margin-top:14px"></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1847,8 +1879,10 @@
     <div class="login-modal-content">
       <div class="modal-close" id="loginModalClose">&times;</div>
       <h3>Acesso Administrador</h3>
-      <input type="password" id="adminPassword" placeholder="Senha">
+      <input type="email" id="adminEmail" placeholder="E-mail" autocomplete="username">
+      <input type="password" id="adminPassword" placeholder="Senha" autocomplete="current-password">
       <button id="loginAdminBtn">Entrar</button>
+      <p id="loginErro" style="display:none;margin-top:10px;color:#ff6b6b;font-size:13px;"></p>
     </div>
   </div>
 
