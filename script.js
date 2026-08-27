@@ -2,6 +2,25 @@
     // ─── CONFIGURAÇÃO API ─────────────────────────────────────────────────────
     const API_BASE = "https://api.fbelegancelux.com.br";
 
+    // ─── SESSÃO ADMIN ────────────────────────────────────────────────────────
+    // Guarda o token emitido pela API no login. Antes disto a "senha" era
+    // uma string literal comparada aqui no navegador — qualquer pessoa
+    // via o código-fonte e entrava; e a API sequer checava quem chamava.
+    // Agora a decisão é do servidor: aqui só carregamos a credencial.
+    const TOKEN_KEY = 'fb_admin_token';
+    let sessaoUsuario = null;   // {id, nome, email, papel, permissoes}
+
+    function getToken()      { try { return localStorage.getItem(TOKEN_KEY); } catch (e) { return null; } }
+    function setToken(t)     { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+    function limparSessao()  { setToken(null); sessaoUsuario = null; }
+
+    /** O usuário pode usar esta área do painel? Admin tem tudo. */
+    function podeAcessar(area) {
+        if (!sessaoUsuario) return false;
+        if (sessaoUsuario.papel === 'admin') return true;
+        return Array.isArray(sessaoUsuario.permissoes) && sessaoUsuario.permissoes.includes(area);
+    }
+
     // ─── CLIENTE API (fetch nativo) ──────────────────────────────────────────
     async function apiFetch(method, path, body) {
         const opts = { method, headers: {} };
@@ -11,10 +30,26 @@
         } else if (body instanceof FormData) {
             opts.body = body;
         }
+        // Enviado em toda chamada, inclusive nos GETs públicos: é
+        // inofensivo lá e evita ter que lembrar de marcar rota por rota
+        // qual precisa de token — esquecer uma seria uma falha silenciosa.
+        const token = getToken();
+        if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+
         const res = await fetch(API_BASE + path, opts);
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || res.statusText);
+            // Token expirado ou conta desativada pelo admin: derruba a
+            // sessão local em vez de deixar a tela num limbo em que todo
+            // botão falha sem explicação.
+            if (res.status === 401 && token) {
+                limparSessao();
+                alert('Sua sessão expirou. Entre novamente.');
+                location.reload();
+            }
+            // A API responde { error: "..." }; ler `message` deixava toda
+            // mensagem de erro cair no genérico do statusText.
+            throw new Error(err.error || err.message || res.statusText);
         }
         return res.json();
     }
@@ -39,7 +74,12 @@
     async function uploadImage(file) {
         const fd = new FormData();
         fd.append('imagem', file);
-        const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/api/upload`, {
+            method: 'POST',
+            body: fd,
+            headers: token ? { Authorization: 'Bearer ' + token } : {}
+        });
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             throw new Error('Upload falhou: ' + (err.message || res.statusText));
@@ -1160,19 +1200,70 @@
         if (logoTimer) clearTimeout(logoTimer);
         logoTimer = setTimeout(() => { logoTimer=null; window.location.reload(); }, 350);
     });
-    document.getElementById('adminTriggerLogo').addEventListener('dblclick', () => {
+    document.getElementById('adminTriggerLogo').addEventListener('dblclick', async () => {
         if (logoTimer) { clearTimeout(logoTimer); logoTimer=null; }
+
+        // Sessão ainda válida → entra direto, sem pedir a senha de novo.
+        // O token é revalidado no servidor a cada abertura, então uma
+        // conta desativada ou um token expirado caem no login.
+        if (getToken()) {
+            try {
+                sessaoUsuario = await apiFetch('GET', '/api/auth/me');
+                abrirAdminOverlay();
+                return;
+            } catch (e) {
+                limparSessao();
+            }
+        }
+        document.getElementById('loginErro').style.display = 'none';
         loginModal.style.display='flex'; document.body.style.overflow='hidden';
     });
     document.getElementById('loginModalClose').addEventListener('click', () => { loginModal.style.display='none'; document.body.style.overflow='auto'; });
     window.addEventListener('click', e => { if(e.target===loginModal) { loginModal.style.display='none'; document.body.style.overflow='auto'; } });
-    document.getElementById('loginAdminBtn').addEventListener('click', () => {
-        if (document.getElementById('adminPassword').value==='fbadmin') {
-            loginModal.style.display='none';
-            document.body.style.overflow='hidden';
-            document.getElementById('adminPassword').value='';
+    // Login de verdade: quem valida é a API. A senha nunca é comparada
+    // aqui — antes, `=== 'fbadmin'` no navegador era toda a "segurança",
+    // legível por qualquer visitante em Exibir código-fonte.
+    async function fazerLogin() {
+        const btn = document.getElementById('loginAdminBtn');
+        const erroEl = document.getElementById('loginErro');
+        const email = (document.getElementById('adminEmail').value || '').trim();
+        const senha = document.getElementById('adminPassword').value || '';
+
+        erroEl.style.display = 'none';
+        if (!email || !senha) {
+            erroEl.textContent = 'Informe e-mail e senha.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        const textoOriginal = btn.textContent;
+        btn.textContent = 'Entrando...';
+        try {
+            const r = await apiFetch('POST', '/api/auth/login', { email, senha });
+            setToken(r.token);
+            sessaoUsuario = r.usuario;
+            loginModal.style.display = 'none';
+            document.body.style.overflow = 'hidden';
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminEmail').value = '';
             abrirAdminOverlay();
-        } else alert('Senha incorreta');
+        } catch (e) {
+            erroEl.textContent = e.message || 'Não foi possível entrar.';
+            erroEl.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = textoOriginal;
+        }
+    }
+
+    document.getElementById('loginAdminBtn').addEventListener('click', fazerLogin);
+    // Enter em qualquer um dos dois campos envia — sem isto o usuário
+    // digita a senha, aperta Enter e nada acontece.
+    ['adminEmail', 'adminPassword'].forEach((id) => {
+        document.getElementById(id).addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') fazerLogin();
+        });
     });
 
     function abrirAdminOverlay() {
@@ -1181,9 +1272,16 @@
         document.body.style.overflow = 'hidden';
         adminVisible = true;
         admInit();
+        // Fora do admInit de propósito: ele só roda por completo na
+        // primeira abertura, e as permissões podem ter mudado desde
+        // então (o admin alterou, a pessoa reabriu).
+        admAplicarPermissoesNaNav();
     }
 
     document.getElementById('logoutAdminBtn').addEventListener('click', () => {
+        // Descarta a credencial, não só fecha a tela: antes o "Sair"
+        // apenas escondia o painel, e reabrir voltava a dar acesso.
+        limparSessao();
         document.getElementById('adminOverlay').style.display = 'none';
         document.body.style.overflow = 'auto';
         adminVisible = false;
@@ -1276,9 +1374,164 @@
         }
     }
 
+
+    // ─── GESTÃO DE USUÁRIOS (somente admin) ──────────────────────────────────
+
+    const PERM_ROTULOS = {
+        produtos: 'Produtos', categorias: 'Categorias',
+        marcas: 'Marcas', tamanhos: 'Tamanhos', config: 'Site'
+    };
+    let admPermsDisponiveis = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config'];
+
+    function admRenderPermCheckboxes() {
+        const box = admEl('adm-u-perms');
+        if (!box) return;
+        box.innerHTML = admPermsDisponiveis.map((p) => `
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+                <input type="checkbox" value="${p}" class="adm-u-perm-cb"> ${PERM_ROTULOS[p] || p}
+            </label>`).join('');
+    }
+
+    async function admRenderUsuarios() {
+        const lista = admEl('adm-u-lista');
+        if (!lista) return;
+        lista.innerHTML = '<p style="opacity:.6;font-size:13px">Carregando...</p>';
+        try {
+            const r = await apiFetch('GET', '/api/usuarios');
+            if (Array.isArray(r.permissoesDisponiveis) && r.permissoesDisponiveis.length) {
+                admPermsDisponiveis = r.permissoesDisponiveis;
+                admRenderPermCheckboxes();
+            }
+            const usuarios = r.usuarios || [];
+            lista.innerHTML = usuarios.map((u) => {
+                const perms = Array.isArray(u.permissoes) ? u.permissoes : [];
+                const ehAdmin = u.papel === 'admin';
+                const souEu = sessaoUsuario && sessaoUsuario.id === u.id;
+                const chips = ehAdmin
+                    ? '<span style="opacity:.7;font-size:12px">Acesso total (administrador)</span>'
+                    : admPermsDisponiveis.map((p) => `
+                        <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;margin-right:10px">
+                            <input type="checkbox" data-uid="${u.id}" data-perm="${p}" class="adm-u-toggle-perm"
+                                   ${perms.includes(p) ? 'checked' : ''}> ${PERM_ROTULOS[p] || p}
+                        </label>`).join('');
+                return `
+                <div style="border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:10px;background:#111">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+                    <div>
+                      <div style="font-weight:600">${u.nome} ${souEu ? '<span style="opacity:.5;font-size:12px">(você)</span>' : ''}</div>
+                      <div style="font-size:12px;opacity:.65">${u.email} · ${ehAdmin ? 'Administrador' : 'Usuário'}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center">
+                      <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                        <input type="checkbox" class="adm-u-toggle-ativo" data-uid="${u.id}" ${u.ativo ? 'checked' : ''}
+                               ${souEu ? 'disabled' : ''}> Ativo
+                      </label>
+                      ${souEu ? '' : `<button type="button" class="adm-u-del" data-uid="${u.id}"
+                          style="background:#2a1212;color:#ff6b6b;border:1px solid #4a1f1f;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer">Excluir</button>`}
+                    </div>
+                  </div>
+                  <div style="margin-top:10px">${chips}</div>
+                </div>`;
+            }).join('') || '<p style="opacity:.6;font-size:13px">Nenhum usuário.</p>';
+
+            lista.querySelectorAll('.adm-u-toggle-perm').forEach((cb) => {
+                cb.addEventListener('change', async () => {
+                    const uid = cb.dataset.uid;
+                    const marcadas = Array.from(
+                        lista.querySelectorAll(`.adm-u-toggle-perm[data-uid="${uid}"]`)
+                    ).filter((x) => x.checked).map((x) => x.dataset.perm);
+                    try {
+                        await apiFetch('PUT', `/api/usuarios/${uid}`, { permissoes: marcadas });
+                    } catch (e) {
+                        alert('Não foi possível salvar: ' + e.message);
+                        admRenderUsuarios();
+                    }
+                });
+            });
+            lista.querySelectorAll('.adm-u-toggle-ativo').forEach((cb) => {
+                cb.addEventListener('change', async () => {
+                    try {
+                        await apiFetch('PUT', `/api/usuarios/${cb.dataset.uid}`, { ativo: cb.checked });
+                    } catch (e) {
+                        alert(e.message);
+                        admRenderUsuarios();
+                    }
+                });
+            });
+            lista.querySelectorAll('.adm-u-del').forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    if (!confirm('Excluir este usuário? A ação não pode ser desfeita.')) return;
+                    try {
+                        await apiFetch('DELETE', `/api/usuarios/${btn.dataset.uid}`);
+                        admRenderUsuarios();
+                    } catch (e) { alert(e.message); }
+                });
+            });
+        } catch (e) {
+            lista.innerHTML = `<p style="color:#ff6b6b;font-size:13px">${e.message}</p>`;
+        }
+    }
+
+    async function admCriarUsuario() {
+        const erro = admEl('adm-u-erro');
+        const btn = admEl('adm-u-criar');
+        erro.style.display = 'none';
+        const nome = (admEl('adm-u-nome').value || '').trim();
+        const email = (admEl('adm-u-email').value || '').trim();
+        const senha = admEl('adm-u-senha').value || '';
+        const papel = admEl('adm-u-papel').value;
+        const permissoes = Array.from(document.querySelectorAll('.adm-u-perm-cb'))
+            .filter((c) => c.checked).map((c) => c.value);
+
+        if (!nome || !email || !senha) {
+            erro.textContent = 'Preencha nome, e-mail e senha.';
+            erro.style.display = 'block'; return;
+        }
+        if (senha.length < 8) {
+            erro.textContent = 'A senha precisa ter ao menos 8 caracteres.';
+            erro.style.display = 'block'; return;
+        }
+        btn.disabled = true;
+        try {
+            await apiFetch('POST', '/api/usuarios', { nome, email, senha, papel, permissoes });
+            admEl('adm-u-nome').value = '';
+            admEl('adm-u-email').value = '';
+            admEl('adm-u-senha').value = '';
+            document.querySelectorAll('.adm-u-perm-cb').forEach((c) => { c.checked = false; });
+            admRenderUsuarios();
+        } catch (e) {
+            erro.textContent = e.message;
+            erro.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    /** Esconde as abas que o usuário não pode acessar.
+     *  É conveniência de interface, não segurança: quem editar o HTML
+     *  reexibe a aba, mas a API recusa a chamada de qualquer forma. */
+    function admAplicarPermissoesNaNav() {
+        const mapa = { estoque: 'produtos', categorias: 'categorias', site: 'config' };
+        document.querySelectorAll('.adm-n[data-adm-tab]').forEach((el) => {
+            const tab = el.dataset.admTab;
+            if (tab === 'usuarios') {
+                el.style.display = (sessaoUsuario && sessaoUsuario.papel === 'admin') ? '' : 'none';
+                return;
+            }
+            const area = mapa[tab];
+            if (!area) return;                       // dashboard: todos veem
+            el.style.display = podeAcessar(area) ? '' : 'none';
+        });
+    }
+
     function admInit() {
         if (admInited) { admLoadData().then(() => { admRenderDash(); admRenderStock(); }); return; }
         admInited = true;
+
+        admRenderPermCheckboxes();
+        admAplicarPermissoesNaNav();
+        const btnCriarUsuario = admEl('adm-u-criar');
+        if (btnCriarUsuario) btnCriarUsuario.addEventListener('click', admCriarUsuario);
 
         // NAV
         document.querySelectorAll('.adm-n[data-adm-tab]').forEach(el => {
@@ -1288,14 +1541,15 @@
                 admTab = el.dataset.admTab;
                 document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
                 admEl('adm-tab-'+admTab).classList.add('active');
-                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site'};
+                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site',usuarios:'Usuários e permissões'};
                 admEl('adm-tb-title').textContent = titles[admTab]||admTab;
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
-                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site')?'none':'flex';
+                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site'||admTab==='usuarios')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
                 if(admTab==='categorias') { admRenderCats(); admRenderCatsManage(); admRenderSizeOpts(); admRenderBrands(); }
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='site') admRenderSite();
+                if(admTab==='usuarios') admRenderUsuarios();
             });
         });
 
