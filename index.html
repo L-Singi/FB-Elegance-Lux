@@ -43,7 +43,6 @@
   <section class="hero">
     <div class="hero-inner">
       <div class="hero-copy">
-        <div class="hero-eyebrow" id="heroEyebrow">Coleção 2026 · Importados</div>
         <h1 class="hero-title"><span id="heroTitle1">Streetwear</span><br><span id="heroTitle2">importado,</span><br><em
             id="heroTitle3">sem réplica.</em></h1>
         <p class="hero-desc" id="heroDesc">Off-White, Diesel, AllSaints e outras: peças conferidas uma a uma, com
@@ -85,6 +84,11 @@
 
   <main>
     <div class="container">
+      <div class="cat-showcase">
+        <div class="grid-header"><h2>Categorias</h2></div>
+        <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
+      </div>
+
       <div class="plp-headrow">
         <h1 id="filterMenuLabel">Casacos <span id="plpCount">(0)</span></h1>
         <div class="plp-headrow-right">
@@ -115,6 +119,8 @@
         </aside>
         <div class="plp-results">
           <div class="result-info" id="result-info"></div>
+          <button type="button" class="procurados-arrow procurados-arrow-prev" id="procuradosPrev" style="display:none" aria-label="Página anterior"><i class="fas fa-chevron-left"></i></button>
+          <button type="button" class="procurados-arrow procurados-arrow-next" id="procuradosNext" style="display:none" aria-label="Próxima página"><i class="fas fa-chevron-right"></i></button>
           <div class="product-grid" id="product-grid"></div>
         </div>
       </div>
@@ -125,26 +131,24 @@
         </div>
         <div class="curated-grid" id="lancamentosGrid"></div>
       </div>
-
-      <div class="cat-showcase">
-        <div class="grid-header"><h2>Categorias</h2></div>
-        <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
-      </div>
     </div>
 
     <div class="feature-section">
+      <div class="container feature-banner" id="featureBannerWrap" style="display:none">
+        <img id="featureBannerImg" src="" alt="">
+      </div>
       <div class="container feature-grid">
         <div class="feature-item feature-item-first">
-          <div class="feature-title">100% Original</div>
-          <div class="feature-desc">Peças autênticas com procedência garantida</div>
+          <div class="feature-title" id="feature1Title">100% Original</div>
+          <div class="feature-desc" id="feature1Desc">Peças autênticas com procedência garantida</div>
         </div>
         <div class="feature-item">
-          <div class="feature-title">Entrega nacional</div>
-          <div class="feature-desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div>
+          <div class="feature-title" id="feature2Title">Entrega nacional</div>
+          <div class="feature-desc" id="feature2Desc">Enviamos para todo o Brasil via SEDEX/PAC com seguro</div>
         </div>
         <div class="feature-item">
-          <div class="feature-title">Compra segura</div>
-          <div class="feature-desc">Atendimento personalizado e acompanhamento via WhatsApp</div>
+          <div class="feature-title" id="feature3Title">Compra segura</div>
+          <div class="feature-desc" id="feature3Desc">Atendimento personalizado e acompanhamento via WhatsApp</div>
         </div>
       </div>
     </div>
@@ -170,6 +174,10 @@
       </div>
     </div>
   </footer>
+
+  <button type="button" id="backToAdminBtn" style="display:none">
+    <i class="ti ti-arrow-back-up"></i> Voltar ao admin
+  </button>
 
   <!-- ── PAINEL ADMIN v2 (oculto por padrão) ── -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
@@ -1455,6 +1463,7 @@
           <div class="adm-n" data-adm-tab="site"><i class="ti ti-photo"></i><span>Site</span></div>
           <div class="adm-n" data-adm-tab="usuarios" id="adm-nav-usuarios" style="display:none"><i class="ti ti-users"></i><span>Usuários</span></div>
           <div class="adm-sep"></div>
+          <div class="adm-n" id="viewSiteAdminBtn"><i class="ti ti-eye"></i><span>Ver site</span></div>
           <div class="adm-n adm-n-logout" id="logoutAdminBtn"><i class="ti ti-logout"></i><span>Sair</span></div>
         </div>
       </nav>
@@ -1695,6 +1704,27 @@
               <div class="adm-fr"><label>Nome do produto</label><input type="text" id="adm-feat-name" placeholder="Ex: WHOOP 5.0 e MG"></div>
               <div class="adm-fr"><label>Descrição</label><textarea id="adm-feat-desc" placeholder="Frase curta sobre o produto"></textarea></div>
               <div class="adm-fr"><label>Link do botão</label><input type="text" id="adm-feat-link" placeholder="Link do WhatsApp ou do produto"></div>
+            </div>
+
+            <div class="adm-dc" style="max-width:420px;margin-top:16px">
+              <div class="adm-dc-title">Banner final da página</div>
+              <div class="adm-dc-sub">Imagem exibida acima de "100% Original / Entrega nacional / Compra segura"</div>
+              <div id="adm-feature-banner-preview" style="margin:14px 0;width:100%;aspect-ratio:21/9;background:#1a1a1a;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">
+                <img id="adm-feature-banner-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+              </div>
+              <input type="file" id="adm-feature-banner-image" accept="image/*"
+                style="width:100%;padding:7px 10px;background:#151515;border:1px solid #1e1e1e;border-radius:8px;color:#eaeaea;font-size:12px">
+            </div>
+
+            <div class="adm-dc" style="max-width:420px;margin-top:16px">
+              <div class="adm-dc-title">Selos de confiança</div>
+              <div class="adm-dc-sub">Os 3 itens no final da página ("100% Original", etc.)</div>
+              <div class="adm-fr"><label>Título 1</label><input type="text" id="adm-feature1-title" placeholder="Ex: 100% Original"></div>
+              <div class="adm-fr"><label>Descrição 1</label><input type="text" id="adm-feature1-desc" placeholder="Ex: Peças autênticas com procedência garantida"></div>
+              <div class="adm-fr"><label>Título 2</label><input type="text" id="adm-feature2-title" placeholder="Ex: Entrega nacional"></div>
+              <div class="adm-fr"><label>Descrição 2</label><input type="text" id="adm-feature2-desc" placeholder="Ex: Enviamos para todo o Brasil via SEDEX/PAC com seguro"></div>
+              <div class="adm-fr"><label>Título 3</label><input type="text" id="adm-feature3-title" placeholder="Ex: Compra segura"></div>
+              <div class="adm-fr"><label>Descrição 3</label><input type="text" id="adm-feature3-desc" placeholder="Ex: Atendimento personalizado e acompanhamento via WhatsApp"></div>
             </div>
 
             <button type="button" class="adm-btn-add" id="adm-site-save" style="margin-top:16px"><i

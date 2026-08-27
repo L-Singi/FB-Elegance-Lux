@@ -58,6 +58,7 @@
     async function dbInsert(data)    { return apiFetch('POST', '/api/produtos', data); }
     async function dbUpdate(id, data){ return apiFetch('PUT', `/api/produtos/${id}`, data); }
     async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
+    async function dbReorderProdutos(order) { return apiFetch('PUT', '/api/produtos/reorder', { order }); }
     async function dbGetConfig()     { return apiFetch('GET', '/api/config'); }
     async function dbGetBrands()          { return apiFetch('GET', '/api/brands'); }
     async function dbAddBrand(categoria, nome) { return apiFetch('POST', '/api/brands', { categoria, nome }); }
@@ -446,8 +447,24 @@
             setText('heroDesc', cfg.hero_desc);
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
+            setText('feature1Title', cfg.feature1_title);
+            setText('feature1Desc', cfg.feature1_desc);
+            setText('feature2Title', cfg.feature2_title);
+            setText('feature2Desc', cfg.feature2_desc);
+            setText('feature3Title', cfg.feature3_title);
+            setText('feature3Desc', cfg.feature3_desc);
             renderizarDestaque(cfg);
+            renderizarFeatureBanner(cfg);
         } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
+    }
+
+    // ─── BANNER DE IMAGEM (final da página, acima dos selos de confiança) ─────
+    function renderizarFeatureBanner(cfg) {
+        const wrap = document.getElementById('featureBannerWrap');
+        if (!wrap) return;
+        if (!cfg || !cfg.feature_banner_image) { wrap.style.display = 'none'; return; }
+        document.getElementById('featureBannerImg').src = cfg.feature_banner_image;
+        wrap.style.display = 'block';
     }
 
     // ─── CARROSSEL DO HERO ────────────────────────────────────────────────────
@@ -629,6 +646,15 @@
 
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
     let ordenacao = 'newest';
+    // "Mais Procurados" mostra 18 produtos no total, 6 por vez, navegados
+    // pelas setas ao lado da grade (ver PROCURADOS_POR_PAGINA/PROCURADOS_MAX).
+    const PROCURADOS_POR_PAGINA = 6;
+    const PROCURADOS_MAX = 18;
+    let procuradosPage = 0;
+    function mudarPaginaProcurados(delta) {
+        procuradosPage += delta;
+        renderizarCatalogo();
+    }
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
         // "Mais Procurados" é uma vitrine com produtos de todas as categorias
@@ -651,11 +677,37 @@
         }
         if (ordenacao==='preco_asc') f.sort((a,b) => precoNum(a.preco)-precoNum(b.preco));
         else if (ordenacao==='preco_desc') f.sort((a,b) => precoNum(b.preco)-precoNum(a.preco));
-        else f.sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+        else f.sort((a,b) => {
+            // Ordem manual definida pelo admin (arrastar na aba Estoque) tem
+            // prioridade; produtos sem ordem definida (novos, ainda não
+            // organizados) caem pra depois, ordenados por mais recentes.
+            const ao = Number.isFinite(a.ordem) ? a.ordem : Infinity;
+            const bo = Number.isFinite(b.ordem) ? b.ordem : Infinity;
+            if (ao !== bo) return ao - bo;
+            return new Date(b.created_at) - new Date(a.created_at);
+        });
         f.sort((a,b) => (a.status==='vendido'?1:0)-(b.status==='vendido'?1:0));
 
+        const prevBtn = document.getElementById('procuradosPrev');
+        const nextBtn = document.getElementById('procuradosNext');
+        let totalCount = f.length;
+        if (filtroCategoria === 'procurados' && !termoBusca.trim()) {
+            const full = f.slice(0, PROCURADOS_MAX);
+            totalCount = full.length;
+            const totalPages = Math.max(1, Math.ceil(full.length / PROCURADOS_POR_PAGINA));
+            if (procuradosPage >= totalPages) procuradosPage = totalPages - 1;
+            if (procuradosPage < 0) procuradosPage = 0;
+            f = full.slice(procuradosPage * PROCURADOS_POR_PAGINA, procuradosPage * PROCURADOS_POR_PAGINA + PROCURADOS_POR_PAGINA);
+            const showArrows = totalPages > 1;
+            if (prevBtn) { prevBtn.style.display = showArrows ? 'flex' : 'none'; prevBtn.disabled = procuradosPage === 0; }
+            if (nextBtn) { nextBtn.style.display = showArrows ? 'flex' : 'none'; nextBtn.disabled = procuradosPage >= totalPages - 1; }
+        } else {
+            if (prevBtn) prevBtn.style.display = 'none';
+            if (nextBtn) nextBtn.style.display = 'none';
+        }
+
         const countEl = document.getElementById('plpCount');
-        if (countEl) countEl.textContent = `(${f.length})`;
+        if (countEl) countEl.textContent = `(${totalCount})`;
 
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
@@ -667,6 +719,7 @@
     function mudarCategoria(cat) {
         filtroCategoria = cat;
         filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+        procuradosPage = 0;
         renderizarCatalogo();
         const grid = document.getElementById('product-grid');
         if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1196,6 +1249,9 @@
     // ─── LOGIN ADMIN ──────────────────────────────────────────────────────────
     const loginModal = document.getElementById('loginModal');
     let logoTimer = null;
+    // Sessão de admin ativa: permite reabrir o painel (botão flutuante ou
+    // duplo-clique na logo) sem pedir a senha de novo, até clicar em "Sair".
+    let admSessionActive = false;
     document.getElementById('adminTriggerLogo').addEventListener('click', () => {
         if (logoTimer) clearTimeout(logoTimer);
         logoTimer = setTimeout(() => { logoTimer=null; window.location.reload(); }, 350);
@@ -1204,15 +1260,20 @@
         if (logoTimer) { clearTimeout(logoTimer); logoTimer=null; }
 
         // Sessão ainda válida → entra direto, sem pedir a senha de novo.
-        // O token é revalidado no servidor a cada abertura, então uma
-        // conta desativada ou um token expirado caem no login.
+        // O token é revalidado no SERVIDOR a cada abertura: substitui o
+        // antigo `admSessionActive`, que era só um booleano em memória e
+        // portanto não sabia se a conta ainda existe ou foi desativada.
+        // A flag continua sendo mantida porque o botão "voltar ao painel"
+        // depende dela.
         if (getToken()) {
             try {
                 sessaoUsuario = await apiFetch('GET', '/api/auth/me');
+                admSessionActive = true;
                 abrirAdminOverlay();
                 return;
             } catch (e) {
                 limparSessao();
+                admSessionActive = false;
             }
         }
         document.getElementById('loginErro').style.display = 'none';
@@ -1243,6 +1304,7 @@
             const r = await apiFetch('POST', '/api/auth/login', { email, senha });
             setToken(r.token);
             sessaoUsuario = r.usuario;
+            admSessionActive = true;
             loginModal.style.display = 'none';
             document.body.style.overflow = 'hidden';
             document.getElementById('adminPassword').value = '';
@@ -1270,6 +1332,7 @@
         const overlay = document.getElementById('adminOverlay');
         overlay.style.display = 'block';
         document.body.style.overflow = 'hidden';
+        document.getElementById('backToAdminBtn').style.display = 'none';
         adminVisible = true;
         admInit();
         // Fora do admInit de propósito: ele só roda por completo na
@@ -1278,6 +1341,14 @@
         admAplicarPermissoesNaNav();
     }
 
+    document.getElementById('viewSiteAdminBtn').addEventListener('click', () => {
+        document.getElementById('adminOverlay').style.display = 'none';
+        document.body.style.overflow = 'auto';
+        adminVisible = false;
+        document.getElementById('backToAdminBtn').style.display = 'flex';
+    });
+    document.getElementById('backToAdminBtn').addEventListener('click', abrirAdminOverlay);
+
     document.getElementById('logoutAdminBtn').addEventListener('click', () => {
         // Descarta a credencial, não só fecha a tela: antes o "Sair"
         // apenas escondia o painel, e reabrir voltava a dar acesso.
@@ -1285,6 +1356,8 @@
         document.getElementById('adminOverlay').style.display = 'none';
         document.body.style.overflow = 'auto';
         adminVisible = false;
+        admSessionActive = false;
+        document.getElementById('backToAdminBtn').style.display = 'none';
     });
 
     // ─── DASHBOARD v2 ────────────────────────────────────────────────────────
@@ -1822,8 +1895,13 @@
             const sCls=ADM_STATUS_CLS[p.status]||'adm-p-brev';
             const sLbl=ADM_STATUS_OPTS[p.status]||p.status;
             const otherOpts=Object.entries(ADM_STATUS_OPTS).filter(([k])=>k!==p.status);
-            return `<tr draggable="true" data-id="${p.id}">
-                <td style="color:#444;text-align:center"><i class="ti ti-grip-vertical" style="font-size:14px"></i></td>
+            // Filtro de categoria/status/busca não muda a ordem relativa dos itens
+            // (só esconde os que não batem), então não atrapalha o drag — o índice
+            // em admProds continua correto. Só a ORDENAÇÃO (nome/preço) desalinha
+            // a posição visual do índice real, por isso só ela desabilita o arrastar.
+            const podeArrastar = sort === 'newest';
+            return `<tr draggable="${podeArrastar}" data-id="${p.id}">
+                <td style="color:#444;text-align:center" ${podeArrastar?'title="Arraste para reordenar"':''}><i class="ti ti-grip-vertical" style="font-size:14px;${podeArrastar?'cursor:grab':'opacity:.25'}"></i></td>
                 <td>
                     <div style="display:flex;align-items:center;gap:8px">
                         <div style="width:26px;height:26px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -1872,12 +1950,15 @@
             });
         });
 
-        // Drag & drop
-        body.querySelectorAll('tr[draggable]').forEach(row=>{
+        // Drag & drop — só habilitado com "Mais recentes" e sem filtros ativos
+        // (ver podeArrastar acima), pra posição visual e índice em admProds
+        // sempre baterem. A nova ordem é persistida via PUT /api/produtos/reorder,
+        // e o site público passa a respeitá-la (ver campo "ordem" em renderizarCatalogo()).
+        body.querySelectorAll('tr[draggable="true"]').forEach(row=>{
             row.addEventListener('dragstart',e=>{admDragSrcId=Number(row.dataset.id);e.dataTransfer.effectAllowed='move';});
             row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over');});
             row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
-            row.addEventListener('drop',e=>{
+            row.addEventListener('drop',async e=>{
                 e.preventDefault();row.classList.remove('drag-over');
                 const targetId=Number(row.dataset.id);
                 if(!admDragSrcId||admDragSrcId===targetId)return;
@@ -1887,7 +1968,13 @@
                 const [item]=admProds.splice(si,1);
                 admProds.splice(ti,0,item);
                 admRenderStock();
-                admToast('Ordem atualizada');
+                try {
+                    await dbReorderProdutos(admProds.map(p=>p.id));
+                    admProds.forEach((p,idx)=>{ p.ordem = idx; });
+                    admToast('Ordem atualizada');
+                } catch(err) {
+                    admToast('Erro ao salvar ordem: '+err.message);
+                }
             });
             row.addEventListener('dragend',()=>body.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over')));
         });
@@ -2181,6 +2268,17 @@
             admEl('adm-feat-name').value = cfg?.feat_name || '';
             admEl('adm-feat-desc').value = cfg?.feat_desc || '';
             admEl('adm-feat-link').value = cfg?.feat_link || '';
+
+            const featureBannerImg = admEl('adm-feature-banner-preview-img');
+            if (cfg && cfg.feature_banner_image) { featureBannerImg.src = cfg.feature_banner_image; featureBannerImg.style.display = 'block'; }
+            else { featureBannerImg.style.display = 'none'; }
+
+            admEl('adm-feature1-title').value = cfg?.feature1_title || '';
+            admEl('adm-feature1-desc').value = cfg?.feature1_desc || '';
+            admEl('adm-feature2-title').value = cfg?.feature2_title || '';
+            admEl('adm-feature2-desc').value = cfg?.feature2_desc || '';
+            admEl('adm-feature3-title').value = cfg?.feature3_title || '';
+            admEl('adm-feature3-desc').value = cfg?.feature3_desc || '';
         } catch(e) { admRenderHeroPreview([]); }
     }
     admEl('adm-site-cover').addEventListener('change', () => {
@@ -2212,6 +2310,16 @@
             img.style.display = 'block';
         }
     });
+    let admFeatureBannerNewFile = null;
+    admEl('adm-feature-banner-image').addEventListener('change', () => {
+        const f = admEl('adm-feature-banner-image').files[0];
+        admFeatureBannerNewFile = f || null;
+        if (f) {
+            const img = admEl('adm-feature-banner-preview-img');
+            img.src = URL.createObjectURL(f);
+            img.style.display = 'block';
+        }
+    });
     admEl('adm-site-save').addEventListener('click', async () => {
         const fd = new FormData();
         fd.append('hero_images_keep', JSON.stringify(admSiteHeroKeptUrls()));
@@ -2231,6 +2339,13 @@
         fd.append('feat_name', admEl('adm-feat-name').value.trim());
         fd.append('feat_desc', admEl('adm-feat-desc').value.trim());
         fd.append('feat_link', admEl('adm-feat-link').value.trim());
+        if (admFeatureBannerNewFile) fd.append('feature_banner_image', admFeatureBannerNewFile);
+        fd.append('feature1_title', admEl('adm-feature1-title').value.trim());
+        fd.append('feature1_desc', admEl('adm-feature1-desc').value.trim());
+        fd.append('feature2_title', admEl('adm-feature2-title').value.trim());
+        fd.append('feature2_desc', admEl('adm-feature2-desc').value.trim());
+        fd.append('feature3_title', admEl('adm-feature3-title').value.trim());
+        fd.append('feature3_desc', admEl('adm-feature3-desc').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
             // Imagem de capa por categoria agora é campo próprio de cada
@@ -2246,8 +2361,10 @@
             admSiteNewFiles = [];
             admCatNewFiles = {};
             admFeatNewFile = null;
+            admFeatureBannerNewFile = null;
             admEl('adm-site-cover').value = '';
             admEl('adm-feat-image').value = '';
+            admEl('adm-feature-banner-image').value = '';
             carregarCapaDoSite();
             carregarCategorias();
         } catch(e) { admToast('Erro: ' + e.message); }
@@ -2273,6 +2390,8 @@
     document.getElementById('plpSidebarBackdrop').addEventListener('click', fecharMenuFiltros);
     document.getElementById('plpSort').addEventListener('change', e => { ordenacao = e.target.value; renderizarCatalogo(); });
     document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
+    document.getElementById('procuradosPrev')?.addEventListener('click', () => mudarPaginaProcurados(-1));
+    document.getElementById('procuradosNext')?.addEventListener('click', () => mudarPaginaProcurados(1));
 
     const cartModal = document.getElementById('cartModal');
     document.getElementById('cartIcon').addEventListener('click', () => { renderCartModal(); cartModal.style.display='flex'; });
