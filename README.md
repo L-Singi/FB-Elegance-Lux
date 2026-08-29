@@ -50,8 +50,6 @@ fb_vf/
 - `SUPABASE_ANON_KEY`: Chave anônima do Supabase (para operações públicas)
 - `SUPABASE_SERVICE_KEY`: Chave de serviço do Supabase (para operações administrativas)
 
-### Opcionais:
-- `ADMIN_PASSWORD`: Senha para acesso ao painel administrativo (padrão: fbadmin)
 
 ## Funcionalidades
 
