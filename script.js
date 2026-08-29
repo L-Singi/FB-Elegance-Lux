@@ -60,6 +60,7 @@
     async function dbDelete(id)      { return apiFetch('DELETE', `/api/produtos/${id}`); }
     async function dbReorderProdutos(order) { return apiFetch('PUT', '/api/produtos/reorder', { order }); }
     async function dbGetConfig()     { return apiFetch('GET', '/api/config'); }
+    async function dbGetFeedbacks()       { return apiFetch('GET', '/api/feedbacks'); }
     async function dbGetBrands()          { return apiFetch('GET', '/api/brands'); }
     async function dbAddBrand(categoria, nome) { return apiFetch('POST', '/api/brands', { categoria, nome }); }
     async function dbDeleteBrand(id)      { return apiFetch('DELETE', `/api/brands/${id}`); }
@@ -228,6 +229,11 @@
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
     document.getElementById('toastClose').addEventListener('click', () => toast.classList.remove('show'));
+    document.getElementById('printOverlayClose').addEventListener('click', fecharPrint);
+    document.getElementById('printOverlay').addEventListener('click', e => {
+        if (e.target === document.getElementById('printOverlay')) fecharPrint();
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharPrint(); });
 
     // ─── FORMATAÇÃO DE PREÇO (esquerda → direita, sem inverter) ──────────────
     function digitosParaPreco(digits) {
@@ -332,6 +338,7 @@
             renderizarCatalogo();
             renderizarSecoesCuradas();
             if (adminVisible) renderizarAdminLista();
+            abrirProdutoDoEndereco();
         } catch(err) {
             console.error('Erro Supabase:', err);
             document.getElementById('product-grid').innerHTML = `<div class="empty-message">Erro ao carregar: ${err.message}</div>`;
@@ -440,6 +447,14 @@
             const heroImages = rawHeroImages.filter(Boolean);
             initHeroCarousel(heroImages, { shuffle: !!cfg.hero_shuffle, intervalMs: cfg.hero_interval_ms || 5000 });
             const setText = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+            // Igual ao setText, mas reconhece **negrito**. O texto vem do
+            // painel admin, então é escapado primeiro: o marcador é a única
+            // coisa que pode virar HTML.
+            const setRichText = (id, val) => {
+                const el = document.getElementById(id);
+                if (!el || !val) return;
+                el.innerHTML = escapeHtml(val).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            };
             setText('heroEyebrow', cfg.hero_eyebrow);
             setText('heroTitle1', cfg.hero_title1);
             setText('heroTitle2', cfg.hero_title2);
@@ -448,14 +463,130 @@
             setText('heroTagEyebrow', cfg.hero_tag_eyebrow);
             setText('heroTagTitle', cfg.hero_tag_title);
             setText('feature1Title', cfg.feature1_title);
-            setText('feature1Desc', cfg.feature1_desc);
+            setRichText('feature1Desc', cfg.feature1_desc);
             setText('feature2Title', cfg.feature2_title);
-            setText('feature2Desc', cfg.feature2_desc);
+            setRichText('feature2Desc', cfg.feature2_desc);
             setText('feature3Title', cfg.feature3_title);
-            setText('feature3Desc', cfg.feature3_desc);
+            setRichText('feature3Desc', cfg.feature3_desc);
             renderizarDestaque(cfg);
             renderizarFeatureBanner(cfg);
-        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); }
+            renderizarSobre(cfg);
+        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); renderizarSobre({}); }
+    }
+
+    // ─── SOBRE NÓS ────────────────────────────────────────────────────────────
+    // Texto inicial, editável pelo painel. Existe para a seção nunca
+    // aparecer vazia antes de alguém preencher, e diz só o que a própria
+    // loja já afirma no resto do site.
+    const SOBRE_PADRAO = `Somos uma curadoria de moda masculina de luxo em second hand: peças que já tiveram dono e seguem impecáveis, escolhidas uma a uma.
+
+Autenticidade aqui é inegociável. Toda peça passa por análise e autenticação antes de entrar no catálogo — e só entra se for original.
+
+Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregues** para todo o Brasil. O atendimento é pessoal, pelo WhatsApp, do primeiro contato até a peça chegar na sua mão.`;
+
+    function renderizarSobre(cfg) {
+        const titulo = (cfg && cfg.sobre_titulo || '').trim();
+        const corpoTexto = (cfg && cfg.sobre_texto || '').trim() || SOBRE_PADRAO;
+
+        if (titulo) {
+            const el = document.getElementById('sobreTitulo');
+            if (el) el.textContent = titulo;
+        }
+
+        const corpo = document.getElementById('sobreTexto');
+        if (corpo) {
+            // Linha em branco separa parágrafo; **isto** vira negrito. O
+            // texto é escapado antes, então nada além do marcador vira
+            // HTML — o campo é editável pelo painel.
+            corpo.innerHTML = corpoTexto
+                .split(/\n\s*\n/)
+                .map(p => p.trim())
+                .filter(Boolean)
+                .map(p => `<p>${escapeHtml(p)
+                    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n/g, '<br>')}</p>`)
+                .join('');
+        }
+
+        const media = document.getElementById('sobreMedia');
+        const img = document.getElementById('sobreImagem');
+        if (media && img) {
+            const temImagem = !!(cfg && cfg.sobre_imagem);
+            if (temImagem) img.src = cfg.sobre_imagem;
+            media.style.display = temImagem ? '' : 'none';
+            document.querySelector('.sobre-inner')?.classList.toggle('sobre-sem-imagem', !temImagem);
+        }
+    }
+
+    // ─── FEEDBACKS DE CLIENTES ────────────────────────────────────────────────
+    function cardDeFeedback(f) {
+        if (f.tipo === 'print') {
+            if (!f.imagem) return '';
+            return `<div class="feedback-card feedback-card-print" data-print="${escapeHtml(f.imagem)}">
+                <img src="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy">
+            </div>`;
+        }
+        const nome = (f.nome || '').trim();
+        const cidade = (f.cidade || '').trim();
+        const assinatura = (nome || cidade)
+            ? `<div class="feedback-autor">${nome ? `<strong>${escapeHtml(nome)}</strong>` : ''}${escapeHtml(cidade)}</div>`
+            : '';
+        return `<div class="feedback-card feedback-card-texto">
+            <div class="feedback-aspas">&ldquo;</div>
+            <div class="feedback-texto">${escapeHtml(f.texto || '')}</div>
+            ${assinatura}
+        </div>`;
+    }
+
+    async function renderizarFeedbacks() {
+        const secao = document.getElementById('feedbacksSection');
+        const track = document.getElementById('feedbacksTrack');
+        if (!secao || !track) return;
+
+        let lista = [];
+        // Falha de rede aqui não pode derrubar o resto da página: a seção
+        // simplesmente não aparece, como quando não há nada cadastrado.
+        try { lista = await dbGetFeedbacks(); } catch (_) { lista = []; }
+        const cards = (Array.isArray(lista) ? lista : []).map(cardDeFeedback).filter(Boolean);
+        if (!cards.length) { secao.style.display = 'none'; return; }
+
+        track.innerHTML = cards.join('');
+        secao.style.display = 'block';
+
+        const prev = document.getElementById('feedbacksPrev');
+        const next = document.getElementById('feedbacksNext');
+        const passo = () => (track.querySelector('.feedback-card')?.offsetWidth || 280) + 18;
+        if (prev) prev.onclick = () => track.scrollBy({ left: -passo(), behavior: 'smooth' });
+        if (next) next.onclick = () => track.scrollBy({ left: passo(), behavior: 'smooth' });
+
+        // Com dois ou três feedbacks tudo cabe na tela e não há o que
+        // rolar — seta que não leva a lugar nenhum só confunde. Refaz a
+        // conta ao redimensionar, porque o que cabe muda com a largura.
+        const ajustarSetas = () => {
+            const rola = track.scrollWidth > track.clientWidth + 4;
+            [prev, next].forEach(b => { if (b) b.style.display = rola ? '' : 'none'; });
+        };
+        ajustarSetas();
+        window.addEventListener('resize', ajustarSetas);
+
+        track.querySelectorAll('[data-print]').forEach(el => {
+            el.addEventListener('click', () => abrirPrint(el.dataset.print));
+        });
+    }
+
+    function abrirPrint(url) {
+        const overlay = document.getElementById('printOverlay');
+        const img = document.getElementById('printOverlayImg');
+        if (!overlay || !img) return;
+        img.src = url;
+        overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
+    function fecharPrint() {
+        const overlay = document.getElementById('printOverlay');
+        if (!overlay) return;
+        overlay.classList.remove('open');
+        document.body.style.overflow = 'auto';
     }
 
     // ─── BANNER DE IMAGEM (final da página, acima dos selos de confiança) ─────
@@ -577,10 +708,15 @@
     }
 
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
+    // A busca esconde a seção de lançamentos e precisa saber ao que
+    // devolvê-la depois — daí o estado ficar guardado aqui, em vez de ser
+    // relido do style no meio da busca.
+    let lancamentosTemItens = false;
     function renderizarSecoesCuradas() {
         const lancs = produtos.filter(p => p.status === 'lancamentos');
         const lancSec = document.getElementById('lancamentosSection');
         const lancGrid = document.getElementById('lancamentosGrid');
+        lancamentosTemItens = lancs.length > 0;
         if (lancs.length) { lancSec.style.display='block'; lancGrid.innerHTML=''; lancs.slice(0,6).forEach(p => lancGrid.appendChild(criarCard(p))); }
         else lancSec.style.display = 'none';
     }
@@ -588,6 +724,49 @@
     // ─── CARD ─────────────────────────────────────────────────────────────────
     const STATUS = { disponiveis:['DISPONÍVEL','disponivel'], lancamentos:['LANÇAMENTO','lancamento'], embreve:['EM BREVE','embreve'], vendido:['VENDIDO','vendido'] };
     const CAT_LABEL = { casacos:'CASACOS', camisetas:'CAMISETAS', shorts:'SHORTS', calcados:'CALÇADOS', acessorios:'ACESSÓRIOS', perfumes:'PERFUMES', vestuario:'VESTUÁRIO', lifestyle:'LIFESTYLE' };
+
+    // ─── LINK DIRETO DA PEÇA ──────────────────────────────────────────────────
+    // O site é uma página só e mora no GitHub Pages, que não reescreve
+    // caminho nenhum. Por isso o endereço que abre uma peça é um
+    // parâmetro (?produto=<id>) e não uma rota de verdade.
+    //
+    // As pastas em /produto/<id>-<slug>/ existem à parte, geradas pelo
+    // robô em .github/workflows: elas só carregam as marcações de
+    // preview (foto, nome e preço no cartão do WhatsApp) e devolvem a
+    // pessoa para cá. É o link delas que o botão "copiar" entrega.
+    function slugProduto(prod) {
+        return String(prod.nome || '')
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 60) || 'peca';
+    }
+    function linkDoProduto(prod) {
+        return `${location.origin}/produto/${prod.id}-${slugProduto(prod)}/`;
+    }
+    async function copiarLinkDoProduto(prod) {
+        const link = linkDoProduto(prod);
+        try {
+            await navigator.clipboard.writeText(link);
+            showToast('Link copiado — é só colar no WhatsApp');
+        } catch (_) {
+            // A área de transferência depende de permissão do navegador.
+            // Quando ela é negada, mostrar o link para copiar na mão é
+            // melhor do que o botão simplesmente não fazer nada.
+            window.prompt('Copie o link da peça:', link);
+        }
+    }
+    // Deixa o endereço da barra sempre compartilhável enquanto a peça
+    // está aberta. replaceState em vez de pushState de propósito: assim
+    // o botão "voltar" continua saindo do site, como antes, em vez de
+    // acumular uma entrada por peça espiada.
+    function marcarProdutoNoEndereco(prod) {
+        try { history.replaceState(null, '', `?produto=${prod.id}`); } catch (_) {}
+    }
+    function limparProdutoDoEndereco() {
+        try { history.replaceState(null, '', location.pathname); } catch (_) {}
+    }
 
     function criarCard(prod) {
         const card = document.createElement('div');
@@ -645,6 +824,14 @@
     }
 
     // ─── CATÁLOGO ─────────────────────────────────────────────────────────────
+    // Tira acento e troca pontuação por espaço, dos dois lados da
+    // comparação: assim "off white", "Off-White" e "OFF WHITE" encontram
+    // as mesmas peças.
+    const normalizarBusca = s => String(s||'')
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+        .replace(/[^a-z0-9]+/g,' ')
+        .trim();
     let ordenacao = 'newest';
     // "Mais Procurados" mostra 18 produtos no total, 6 por vez, navegados
     // pelas setas ao lado da grade (ver PROCURADOS_POR_PAGINA/PROCURADOS_MAX).
@@ -659,20 +846,37 @@
         const grid = document.getElementById('product-grid');
         // "Mais Procurados" é uma vitrine com produtos de todas as categorias
         // (sem filtro), diferente das demais abas que filtram por categoria real.
-        let f = filtroCategoria === 'procurados'
+        // A busca é global de propósito: quem digita "Off-White" na lupa
+        // quer a marca inteira, não o que sobrou dela dentro da aba que
+        // por acaso estava aberta. Enquanto há texto no campo, a categoria
+        // e os filtros laterais ficam de fora; voltam a valer sozinhos
+        // assim que o campo esvazia.
+        const buscando = termoBusca.trim().length > 0;
+        let f = (buscando || filtroCategoria === 'procurados')
             ? produtos.slice()
             : produtos.filter(p => p.categoria===filtroCategoria);
-        if (termoBusca.trim()) {
-            const b = termoBusca.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-            f = f.filter(p => p.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(b));
+        if (buscando) {
+            const b = normalizarBusca(termoBusca);
+            // Segunda comparação sem espaço nenhum: as marcas são escritas
+            // de um jeito no cadastro e de outro por quem procura —
+            // "AllSaints" é uma palavra só, "Off-White" tem hífen. Sem isto,
+            // quem digita "all saints" ou "offwhite" não acha nada.
+            const bColado = b.replace(/ /g, '');
+            // Procura no nome, na marca e na categoria. Só o nome não basta:
+            // "Off-White" é a marca de dezenas de peças cujo nome não repete
+            // a palavra.
+            f = f.filter(p => {
+                const alvo = normalizarBusca(`${p.nome} ${p.marca||''} ${CAT_LABEL[p.categoria]||''}`);
+                return alvo.includes(b) || alvo.replace(/ /g, '').includes(bColado);
+            });
         }
-        if (TAMANHO_CATS.includes(filtroCategoria) && filtroTamanho.length) {
+        if (!buscando && TAMANHO_CATS.includes(filtroCategoria) && filtroTamanho.length) {
             f = f.filter(p => Array.isArray(p.tamanhos) && p.tamanhos.some(t => filtroTamanho.includes(t)));
         }
-        if (NUMERO_CATS.includes(filtroCategoria) && filtroNumero.length) {
+        if (!buscando && NUMERO_CATS.includes(filtroCategoria) && filtroNumero.length) {
             f = f.filter(p => numeroMatches(p.numeracao, filtroNumero));
         }
-        if (BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
+        if (!buscando && BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
             f = f.filter(p => filtroMarca.includes(p.marca));
         }
         if (ordenacao==='preco_asc') f.sort((a,b) => precoNum(a.preco)-precoNum(b.preco));
@@ -707,13 +911,37 @@
         }
 
         const countEl = document.getElementById('plpCount');
-        if (countEl) countEl.textContent = `(${totalCount})`;
+        if (countEl) countEl.textContent = buscando
+            ? `· ${totalCount} ${totalCount === 1 ? 'peça' : 'peças'}`
+            : `(${totalCount})`;
 
         grid.innerHTML = '';
         if (!f.length) grid.innerHTML = '<div class="empty-message">✦ Nenhum produto encontrado ✦</div>';
         else f.forEach(p => grid.appendChild(criarCard(p)));
         renderizarFiltroMenu();
         renderizarCatTabs();
+        aplicarModoBusca(buscando);
+    }
+
+    // Com texto na lupa a página vira uma página de resultados: o H1 diz o
+    // que foi buscado e as vitrines de navegação saem da frente, para os
+    // produtos aparecerem direto. Precisa rodar depois de
+    // renderizarFiltroMenu(), que reescreve o H1 com o nome da categoria.
+    function aplicarModoBusca(buscando) {
+        const label = document.getElementById('filterMenuLabel');
+        if (label && buscando) label.childNodes[0].nodeValue = `Resultados para “${termoBusca.trim()}” `;
+
+        // String vazia devolve o controle ao CSS — importante no botão de
+        // filtros, que só aparece a partir de certa largura de tela.
+        const oculto = buscando ? 'none' : '';
+        const showcase = document.querySelector('.cat-showcase');
+        if (showcase) showcase.style.display = oculto;
+        const abas = document.querySelector('.cat-tabs');
+        if (abas) abas.style.display = oculto;
+        const filtros = document.getElementById('filterMenuToggle');
+        if (filtros) filtros.style.display = oculto;
+        const lancamentos = document.getElementById('lancamentosSection');
+        if (lancamentos) lancamentos.style.display = buscando ? 'none' : (lancamentosTemItens ? 'block' : 'none');
     }
 
     function mudarCategoria(cat) {
@@ -835,11 +1063,25 @@
 
     // ─── DISPATCHER: mobile sheet ou modal desktop ────────────────────────────
     function abrirProduto(prod) {
+        marcarProdutoNoEndereco(prod);
         if (window.innerWidth <= 768) {
             abrirMobileSheet(prod);
         } else {
             abrirModal(prod);
         }
+    }
+
+    // Abre direto a peça pedida no endereço — é o que um link
+    // compartilhado carrega ao chegar aqui.
+    function abrirProdutoDoEndereco() {
+        const id = new URLSearchParams(location.search).get('produto');
+        if (!id) return;
+        const prod = produtos.find(p => String(p.id) === String(id));
+        if (prod) { abrirProduto(prod); return; }
+        // Peça vendida ou removida: dizer isso é melhor do que largar a
+        // pessoa na home sem explicação nenhuma.
+        limparProdutoDoEndereco();
+        showToast('Essa peça não está mais no catálogo', true);
     }
 
     // ─── MOBILE BOTTOM SHEET ─────────────────────────────────────────────────
@@ -854,6 +1096,7 @@
         document.getElementById('mobileSheetCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
         document.getElementById('mobileSheetPrice').innerText    = prod.preco;
         document.getElementById('mobileSheetDesc').innerText     = prod.descricao_completa || '';
+        document.getElementById('mobileSheetCopiarLink').onclick = () => copiarLinkDoProduto(prod);
 
         let st = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
@@ -934,6 +1177,7 @@
             sheet.style.transform = '';
         }, 360);
         document.body.style.overflow = 'auto';
+        limparProdutoDoEndereco();
     }
 
     document.getElementById('mobileSheetClose').addEventListener('click', fecharMobileSheet);
@@ -947,6 +1191,9 @@
         document.getElementById('modalCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
         document.getElementById('modalPrice').innerText = prod.preco;
         document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
+        // onclick (e não addEventListener) porque abrirModal roda uma vez
+        // por peça: com listener, cada abertura empilharia mais um.
+        document.getElementById('modalCopiarLink').onclick = () => copiarLinkDoProduto(prod);
         let st = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos?.length) st = 'Tamanhos: '+prod.tamanhos.join(', ');
         else if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) st = 'Numeração: '+prod.numeracao;
@@ -1004,7 +1251,7 @@
         document.getElementById('productModal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
-    function fecharModal() { document.getElementById('productModal').style.display='none'; document.body.style.overflow='auto'; }
+    function fecharModal() { document.getElementById('productModal').style.display='none'; document.body.style.overflow='auto'; limparProdutoDoEndereco(); }
     document.getElementById('productModalClose').addEventListener('click', fecharModal);
     window.addEventListener('click', e => { if(e.target===document.getElementById('productModal')) fecharModal(); });
 
@@ -1452,9 +1699,10 @@
 
     const PERM_ROTULOS = {
         produtos: 'Produtos', categorias: 'Categorias',
-        marcas: 'Marcas', tamanhos: 'Tamanhos', config: 'Site'
+        marcas: 'Marcas', tamanhos: 'Tamanhos', config: 'Site',
+        feedbacks: 'Feedbacks', propostas: 'Propostas'
     };
-    let admPermsDisponiveis = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config'];
+    let admPermsDisponiveis = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config', 'feedbacks', 'propostas'];
 
     function admRenderPermCheckboxes() {
         const box = admEl('adm-u-perms');
@@ -1463,6 +1711,231 @@
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
                 <input type="checkbox" value="${p}" class="adm-u-perm-cb"> ${PERM_ROTULOS[p] || p}
             </label>`).join('');
+    }
+
+    // ─── PROPOSTAS DE VENDA (painel) ──────────────────────────────────────────
+    let admPropFiltro = 'aguardando';
+
+    /** Contador na navegação: quantas propostas ainda não foram
+     *  respondidas. Sem ele, ninguém descobre que chegou peça nova sem
+     *  entrar na aba. */
+    async function admAtualizarBadgePropostas() {
+        const badge = admEl('adm-propostas-badge');
+        if (!badge) return;
+        try {
+            const lista = await apiFetch('GET', '/api/propostas?status=aguardando');
+            const n = Array.isArray(lista) ? lista.length : 0;
+            badge.textContent = n;
+            badge.style.display = n ? 'inline-flex' : 'none';
+        } catch (_) {
+            // Sem permissão de propostas ou API fora do ar: some o
+            // contador em vez de deixar um número errado na tela.
+            badge.style.display = 'none';
+        }
+    }
+
+    async function admRenderPropostas() {
+        const wrap = admEl('adm-prop-lista');
+        if (!wrap) return;
+        wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Carregando...</p>';
+
+        let lista = [];
+        try {
+            const query = admPropFiltro ? `?status=${admPropFiltro}` : '';
+            lista = await apiFetch('GET', `/api/propostas${query}`);
+        } catch (err) {
+            wrap.innerHTML = `<p style="color:#ff6b6b;font-size:13px">${admEsc(err.message)}</p>`;
+            return;
+        }
+
+        if (!lista.length) {
+            wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Nenhuma proposta por aqui.</p>';
+            admAtualizarBadgePropostas();
+            return;
+        }
+
+        const cores = { aguardando: '#B8924F', aprovada: '#3f9a5c', recusada: '#8a4040' };
+        wrap.innerHTML = lista.map(p => {
+            const imagens = Array.isArray(p.imagens) ? p.imagens : [];
+            const fotos = imagens.map((url, i) => `
+                <a href="${admEsc(url)}" target="_blank" rel="noopener">
+                  <img src="${admEsc(url)}" alt="Foto ${i + 1}"
+                       style="width:64px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #262626">
+                </a>`).join('');
+            const detalhes = [
+                p.marca && `Marca: ${p.marca}`,
+                p.tamanho && `Tamanho: ${p.tamanho}`,
+                p.estado && `Estado: ${p.estado}`,
+                p.valor && `Pedido: ${p.valor}`
+            ].filter(Boolean).join(' · ');
+            // Abre a conversa já identificando a peça — evita o "oi, sobre
+            // qual peça mesmo?" que atrasa a resposta.
+            const zap = `https://wa.me/55${String(p.telefone || '').replace(/\D/g, '')}` +
+                `?text=${encodeURIComponent(`Olá, ${p.nome}! Recebemos sua proposta da peça "${p.peca}" no site da FB Elegance Lux.`)}`;
+
+            return `
+            <div style="border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:12px;background:#111">
+              <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+                <div style="min-width:200px">
+                  <div style="font-weight:600">${admEsc(p.peca)}</div>
+                  <div style="font-size:12px;opacity:.65;margin-top:3px">${admEsc(p.nome)} · ${admEsc(p.telefone)}</div>
+                  ${detalhes ? `<div style="font-size:12px;opacity:.55;margin-top:4px">${admEsc(detalhes)}</div>` : ''}
+                  <div style="font-size:11px;opacity:.4;margin-top:4px">${admRt(p.created_at)}</div>
+                </div>
+                <span style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border-radius:20px;background:${cores[p.status] || '#333'}22;color:${cores[p.status] || '#999'};border:1px solid ${cores[p.status] || '#333'}55">${p.status}</span>
+              </div>
+
+              ${p.observacoes ? `<div style="font-size:12px;opacity:.7;margin-top:10px;line-height:1.5">${admEsc(p.observacoes)}</div>` : ''}
+              ${fotos ? `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">${fotos}</div>` : ''}
+
+              <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+                <a href="${zap}" target="_blank" rel="noopener"
+                   style="background:#14301f;color:#5fd68a;border:1px solid #1f4a30;border-radius:8px;padding:6px 12px;font-size:12px;text-decoration:none">WhatsApp</a>
+                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="aprovada"
+                   style="background:#12291a;color:#5fd68a;border:1px solid #1f4a30;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Aprovar</button>
+                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="recusada"
+                   style="background:#2a1212;color:#ff9999;border:1px solid #4a1f1f;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Recusar</button>
+                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="aguardando"
+                   style="background:#1a1a1a;color:#bbb;border:1px solid #262626;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Reabrir</button>
+                <button type="button" class="adm-prop-del" data-id="${p.id}"
+                   style="background:#1a1a1a;color:#777;border:1px solid #262626;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Excluir</button>
+              </div>
+            </div>`;
+        }).join('');
+
+        wrap.querySelectorAll('.adm-prop-status').forEach(b => b.addEventListener('click', async () => {
+            try {
+                await apiFetch('PUT', `/api/propostas/${b.dataset.id}`, { status: b.dataset.status });
+                admToast('Proposta atualizada');
+                admRenderPropostas();
+            } catch (err) { admToast(err.message); }
+        }));
+
+        wrap.querySelectorAll('.adm-prop-del').forEach(b => b.addEventListener('click', async () => {
+            if (!confirm('Excluir esta proposta? Não dá para desfazer.')) return;
+            try {
+                await apiFetch('DELETE', `/api/propostas/${b.dataset.id}`);
+                admToast('Proposta excluída');
+                admRenderPropostas();
+            } catch (err) { admToast(err.message); }
+        }));
+
+        admAtualizarBadgePropostas();
+    }
+
+    // ─── FEEDBACKS (painel) ───────────────────────────────────────────────────
+    let admFeedbacks = [];
+
+    async function admRenderFeedbacks() {
+        const wrap = admEl('adm-fb-lista');
+        if (!wrap) return;
+        wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Carregando...</p>';
+        try {
+            admFeedbacks = await apiFetch('GET', '/api/feedbacks/todos');
+        } catch (err) {
+            wrap.innerHTML = `<p style="color:#ff6b6b;font-size:13px">${admEsc(err.message)}</p>`;
+            return;
+        }
+        if (!admFeedbacks.length) {
+            wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Nenhum feedback cadastrado ainda.</p>';
+            return;
+        }
+        wrap.innerHTML = admFeedbacks.map((f, i) => {
+            const resumo = f.tipo === 'print'
+                ? `<img src="${admEsc(f.imagem || '')}" style="width:54px;height:72px;object-fit:cover;border-radius:6px;border:1px solid #262626">`
+                : `<div style="font-size:12px;opacity:.75;max-width:340px;line-height:1.5">${admEsc((f.texto || '').slice(0, 160))}${(f.texto || '').length > 160 ? '…' : ''}</div>`;
+            const autor = [f.nome, f.cidade].filter(Boolean).join(' · ');
+            return `
+            <div style="border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:10px;background:#111;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+              ${resumo}
+              <div style="flex:1;min-width:160px">
+                <div style="font-size:12px;opacity:.55">${f.tipo === 'print' ? 'Print da conversa' : 'Depoimento escrito'}</div>
+                ${autor ? `<div style="font-size:13px;margin-top:3px">${admEsc(autor)}</div>` : ''}
+              </div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button type="button" class="adm-fb-mover" data-id="${f.id}" data-dir="-1" ${i === 0 ? 'disabled' : ''}
+                    style="background:#1a1a1a;color:#eaeaea;border:1px solid #262626;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer">↑</button>
+                <button type="button" class="adm-fb-mover" data-id="${f.id}" data-dir="1" ${i === admFeedbacks.length - 1 ? 'disabled' : ''}
+                    style="background:#1a1a1a;color:#eaeaea;border:1px solid #262626;border-radius:8px;padding:5px 9px;font-size:12px;cursor:pointer">↓</button>
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+                  <input type="checkbox" class="adm-fb-ativo" data-id="${f.id}" ${f.ativo ? 'checked' : ''}> No site
+                </label>
+                <button type="button" class="adm-fb-del" data-id="${f.id}"
+                    style="background:#2a1212;color:#ff6b6b;border:1px solid #4a1f1f;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer">Excluir</button>
+              </div>
+            </div>`;
+        }).join('');
+
+        wrap.querySelectorAll('.adm-fb-ativo').forEach(cb => cb.addEventListener('change', async () => {
+            const fd = new FormData();
+            fd.append('ativo', cb.checked ? 'true' : 'false');
+            try {
+                await apiFetch('PUT', `/api/feedbacks/${cb.dataset.id}`, fd);
+                admToast(cb.checked ? 'Aparecendo no site' : 'Escondido do site');
+                renderizarFeedbacks();
+            } catch (err) { cb.checked = !cb.checked; admToast(err.message); }
+        }));
+
+        wrap.querySelectorAll('.adm-fb-del').forEach(b => b.addEventListener('click', async () => {
+            if (!confirm('Excluir este feedback? Não dá para desfazer.')) return;
+            try {
+                await apiFetch('DELETE', `/api/feedbacks/${b.dataset.id}`);
+                admToast('Feedback excluído');
+                admRenderFeedbacks();
+                renderizarFeedbacks();
+            } catch (err) { admToast(err.message); }
+        }));
+
+        // Reordenar troca a posição com o vizinho: duas gravações, que é
+        // o suficiente para uma lista desse tamanho.
+        wrap.querySelectorAll('.adm-fb-mover').forEach(b => b.addEventListener('click', async () => {
+            const dir = parseInt(b.dataset.dir, 10);
+            const idx = admFeedbacks.findIndex(f => String(f.id) === String(b.dataset.id));
+            const alvo = idx + dir;
+            if (idx < 0 || alvo < 0 || alvo >= admFeedbacks.length) return;
+            const a = admFeedbacks[idx], c = admFeedbacks[alvo];
+            try {
+                const fdA = new FormData(); fdA.append('ordem', String(c.ordem));
+                const fdC = new FormData(); fdC.append('ordem', String(a.ordem));
+                await apiFetch('PUT', `/api/feedbacks/${a.id}`, fdA);
+                await apiFetch('PUT', `/api/feedbacks/${c.id}`, fdC);
+                admRenderFeedbacks();
+                renderizarFeedbacks();
+            } catch (err) { admToast(err.message); }
+        }));
+    }
+
+    async function admCriarFeedback() {
+        const btn = admEl('adm-fb-criar');
+        const tipo = admEl('adm-fb-tipo').value;
+        const arquivo = admEl('adm-fb-imagem').files[0];
+        const texto = admEl('adm-fb-texto').value.trim();
+
+        if (tipo === 'print' && !arquivo) { admToast('Escolha a imagem do print'); return; }
+        if (tipo === 'texto' && !texto) { admToast('Escreva o depoimento'); return; }
+
+        const fd = new FormData();
+        fd.append('tipo', tipo);
+        if (arquivo) fd.append('imagem', arquivo);
+        fd.append('texto', tipo === 'texto' ? texto : '');
+        fd.append('nome', admEl('adm-fb-nome').value.trim());
+        fd.append('cidade', admEl('adm-fb-cidade').value.trim());
+
+        btn.disabled = true;
+        try {
+            await apiFetch('POST', '/api/feedbacks', fd);
+            admToast('Feedback adicionado');
+            admEl('adm-fb-imagem').value = '';
+            admEl('adm-fb-texto').value = '';
+            admEl('adm-fb-nome').value = '';
+            admEl('adm-fb-cidade').value = '';
+            admRenderFeedbacks();
+            renderizarFeedbacks();
+        } catch (err) {
+            admToast(err.message);
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     async function admRenderUsuarios() {
@@ -1584,7 +2057,7 @@
      *  É conveniência de interface, não segurança: quem editar o HTML
      *  reexibe a aba, mas a API recusa a chamada de qualquer forma. */
     function admAplicarPermissoesNaNav() {
-        const mapa = { estoque: 'produtos', categorias: 'categorias', site: 'config' };
+        const mapa = { estoque: 'produtos', categorias: 'categorias', site: 'config', feedbacks: 'feedbacks', propostas: 'propostas' };
         document.querySelectorAll('.adm-n[data-adm-tab]').forEach((el) => {
             const tab = el.dataset.admTab;
             if (tab === 'usuarios') {
@@ -1604,6 +2077,22 @@
         admRenderPermCheckboxes();
         admAplicarPermissoesNaNav();
         const btnCriarUsuario = admEl('adm-u-criar');
+        document.querySelectorAll('.adm-prop-filtro').forEach(b => b.addEventListener('click', () => {
+            document.querySelectorAll('.adm-prop-filtro').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            admPropFiltro = b.dataset.status;
+            admRenderPropostas();
+        }));
+        admAtualizarBadgePropostas();
+
+        const btnCriarFeedback = admEl('adm-fb-criar');
+        if (btnCriarFeedback) btnCriarFeedback.addEventListener('click', admCriarFeedback);
+        const seletorTipoFb = admEl('adm-fb-tipo');
+        if (seletorTipoFb) seletorTipoFb.addEventListener('change', () => {
+            const ehPrint = seletorTipoFb.value === 'print';
+            admEl('adm-fb-campo-print').style.display = ehPrint ? '' : 'none';
+            admEl('adm-fb-campo-texto').style.display = ehPrint ? 'none' : '';
+        });
         if (btnCriarUsuario) btnCriarUsuario.addEventListener('click', admCriarUsuario);
 
         // NAV
@@ -1614,14 +2103,16 @@
                 admTab = el.dataset.admTab;
                 document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
                 admEl('adm-tab-'+admTab).classList.add('active');
-                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site',usuarios:'Usuários e permissões'};
+                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site',feedbacks:'Feedbacks de clientes',propostas:'Propostas de venda',usuarios:'Usuários e permissões'};
                 admEl('adm-tb-title').textContent = titles[admTab]||admTab;
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
-                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site'||admTab==='usuarios')?'none':'flex';
+                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site'||admTab==='feedbacks'||admTab==='propostas'||admTab==='usuarios')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
                 if(admTab==='categorias') { admRenderCats(); admRenderCatsManage(); admRenderSizeOpts(); admRenderBrands(); }
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='site') admRenderSite();
+                if(admTab==='feedbacks') admRenderFeedbacks();
+                if(admTab==='propostas') admRenderPropostas();
                 if(admTab==='usuarios') admRenderUsuarios();
             });
         });
@@ -2237,6 +2728,15 @@
             admEl('adm-site-desc').value = cfg?.hero_desc || '';
             admEl('adm-site-tag-eyebrow').value = cfg?.hero_tag_eyebrow || '';
             admEl('adm-site-tag-title').value = cfg?.hero_tag_title || '';
+            admEl('adm-sobre-titulo').value = cfg?.sobre_titulo || '';
+            admEl('adm-sobre-texto').value = cfg?.sobre_texto || SOBRE_PADRAO;
+            admSobreNewFile = null;
+            admEl('adm-sobre-imagem').value = '';
+            const sobrePrev = admEl('adm-sobre-preview-img');
+            if (sobrePrev) {
+                sobrePrev.src = cfg?.sobre_imagem || '';
+                sobrePrev.style.display = cfg?.sobre_imagem ? 'block' : 'none';
+            }
 
             admCatNewFiles = {};
             const catsWrap = admEl('adm-site-cats');
@@ -2310,6 +2810,16 @@
             img.style.display = 'block';
         }
     });
+    let admSobreNewFile = null;
+    admEl('adm-sobre-imagem').addEventListener('change', () => {
+        const f = admEl('adm-sobre-imagem').files[0];
+        admSobreNewFile = f || null;
+        if (f) {
+            const img = admEl('adm-sobre-preview-img');
+            img.src = URL.createObjectURL(f);
+            img.style.display = 'block';
+        }
+    });
     let admFeatureBannerNewFile = null;
     admEl('adm-feature-banner-image').addEventListener('change', () => {
         const f = admEl('adm-feature-banner-image').files[0];
@@ -2346,6 +2856,9 @@
         fd.append('feature2_desc', admEl('adm-feature2-desc').value.trim());
         fd.append('feature3_title', admEl('adm-feature3-title').value.trim());
         fd.append('feature3_desc', admEl('adm-feature3-desc').value.trim());
+        if (admSobreNewFile) fd.append('sobre_imagem', admSobreNewFile);
+        fd.append('sobre_titulo', admEl('adm-sobre-titulo').value.trim());
+        fd.append('sobre_texto', admEl('adm-sobre-texto').value.trim());
         try {
             await apiFetch('PUT', '/api/config', fd);
             // Imagem de capa por categoria agora é campo próprio de cada
@@ -2365,6 +2878,8 @@
             admEl('adm-site-cover').value = '';
             admEl('adm-feat-image').value = '';
             admEl('adm-feature-banner-image').value = '';
+            admSobreNewFile = null;
+            admEl('adm-sobre-imagem').value = '';
             carregarCapaDoSite();
             carregarCategorias();
         } catch(e) { admToast('Erro: ' + e.message); }
@@ -2389,7 +2904,22 @@
     document.getElementById('plpSidebarClose').addEventListener('click', fecharMenuFiltros);
     document.getElementById('plpSidebarBackdrop').addEventListener('click', fecharMenuFiltros);
     document.getElementById('plpSort').addEventListener('change', e => { ordenacao = e.target.value; renderizarCatalogo(); });
-    document.getElementById('searchInput').addEventListener('input', e => { termoBusca=e.target.value; renderizarCatalogo(); });
+    const irParaResultados = () => document.querySelector('.plp-headrow')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('searchInput').addEventListener('input', e => {
+        const buscavaAntes = termoBusca.trim().length > 0;
+        termoBusca = e.target.value;
+        renderizarCatalogo();
+        // Só na primeira letra: rolar a cada tecla deixaria a página
+        // saltando enquanto a pessoa ainda está digitando.
+        if (!buscavaAntes && termoBusca.trim()) irParaResultados();
+    });
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        e.target.blur(); // fecha o teclado no celular
+        if (termoBusca.trim()) irParaResultados();
+    });
     document.getElementById('procuradosPrev')?.addEventListener('click', () => mudarPaginaProcurados(-1));
     document.getElementById('procuradosNext')?.addEventListener('click', () => mudarPaginaProcurados(1));
 
@@ -2412,6 +2942,7 @@
     carregarCategorias();
     carregarSizeOptions();
     carregarProdutos();
+    renderizarFeedbacks();
     carregarCapaDoSite();
     carregarBrands();
     updateCartUI();

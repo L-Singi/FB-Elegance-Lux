@@ -657,9 +657,154 @@ body {
 .modal-whatsapp { display: inline-flex; align-items: center; justify-content: center; gap: 10px; background: #25D366; color: #F2EFE9; padding: 15px 28px; text-decoration: none; font-weight: 500; margin-top: 20px; transition: 0.2s; border-radius: 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: .16em; }
 .modal-whatsapp:hover { background: #1da851; transform: translateY(-1px); }
 
+/* ========== FEEDBACKS DE CLIENTES ========== */
+.feedbacks { padding: 20px 0 10px; }
+.feedbacks-viewport { position: relative; }
+
+/* Rolagem nativa com encaixe em vez de carrossel em JavaScript: no
+   celular já vem o gesto de arrastar de graça, e não há estado a
+   sincronizar. As setas só empurram essa mesma rolagem. */
+.feedbacks-track {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 4px 2px 18px;
+    scrollbar-width: none;
+}
+.feedbacks-track::-webkit-scrollbar { display: none; }
+
+.feedback-card {
+    flex: 0 0 auto;
+    width: 260px;
+    scroll-snap-align: start;
+    background: #141416;
+    border: 1px solid rgba(242, 239, 233, .10);
+    display: flex;
+    flex-direction: column;
+}
+.feedback-card-print { cursor: zoom-in; padding: 0; }
+.feedback-card-print img { width: 100%; display: block; object-fit: cover; max-height: 380px; }
+
+.feedback-card-texto { padding: 26px 24px; justify-content: space-between; gap: 18px; }
+.feedback-aspas { font-family: 'Bodoni Moda', serif; font-size: 2.4rem; line-height: 1; color: #B8924F; }
+.feedback-texto {
+    font-size: 0.9rem;
+    line-height: 1.65;
+    color: #D9D5CE;
+    flex: 1;
+}
+.feedback-autor { font-size: 0.72rem; letter-spacing: .14em; text-transform: uppercase; color: #8E8880; }
+.feedback-autor strong { display: block; color: #F2EFE9; font-weight: 400; letter-spacing: .1em; margin-bottom: 3px; }
+
+.feedbacks-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 10, 11, .82);
+    border: 1px solid rgba(242, 239, 233, .22);
+    color: #F2EFE9;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.feedbacks-arrow:hover { border-color: #B8924F; color: #B8924F; }
+.feedbacks-arrow-prev { left: -12px; }
+.feedbacks-arrow-next { right: -12px; }
+@media (max-width: 768px) {
+    .feedbacks-arrow { display: none; }
+    .feedback-card { width: 78vw; max-width: 300px; }
+}
+
+/* Print ampliado */
+.print-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1600;
+    background: rgba(6, 6, 7, .94);
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+}
+.print-overlay.open { display: flex; }
+.print-overlay img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.print-overlay-close {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    background: none;
+    border: none;
+    color: #F2EFE9;
+    font-size: 2.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 8px;
+}
+.print-overlay-close:hover { color: #B8924F; }
+
+/* ========== SOBRE NÓS ========== */
+.sobre { padding: 50px 0 20px; }
+.sobre-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+    gap: 48px;
+    align-items: center;
+}
+.sobre-media img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; display: block; }
+/* Enquanto não houver imagem cadastrada, o texto ocupa a largura toda
+   em vez de ficar espremido na coluna reservada para ela. */
+.sobre-inner.sobre-sem-imagem { grid-template-columns: minmax(0, 1fr); }
+.sobre-eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #B8924F;
+    margin-bottom: 14px;
+}
+.sobre-title {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 2.1rem;
+    line-height: 1.2;
+    margin: 0 0 20px;
+    color: #F2EFE9;
+    text-wrap: balance;
+}
+.sobre-texto p { font-size: 0.95rem; line-height: 1.75; color: #A9A49C; margin: 0 0 15px; max-width: 62ch; }
+.sobre-texto strong { color: #F2EFE9; font-weight: 500; }
+.sobre-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 13px 26px;
+    border: 1px solid rgba(242, 239, 233, .22);
+    color: #F2EFE9;
+    text-decoration: none;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    transition: 0.2s;
+}
+.sobre-cta:hover { border-color: #B8924F; color: #B8924F; }
+.sobre-cta i { color: #25D366; font-size: 0.95rem; }
+@media (max-width: 900px) {
+    .sobre-inner { grid-template-columns: 1fr; gap: 28px; }
+    .sobre-media { max-width: 280px; }
+    .sobre-title { font-size: 1.7rem; }
+}
+
 /* ========== CARRINHO ========== */
 .cart-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.cart-modal-header h3 { font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 1.3rem; }
+.cart-modal-header h3 { display: flex; align-items: center; gap: 10px; font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 1.3rem; }
+.cart-modal-icon { width: 19px; height: 19px; flex-shrink: 0; color: #B8924F; }
 .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(242,239,233,.08); }
 .cart-item-img { width: 50px; height: 50px; object-fit: cover; background: #141416; border: 1px solid rgba(242,239,233,.14); border-radius: 0; }
 .cart-item-info { flex: 1; }
@@ -1618,7 +1763,278 @@ body {
 }
 .mobile-sheet-whatsapp:hover { background: #1da851; }
 
+/* Copiar link da peça — discreto ao lado do botão do WhatsApp, que
+   continua sendo a ação principal. */
+.btn-copiar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 12px;
+    padding: 13px 26px;
+    background: transparent;
+    border: 1px solid rgba(242, 239, 233, .22);
+    color: #F2EFE9;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-copiar-link:hover { border-color: #B8924F; color: #B8924F; }
+.btn-copiar-link i { color: #B8924F; font-size: 0.8rem; }
+.mobile-sheet-info .btn-copiar-link { display: flex; width: 100%; }
+
 /* Ocultar bottom sheet no desktop */
 @media (min-width: 769px) {
     .mobile-sheet-overlay { display: none !important; }
 }
+
+
+/* ========== PÁGINA /vender ========== */
+.vender-voltar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #8E8880;
+    text-decoration: none;
+    font-size: 0.68rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    transition: color .2s;
+}
+.vender-voltar:hover { color: #B8924F; }
+.vender-main { padding: 40px 0 60px; }
+
+.vender-hero { max-width: 720px; margin-bottom: 56px; }
+.vender-eyebrow {
+    font-size: 0.68rem;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #B8924F;
+    margin-bottom: 16px;
+}
+.vender-title {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.12;
+    margin: 0 0 20px;
+    color: #F2EFE9;
+    text-wrap: balance;
+}
+.vender-title em { font-style: italic; color: #B8924F; }
+.vender-sub { font-size: 1rem; line-height: 1.7; color: #A9A49C; margin: 0; max-width: 58ch; }
+
+/* Os passos são numerados porque descrevem uma ordem real: enviar,
+   avaliar, propor. */
+.vender-passos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 28px;
+    padding: 34px 0;
+    border-top: 1px solid rgba(242, 239, 233, .12);
+    border-bottom: 1px solid rgba(242, 239, 233, .12);
+    margin-bottom: 56px;
+}
+.vender-passo-num {
+    display: block;
+    font-family: 'Bodoni Moda', serif;
+    font-size: 1.5rem;
+    color: #B8924F;
+    margin-bottom: 10px;
+}
+.vender-passo h3 {
+    font-family: 'Jost', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 500;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #F2EFE9;
+    margin: 0 0 10px;
+}
+.vender-passo p { font-size: 0.88rem; line-height: 1.65; color: #8E8880; margin: 0; }
+
+.vender-form-wrap { display: flex; justify-content: center; margin-bottom: 56px; }
+.vender-form-card {
+    width: 100%;
+    max-width: 720px;
+    background: #141416;
+    border: 1px solid rgba(242, 239, 233, .10);
+    padding: 36px;
+}
+.vender-form-title {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 1.6rem;
+    margin: 0 0 26px;
+    color: #F2EFE9;
+}
+.vender-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 20px; }
+.vender-campo { margin-bottom: 18px; }
+.vender-campo label {
+    display: block;
+    font-size: 0.66rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #8E8880;
+    margin-bottom: 8px;
+}
+.vender-campo label span { color: #B8924F; }
+.vender-campo input,
+.vender-campo select,
+.vender-campo textarea {
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(242, 239, 233, .18);
+    color: #F2EFE9;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.92rem;
+    padding: 12px 14px;
+    outline: none;
+    border-radius: 0;
+    transition: border-color .2s;
+}
+.vender-campo textarea { resize: vertical; }
+.vender-campo input:focus,
+.vender-campo select:focus,
+.vender-campo textarea:focus { border-color: #B8924F; }
+.vender-campo select option { background: #141416; color: #F2EFE9; }
+.vender-dica { font-size: 0.78rem; color: #8E8880; margin: -2px 0 10px; }
+
+.vender-dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 26px;
+    border: 1px dashed rgba(242, 239, 233, .26);
+    color: #A9A49C;
+    font-size: 0.76rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: .2s;
+}
+.vender-dropzone:hover { border-color: #B8924F; color: #B8924F; }
+.vender-dropzone i { color: #B8924F; font-size: 1.1rem; }
+
+.vender-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.vender-preview { position: relative; width: 76px; height: 96px; }
+.vender-preview img { width: 100%; height: 100%; object-fit: cover; border: 1px solid rgba(242, 239, 233, .14); }
+.vender-preview-remover {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #0A0A0B;
+    border: 1px solid rgba(242, 239, 233, .3);
+    color: #F2EFE9;
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+}
+.vender-preview-remover:hover { border-color: #c0392b; color: #ff9999; }
+
+.vender-erro {
+    background: rgba(192, 57, 43, .12);
+    border-left: 2px solid #c0392b;
+    color: #ff9999;
+    font-size: 0.86rem;
+    padding: 12px 14px;
+    margin: 0 0 18px;
+}
+.vender-enviar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 28px;
+    background: #B8924F;
+    border: none;
+    color: #0A0A0B;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 500;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: .2s;
+}
+.vender-enviar:hover:not(:disabled) { background: #d0a75c; }
+.vender-enviar:disabled { opacity: .6; cursor: default; }
+.vender-legal { font-size: 0.74rem; line-height: 1.6; color: #6E6963; margin: 16px 0 0; }
+
+.vender-sucesso { text-align: center; padding: 20px 0; }
+.vender-sucesso i { font-size: 2.6rem; color: #B8924F; }
+.vender-sucesso h3 {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 1.6rem;
+    color: #F2EFE9;
+    margin: 18px 0 10px;
+}
+.vender-sucesso p { font-size: 0.92rem; line-height: 1.7; color: #A9A49C; margin: 0 auto 22px; max-width: 44ch; }
+.vender-sucesso-wpp {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: #25D366;
+    color: #F2EFE9;
+    text-decoration: none;
+    font-size: 0.76rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+}
+.vender-sucesso-wpp:hover { background: #1da851; }
+
+.vender-aceitamos { max-width: 720px; margin: 0 auto; }
+.vender-aceitamos h2 {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 1.3rem;
+    color: #F2EFE9;
+    margin: 32px 0 16px;
+}
+.vender-aceitamos ul { list-style: none; padding: 0; margin: 0; }
+.vender-aceitamos li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: #A9A49C;
+    padding: 9px 0;
+}
+.vender-aceitamos li span { flex: 1; }
+.vender-aceitamos li strong { color: #F2EFE9; font-weight: 500; }
+.vender-aceitamos li i { color: #B8924F; font-size: 0.8rem; margin-top: 5px; }
+.vender-aceitamos .vender-nao li i { color: #c0392b; }
+
+@media (max-width: 600px) {
+    .vender-form-card { padding: 24px 20px; }
+    .vender-voltar span { display: none; }
+}
+
+/* Chamada para a página de venda, no rodapé da loja */
+.footer-vender {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 4px;
+    color: #B8924F;
+    text-decoration: none;
+    font-size: 0.7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(184, 146, 79, .4);
+    padding-bottom: 3px;
+    transition: .2s;
+}
+.footer-vender:hover { color: #d0a75c; border-bottom-color: #d0a75c; }

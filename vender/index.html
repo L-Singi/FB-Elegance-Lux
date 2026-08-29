@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Venda sua peça | FB Elegance Lux</title>
+  <meta name="description"
+    content="Tem uma peça de luxo original parada no armário? A FB Elegance Lux avalia e compra. Envie as fotos e receba uma proposta.">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <link rel="canonical" href="https://fbelegancelux.com.br/vender/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="FB Elegance Lux">
+  <meta property="og:url" content="https://fbelegancelux.com.br/vender/">
+  <meta property="og:title" content="Venda sua peça na FB Elegance Lux">
+  <meta property="og:description"
+    content="Tem uma peça de luxo original parada no armário? Envie as fotos e receba uma proposta.">
+  <meta property="og:image" content="https://fbelegancelux.com.br/logo.png">
+  <meta property="og:locale" content="pt_BR">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+
+  <div class="announce-bar">Compramos peças originais de luxo · Avaliação sem compromisso</div>
+
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo-area" style="text-decoration:none">
+        <img src="/logo.png" alt="FB" class="logo-mark">
+        <span class="logo-word">Elegance Lux</span>
+      </a>
+      <div class="header-actions">
+        <a href="/" class="vender-voltar"><i class="fas fa-arrow-left"></i> Voltar à loja</a>
+        <a href="https://www.instagram.com/fb.elegancelux/" target="_blank" class="social-icon"><i
+            class="fab fa-instagram"></i></a>
+        <a href="https://wa.me/5543996179533" target="_blank" class="social-icon"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="vender-main">
+    <div class="container">
+
+      <section class="vender-hero">
+        <div class="vender-eyebrow">Venda conosco</div>
+        <h1 class="vender-title">Sua peça de luxo<br><em>vale mais do que o armário.</em></h1>
+        <p class="vender-sub">Compramos peças originais de grife em bom estado. Envie as fotos, a gente avalia a
+          autenticidade e volta com uma proposta.</p>
+      </section>
+
+      <section class="vender-passos">
+        <div class="vender-passo">
+          <span class="vender-passo-num">1</span>
+          <h3>Você envia</h3>
+          <p>Preencha o formulário com os dados da peça e anexe fotos nítidas — etiqueta, costura e possíveis marcas de
+            uso.</p>
+        </div>
+        <div class="vender-passo">
+          <span class="vender-passo-num">2</span>
+          <h3>A gente avalia</h3>
+          <p>Analisamos autenticidade, estado de conservação e procura pela peça. É o mesmo crivo que usamos no que
+            entra no catálogo.</p>
+        </div>
+        <div class="vender-passo">
+          <span class="vender-passo-num">3</span>
+          <h3>Fazemos a proposta</h3>
+          <p>Retornamos pelo WhatsApp com o valor. Aceitando, combinamos a coleta ou o envio e o pagamento.</p>
+        </div>
+      </section>
+
+      <section class="vender-form-wrap">
+        <div class="vender-form-card">
+          <h2 class="vender-form-title">Conte sobre a peça</h2>
+
+          <form id="propostaForm" novalidate>
+            <div class="vender-grid">
+              <div class="vender-campo">
+                <label for="vNome">Seu nome <span>*</span></label>
+                <input type="text" id="vNome" name="nome" maxlength="120" autocomplete="name" required>
+              </div>
+              <div class="vender-campo">
+                <label for="vTelefone">WhatsApp <span>*</span></label>
+                <input type="tel" id="vTelefone" name="telefone" maxlength="40" autocomplete="tel"
+                  placeholder="(43) 99999-9999" required>
+              </div>
+              <div class="vender-campo">
+                <label for="vMarca">Marca</label>
+                <input type="text" id="vMarca" name="marca" maxlength="80" placeholder="Ex: Off-White">
+              </div>
+              <div class="vender-campo">
+                <label for="vPeca">Peça <span>*</span></label>
+                <input type="text" id="vPeca" name="peca" maxlength="160" placeholder="Ex: Hoodie Arrows" required>
+              </div>
+              <div class="vender-campo">
+                <label for="vTamanho">Tamanho / numeração</label>
+                <input type="text" id="vTamanho" name="tamanho" maxlength="40" placeholder="Ex: L ou 42">
+              </div>
+              <div class="vender-campo">
+                <label for="vEstado">Estado de conservação</label>
+                <select id="vEstado" name="estado">
+                  <option value="">Selecione</option>
+                  <option value="Novo com etiqueta">Novo com etiqueta</option>
+                  <option value="Novo sem etiqueta">Novo sem etiqueta</option>
+                  <option value="Seminovo">Seminovo</option>
+                  <option value="Usado">Usado</option>
+                </select>
+              </div>
+              <div class="vender-campo">
+                <label for="vValor">Valor desejado</label>
+                <input type="text" id="vValor" name="valor" maxlength="40" placeholder="Ex: R$ 900 (opcional)">
+              </div>
+            </div>
+
+            <div class="vender-campo">
+              <label for="vObs">Observações</label>
+              <textarea id="vObs" name="observacoes" rows="3" maxlength="1000"
+                placeholder="Defeitos, tempo de uso, se tem caixa/nota fiscal…"></textarea>
+            </div>
+
+            <div class="vender-campo">
+              <label>Fotos da peça <span>*</span></label>
+              <p class="vender-dica">Até 6 fotos, de até 8&nbsp;MB cada. Quanto melhor a foto, mais rápida a avaliação.
+              </p>
+              <label class="vender-dropzone" for="vFotos" id="vDropzone">
+                <i class="fas fa-camera"></i>
+                <span id="vFotosLabel">Escolher fotos</span>
+              </label>
+              <input type="file" id="vFotos" name="imagens" accept="image/*" multiple hidden>
+              <div class="vender-previews" id="vPreviews"></div>
+            </div>
+
+            <p class="vender-erro" id="vErro" style="display:none"></p>
+
+            <button type="submit" class="vender-enviar" id="vEnviar">
+              <i class="fas fa-paper-plane"></i> Enviar proposta
+            </button>
+            <p class="vender-legal">Ao enviar, você concorda em ser contatado pela FB Elegance Lux no WhatsApp
+              informado. Não repassamos seus dados a terceiros.</p>
+          </form>
+
+          <div class="vender-sucesso" id="vSucesso" style="display:none">
+            <i class="fas fa-circle-check"></i>
+            <h3>Proposta recebida</h3>
+            <p>Vamos analisar as fotos e retornar pelo WhatsApp. Se preferir adiantar, chame a gente por lá.</p>
+            <a class="vender-sucesso-wpp" href="https://wa.me/5543996179533" target="_blank">
+              <i class="fab fa-whatsapp"></i> Falar no WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="vender-aceitamos">
+        <h2>O que compramos</h2>
+        <ul>
+          <li><i class="fas fa-check"></i> <span>Peças <strong>originais</strong> de grife, com procedência verificável</span></li>
+          <li><i class="fas fa-check"></i> <span>Casacos, camisetas, shorts, calçados, acessórios e perfumes</span></li>
+          <li><i class="fas fa-check"></i> <span>Bom estado de conservação, com ou sem etiqueta</span></li>
+        </ul>
+        <h2>O que não compramos</h2>
+        <ul class="vender-nao">
+          <li><i class="fas fa-xmark"></i> <span>Réplicas, inspirados ou peças sem como comprovar autenticidade</span></li>
+          <li><i class="fas fa-xmark"></i> <span>Peças com dano estrutural, mancha permanente ou muito desgastadas</span></li>
+        </ul>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>© 2026 FB Elegance Lux</span>
+      <div class="footer-social">
+        <a href="/">Voltar à loja</a>
+        <a href="https://www.instagram.com/fb.elegancelux/" target="_blank">@fb.elegancelux</a>
+        <a href="https://wa.me/5543996179533" target="_blank">(43) 99617-9533</a>
+      </div>
+    </div>
+    <div class="container">
+      <div class="company-info">FB Elegance Lux Ltda · CNPJ: 68.260.978/0001-26 · Londrina - PR</div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      'use strict';
+      var API = 'https://api.fbelegancelux.com.br';
+      var MAX_FOTOS = 6;
+      var MAX_BYTES = 8 * 1024 * 1024;
+
+      var form = document.getElementById('propostaForm');
+      var inputFotos = document.getElementById('vFotos');
+      var previews = document.getElementById('vPreviews');
+      var rotulo = document.getElementById('vFotosLabel');
+      var erroEl = document.getElementById('vErro');
+      var botao = document.getElementById('vEnviar');
+
+      // Lista própria em vez de ler input.files direto: o input não deixa
+      // remover um arquivo isolado, e sem isso quem anexa a foto errada
+      // tem que recomeçar a seleção inteira.
+      var fotos = [];
+
+      function mostrarErro(msg) {
+        erroEl.textContent = msg;
+        erroEl.style.display = msg ? 'block' : 'none';
+        if (msg) erroEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      function desenharPreviews() {
+        previews.innerHTML = '';
+        fotos.forEach(function (arquivo, i) {
+          var item = document.createElement('div');
+          item.className = 'vender-preview';
+          var img = document.createElement('img');
+          img.src = URL.createObjectURL(arquivo);
+          img.alt = 'Foto ' + (i + 1);
+          var remover = document.createElement('button');
+          remover.type = 'button';
+          remover.className = 'vender-preview-remover';
+          remover.setAttribute('aria-label', 'Remover foto ' + (i + 1));
+          remover.innerHTML = '&times;';
+          remover.addEventListener('click', function () {
+            URL.revokeObjectURL(img.src);
+            fotos.splice(i, 1);
+            desenharPreviews();
+          });
+          item.appendChild(img);
+          item.appendChild(remover);
+          previews.appendChild(item);
+        });
+        rotulo.textContent = fotos.length
+          ? fotos.length + (fotos.length === 1 ? ' foto escolhida' : ' fotos escolhidas') + ' — adicionar mais'
+          : 'Escolher fotos';
+      }
+
+      inputFotos.addEventListener('change', function () {
+        var novas = Array.prototype.slice.call(inputFotos.files);
+        var recusadas = [];
+        novas.forEach(function (arquivo) {
+          if (fotos.length >= MAX_FOTOS) { recusadas.push('limite de ' + MAX_FOTOS + ' fotos'); return; }
+          if (arquivo.size > MAX_BYTES) { recusadas.push(arquivo.name + ' passa de 8 MB'); return; }
+          fotos.push(arquivo);
+        });
+        // Zera o input para o mesmo arquivo poder ser escolhido de novo
+        // depois de removido.
+        inputFotos.value = '';
+        desenharPreviews();
+        mostrarErro(recusadas.length ? 'Não anexei: ' + recusadas.join('; ') + '.' : '');
+      });
+
+      form.addEventListener('submit', function (evento) {
+        evento.preventDefault();
+        mostrarErro('');
+
+        var nome = document.getElementById('vNome').value.trim();
+        var telefone = document.getElementById('vTelefone').value.trim();
+        var peca = document.getElementById('vPeca').value.trim();
+
+        if (!nome || !telefone || !peca) { mostrarErro('Preencha nome, WhatsApp e a peça.'); return; }
+        if (telefone.replace(/\D/g, '').length < 10) { mostrarErro('Confira o número do WhatsApp — faltam dígitos.'); return; }
+        if (!fotos.length) { mostrarErro('Anexe pelo menos uma foto da peça.'); return; }
+
+        var dados = new FormData();
+        dados.append('nome', nome);
+        dados.append('telefone', telefone);
+        dados.append('peca', peca);
+        dados.append('marca', document.getElementById('vMarca').value.trim());
+        dados.append('tamanho', document.getElementById('vTamanho').value.trim());
+        dados.append('estado', document.getElementById('vEstado').value);
+        dados.append('valor', document.getElementById('vValor').value.trim());
+        dados.append('observacoes', document.getElementById('vObs').value.trim());
+        fotos.forEach(function (arquivo) { dados.append('imagens', arquivo); });
+
+        botao.disabled = true;
+        botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando…';
+
+        fetch(API + '/api/propostas', { method: 'POST', body: dados })
+          .then(function (resposta) {
+            return resposta.json().catch(function () { return {}; }).then(function (corpo) {
+              if (!resposta.ok) throw new Error(corpo.error || 'Não foi possível enviar agora.');
+              return corpo;
+            });
+          })
+          .then(function () {
+            form.style.display = 'none';
+            document.getElementById('vSucesso').style.display = 'block';
+            document.getElementById('vSucesso').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          })
+          .catch(function (erro) {
+            mostrarErro(erro.message);
+            botao.disabled = false;
+            botao.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar proposta';
+          });
+      });
+    })();
+  </script>
+
+</body>
+
+</html>

@@ -93,7 +93,7 @@ const TOKEN_TTL = '12h';
 
 /** Áreas do painel que podem ser liberadas individualmente por usuário.
  *  Um 'admin' tem todas por definição e não depende desta lista. */
-const PERMISSOES_VALIDAS = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config'];
+const PERMISSOES_VALIDAS = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config', 'feedbacks', 'propostas'];
 
 function gerarToken(usuario) {
     return jwt.sign(
@@ -759,6 +759,273 @@ app.post('/api/upload', requireAuth, upload.single('imagem'), (req, res) => {
     res.json({ url: `${getBaseUrl(req)}/uploads/produtos/${req.file.filename}` });
 });
 
+// ─── FEEDBACKS DE CLIENTES ──────────────────────────────────────────────────
+//
+// Dois formatos na mesma lista, escolhidos item a item: print da
+// conversa (imagem) ou depoimento escrito (texto + nome). O que é
+// obrigatório muda conforme o tipo, então a checagem fica aqui — o
+// banco aceita os dois nulos porque não sabe qual é qual.
+
+function validarFeedback(body, arquivo, atual) {
+    const tipo = (body.tipo || atual?.tipo || 'print').trim();
+    if (!['print', 'texto'].includes(tipo)) {
+        return { erro: 'Tipo deve ser "print" ou "texto"' };
+    }
+    const texto = body.texto !== undefined ? String(body.texto).trim() : (atual?.texto || '');
+    const nome = body.nome !== undefined ? String(body.nome).trim() : (atual?.nome || '');
+    const imagem = arquivo
+        ? null // preenchido pelo chamador, que conhece a baseUrl
+        : (body.imagem !== undefined ? String(body.imagem).trim() : (atual?.imagem || ''));
+
+    if (tipo === 'print' && !arquivo && !imagem) {
+        return { erro: 'Um feedback do tipo "print" precisa de uma imagem' };
+    }
+    if (tipo === 'texto' && !texto) {
+        return { erro: 'Um feedback do tipo "texto" precisa do depoimento escrito' };
+    }
+    if (texto.length > 1000) {
+        return { erro: 'O depoimento passa de 1000 caracteres' };
+    }
+    return {
+        tipo,
+        texto: texto || null,
+        nome: nome || null,
+        cidade: body.cidade !== undefined ? String(body.cidade).trim() || null : (atual?.cidade || null),
+        imagem: imagem || null
+    };
+}
+
+// Público — só os ativos, na ordem definida pelo painel.
+app.get('/api/feedbacks', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT id, tipo, imagem, texto, nome, cidade FROM feedbacks WHERE ativo = TRUE ORDER BY ordem ASC, id ASC'
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('GET /api/feedbacks error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Painel — inclui os desativados, que o site não mostra.
+app.get('/api/feedbacks/todos', requireAuth, requirePermissao('feedbacks'), async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM feedbacks ORDER BY ordem ASC, id ASC');
+        res.json(result.rows);
+    } catch (err) {
+        console.error('GET /api/feedbacks/todos error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/feedbacks', requireAuth, requirePermissao('feedbacks'), upload.single('imagem'), async (req, res) => {
+    try {
+        const v = validarFeedback(req.body, req.file, null);
+        if (v.erro) return res.status(400).json({ error: v.erro });
+
+        const imagem = req.file
+            ? `${getBaseUrl(req)}/uploads/produtos/${req.file.filename}`
+            : v.imagem;
+
+        const result = await pool.query(
+            `INSERT INTO feedbacks (tipo, imagem, texto, nome, cidade, ordem, ativo)
+             VALUES ($1, $2, $3, $4, $5,
+                     COALESCE((SELECT MAX(ordem) + 1 FROM feedbacks), 0), TRUE)
+             RETURNING *`,
+            [v.tipo, imagem, v.texto, v.nome, v.cidade]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('POST /api/feedbacks error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/feedbacks/:id', requireAuth, requirePermissao('feedbacks'), upload.single('imagem'), async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM feedbacks WHERE id = $1', [req.params.id]);
+        const atual = rows[0];
+        if (!atual) return res.status(404).json({ error: 'Feedback não encontrado' });
+
+        const v = validarFeedback(req.body, req.file, atual);
+        if (v.erro) return res.status(400).json({ error: v.erro });
+
+        const imagem = req.file
+            ? `${getBaseUrl(req)}/uploads/produtos/${req.file.filename}`
+            : v.imagem;
+
+        const result = await pool.query(
+            `UPDATE feedbacks
+                SET tipo = $1, imagem = $2, texto = $3, nome = $4, cidade = $5,
+                    ordem = $6, ativo = $7
+              WHERE id = $8
+              RETURNING *`,
+            [
+                v.tipo, imagem, v.texto, v.nome, v.cidade,
+                req.body.ordem !== undefined ? parseInt(req.body.ordem, 10) || 0 : atual.ordem,
+                req.body.ativo !== undefined ? req.body.ativo === 'true' || req.body.ativo === true : atual.ativo,
+                req.params.id
+            ]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('PUT /api/feedbacks/:id error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/feedbacks/:id', requireAuth, requirePermissao('feedbacks'), async (req, res) => {
+    try {
+        const result = await pool.query('DELETE FROM feedbacks WHERE id = $1 RETURNING id', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Feedback não encontrado' });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('DELETE /api/feedbacks/:id error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// ─── PROPOSTAS DE VENDA (página /vender) ────────────────────────────────────
+//
+// Este é o único POST da API aberto a quem não fez login, e ele aceita
+// arquivo. Isso o torna a superfície mais exposta do sistema: sem
+// limite, uma única pessoa enche o disco da VPS com uploads e derruba
+// junto o site e o banco, que dividem o mesmo volume.
+//
+// Daí as três barreiras abaixo, nesta ordem de propósito:
+//   1. limite por IP  — antes do multer, senão o arquivo já foi gravado
+//                       em disco quando a recusa acontece;
+//   2. limite de fotos e de tamanho — o multer já corta em 8MB/arquivo;
+//   3. limite de texto — evita gravar megabytes em campo livre.
+//
+// A contagem por IP vive em memória e zera quando o container
+// reinicia. Para o volume desta loja isso basta: o objetivo é conter
+// abuso casual, não um ataque coordenado — e o custo de acertar isso
+// com Redis não se paga aqui.
+
+const PROPOSTA_JANELA_MS = 60 * 60 * 1000;
+const PROPOSTA_MAX_POR_JANELA = 3;
+const PROPOSTA_MAX_FOTOS = 6;
+const propostasPorIp = new Map();
+
+function limitarPropostas(req, res, next) {
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'desconhecido';
+    const agora = Date.now();
+
+    // Varre o mapa inteiro a cada envio para não vazar memória com IPs
+    // que apareceram uma vez e nunca mais. São poucas entradas — o
+    // limite é de 3 por hora.
+    for (const [chave, marcas] of propostasPorIp) {
+        const vivas = marcas.filter(t => agora - t < PROPOSTA_JANELA_MS);
+        if (vivas.length) propostasPorIp.set(chave, vivas);
+        else propostasPorIp.delete(chave);
+    }
+
+    const recentes = propostasPorIp.get(ip) || [];
+    if (recentes.length >= PROPOSTA_MAX_POR_JANELA) {
+        return res.status(429).json({
+            error: 'Você já enviou algumas propostas agora há pouco. Tente novamente mais tarde ou fale com a gente pelo WhatsApp.'
+        });
+    }
+    propostasPorIp.set(ip, [...recentes, agora]);
+    next();
+}
+
+/** Corta e limpa um campo de texto vindo de fora do painel. */
+function campoPublico(valor, max) {
+    if (valor === undefined || valor === null) return null;
+    const s = String(valor).trim();
+    if (!s) return null;
+    return s.slice(0, max);
+}
+
+app.post('/api/propostas', limitarPropostas, upload.array('imagens', PROPOSTA_MAX_FOTOS), async (req, res) => {
+    try {
+        const nome = campoPublico(req.body.nome, 120);
+        const telefone = campoPublico(req.body.telefone, 40);
+        const peca = campoPublico(req.body.peca, 160);
+
+        if (!nome || !telefone || !peca) {
+            return res.status(400).json({ error: 'Nome, telefone e peça são obrigatórios' });
+        }
+
+        const imagens = (req.files || []).map(f => `${getBaseUrl(req)}/uploads/produtos/${f.filename}`);
+
+        const result = await pool.query(
+            `INSERT INTO propostas (nome, telefone, marca, peca, tamanho, estado, valor, observacoes, imagens)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+             RETURNING id, created_at`,
+            [
+                nome,
+                telefone,
+                campoPublico(req.body.marca, 80),
+                peca,
+                campoPublico(req.body.tamanho, 40),
+                campoPublico(req.body.estado, 40),
+                campoPublico(req.body.valor, 40),
+                campoPublico(req.body.observacoes, 1000),
+                JSON.stringify(imagens)
+            ]
+        );
+        // Devolve só o recibo: a proposta inteira não interessa a quem
+        // enviou, e ecoar os dados de volta só amplia o que um envio
+        // forjado consegue observar.
+        res.status(201).json({ success: true, id: result.rows[0].id });
+    } catch (err) {
+        console.error('POST /api/propostas error:', err);
+        res.status(500).json({ error: 'Não foi possível registrar sua proposta' });
+    }
+});
+
+app.get('/api/propostas', requireAuth, requirePermissao('propostas'), async (req, res) => {
+    try {
+        const { status } = req.query;
+        const filtrar = ['aguardando', 'aprovada', 'recusada'].includes(status);
+        const result = await pool.query(
+            filtrar
+                ? 'SELECT * FROM propostas WHERE status = $1 ORDER BY created_at DESC'
+                : 'SELECT * FROM propostas ORDER BY created_at DESC',
+            filtrar ? [status] : []
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('GET /api/propostas error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/propostas/:id', requireAuth, requirePermissao('propostas'), async (req, res) => {
+    try {
+        const { status } = req.body || {};
+        if (!['aguardando', 'aprovada', 'recusada'].includes(status)) {
+            return res.status(400).json({ error: 'Status inválido' });
+        }
+        const result = await pool.query(
+            'UPDATE propostas SET status = $1 WHERE id = $2 RETURNING *',
+            [status, req.params.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('PUT /api/propostas/:id error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/propostas/:id', requireAuth, requirePermissao('propostas'), async (req, res) => {
+    try {
+        const result = await pool.query('DELETE FROM propostas WHERE id = $1 RETURNING id', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Proposta não encontrada' });
+        res.json({ success: true });
+    } catch (err) {
+        console.error('DELETE /api/propostas/:id error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // ─── CONFIGURAÇÕES DO SITE (capa) ────────────────────────────────────────────
 
 app.get('/api/config', async (req, res) => {
@@ -771,8 +1038,8 @@ app.get('/api/config', async (req, res) => {
     }
 });
 
-const CONFIG_IMAGE_FIELDS = ['hero_image', 'cat_img_casacos', 'cat_img_camisetas', 'cat_img_shorts', 'cat_img_calcados', 'cat_img_acessorios', 'cat_img_perfumes', 'feat_image', 'feature_banner_image'];
-const CONFIG_TEXT_FIELDS = ['hero_eyebrow', 'hero_title1', 'hero_title2', 'hero_title3', 'hero_desc', 'hero_tag_eyebrow', 'hero_tag_title', 'feat_badge', 'feat_name', 'feat_desc', 'feat_link', 'feature1_title', 'feature1_desc', 'feature2_title', 'feature2_desc', 'feature3_title', 'feature3_desc'];
+const CONFIG_IMAGE_FIELDS = ['hero_image', 'cat_img_casacos', 'cat_img_camisetas', 'cat_img_shorts', 'cat_img_calcados', 'cat_img_acessorios', 'cat_img_perfumes', 'feat_image', 'feature_banner_image', 'sobre_imagem'];
+const CONFIG_TEXT_FIELDS = ['hero_eyebrow', 'hero_title1', 'hero_title2', 'hero_title3', 'hero_desc', 'hero_tag_eyebrow', 'hero_tag_title', 'feat_badge', 'feat_name', 'feat_desc', 'feat_link', 'feature1_title', 'feature1_desc', 'feature2_title', 'feature2_desc', 'feature3_title', 'feature3_desc', 'sobre_titulo', 'sobre_texto'];
 
 // hero_images (carrossel do banner) é tratado à parte dos outros campos de
 // imagem: é um array (multer aceita vários arquivos no mesmo campo), não

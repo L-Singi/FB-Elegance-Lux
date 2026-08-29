@@ -1,0 +1,50 @@
+name: Páginas de produto
+
+# Regera as pastas em /produto/, que dão cartão de preview aos links de
+# peça compartilhados no WhatsApp. O motivo de existirem está explicado
+# em scripts/gerar-paginas-produto.js.
+#
+# De hora em hora porque é a frequência com que peças novas entram no
+# catálogo. Enquanto a rodada não acontece, o link com ?produto=<id>
+# funciona normalmente — só o cartão de preview espera.
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+# Duas rodadas ao mesmo tempo commitariam por cima uma da outra.
+concurrency:
+  group: paginas-de-produto
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Gerar as páginas
+        run: node scripts/gerar-paginas-produto.js
+
+      - name: Commitar se algo mudou
+        run: |
+          if [ -z "$(git status --porcelain produto)" ]; then
+            echo "Catálogo sem novidade — nada a commitar."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add produto
+          git commit -m "chore: atualiza páginas de produto (preview de link)"
+          # Alguém pode ter empurrado enquanto isto rodava; rebase antes
+          # de tentar, para não falhar por divergência boba.
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
