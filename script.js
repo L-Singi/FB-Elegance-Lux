@@ -292,7 +292,15 @@
         saveCart();
         showToast('✓ ' + prod.nome + ' adicionado ao carrinho');
     }
-    function removeFromCart(id) { cart = cart.filter(i => i.id !== id); saveCart(); }
+    // Compara como texto: o id gravado no carrinho vem da API como
+    // número, e o que volta do botão (dataset) é sempre string. Com `!==`
+    // entre 291 e "291" o filtro nunca casava e a lixeira de cada item
+    // não removia nada — só o "limpar carrinho" funcionava, porque ele
+    // esvazia a lista sem comparar id nenhum.
+    function removeFromCart(id) {
+        cart = cart.filter(i => String(i.id) !== String(id));
+        saveCart();
+    }
     function clearCart()        { cart = []; saveCart(); }
 
     function precoNum(p) { return parseFloat((p||'').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0; }
@@ -1771,7 +1779,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             // Abre a conversa já identificando a peça — evita o "oi, sobre
             // qual peça mesmo?" que atrasa a resposta.
             const zap = `https://wa.me/55${String(p.telefone || '').replace(/\D/g, '')}` +
-                `?text=${encodeURIComponent(`Olá, ${p.nome}! Recebemos sua proposta da peça "${p.peca}" no site da FB Elegance Lux.`)}`;
+                `?text=${encodeURIComponent(`Olá, ${p.nome}! Recebemos a sua peça "${p.peca}" para avaliação no site da FB Elegance Lux.`)}`;
 
             return `
             <div style="border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:12px;background:#111">

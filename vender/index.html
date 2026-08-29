@@ -6,16 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Venda sua peça | FB Elegance Lux</title>
   <meta name="description"
-    content="Tem uma peça de luxo original parada no armário? A FB Elegance Lux avalia e compra. Envie as fotos e receba uma proposta.">
+    content="Tem uma peça de luxo original parada no armário? A FB Elegance Lux autentica, anuncia e vende por você. Envie as fotos.">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="canonical" href="https://fbelegancelux.com.br/vender/">
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="FB Elegance Lux">
   <meta property="og:url" content="https://fbelegancelux.com.br/vender/">
-  <meta property="og:title" content="Venda sua peça na FB Elegance Lux">
+  <meta property="og:title" content="A FB Elegance Lux vende a sua peça por você">
   <meta property="og:description"
-    content="Tem uma peça de luxo original parada no armário? Envie as fotos e receba uma proposta.">
+    content="A gente autentica, anuncia e cuida do comprador. Envie as fotos da sua peça.">
   <meta property="og:image" content="https://fbelegancelux.com.br/logo.png">
   <meta property="og:locale" content="pt_BR">
 
@@ -30,7 +30,7 @@
 
 <body>
 
-  <div class="announce-bar">Compramos peças originais de luxo · Avaliação sem compromisso</div>
+  <div class="announce-bar">Vendemos a sua peça de luxo por você · Avaliação sem compromisso</div>
 
   <header class="header">
     <div class="container header-inner">
@@ -53,8 +53,8 @@
       <section class="vender-hero">
         <div class="vender-eyebrow">Venda conosco</div>
         <h1 class="vender-title">Sua peça de luxo<br><em>vale mais do que o armário.</em></h1>
-        <p class="vender-sub">Compramos peças originais de grife em bom estado. Envie as fotos, a gente avalia a
-          autenticidade e volta com uma proposta.</p>
+        <p class="vender-sub">A FB anuncia e vende a sua peça para quem já procura por ela. Você envia as fotos; a
+          gente cuida da autenticação, da vitrine e do comprador.</p>
       </section>
 
       <section class="vender-passos">
@@ -72,8 +72,9 @@
         </div>
         <div class="vender-passo">
           <span class="vender-passo-num">3</span>
-          <h3>Fazemos a proposta</h3>
-          <p>Retornamos pelo WhatsApp com o valor. Aceitando, combinamos a coleta ou o envio e o pagamento.</p>
+          <h3>Anunciamos e vendemos</h3>
+          <p>Combinamos as condições pelo WhatsApp, a peça entra na vitrine da FB e a gente cuida do
+            comprador. Quando vender, você recebe.</p>
         </div>
       </section>
 
@@ -115,7 +116,7 @@
                 </select>
               </div>
               <div class="vender-campo">
-                <label for="vValor">Valor desejado</label>
+                <label for="vValor">Quanto quer receber</label>
                 <input type="text" id="vValor" name="valor" maxlength="40" placeholder="Ex: R$ 900 (opcional)">
               </div>
             </div>
@@ -141,7 +142,7 @@
             <p class="vender-erro" id="vErro" style="display:none"></p>
 
             <button type="submit" class="vender-enviar" id="vEnviar">
-              <i class="fas fa-paper-plane"></i> Enviar proposta
+              <i class="fas fa-paper-plane"></i> Enviar para avaliação
             </button>
             <p class="vender-legal">Ao enviar, você concorda em ser contatado pela FB Elegance Lux no WhatsApp
               informado. Não repassamos seus dados a terceiros.</p>
@@ -149,8 +150,9 @@
 
           <div class="vender-sucesso" id="vSucesso" style="display:none">
             <i class="fas fa-circle-check"></i>
-            <h3>Proposta recebida</h3>
-            <p>Vamos analisar as fotos e retornar pelo WhatsApp. Se preferir adiantar, chame a gente por lá.</p>
+            <h3>Recebemos a sua peça</h3>
+            <p>Vamos analisar as fotos e retornar pelo WhatsApp com as condições do anúncio. Se preferir
+              adiantar, chame a gente por lá.</p>
             <a class="vender-sucesso-wpp" href="https://wa.me/5543996179533" target="_blank">
               <i class="fab fa-whatsapp"></i> Falar no WhatsApp
             </a>
@@ -159,13 +161,13 @@
       </section>
 
       <section class="vender-aceitamos">
-        <h2>O que compramos</h2>
+        <h2>O que anunciamos</h2>
         <ul>
           <li><i class="fas fa-check"></i> <span>Peças <strong>originais</strong> de grife, com procedência verificável</span></li>
           <li><i class="fas fa-check"></i> <span>Casacos, camisetas, shorts, calçados, acessórios e perfumes</span></li>
           <li><i class="fas fa-check"></i> <span>Bom estado de conservação, com ou sem etiqueta</span></li>
         </ul>
-        <h2>O que não compramos</h2>
+        <h2>O que não anunciamos</h2>
         <ul class="vender-nao">
           <li><i class="fas fa-xmark"></i> <span>Réplicas, inspirados ou peças sem como comprovar autenticidade</span></li>
           <li><i class="fas fa-xmark"></i> <span>Peças com dano estrutural, mancha permanente ou muito desgastadas</span></li>
@@ -297,7 +299,7 @@
           .catch(function (erro) {
             mostrarErro(erro.message);
             botao.disabled = false;
-            botao.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar proposta';
+            botao.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar para avaliação';
           });
       });
     })();

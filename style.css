@@ -804,7 +804,7 @@ body {
 /* ========== CARRINHO ========== */
 .cart-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .cart-modal-header h3 { display: flex; align-items: center; gap: 10px; font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 1.3rem; }
-.cart-modal-icon { width: 19px; height: 19px; flex-shrink: 0; color: #B8924F; }
+.cart-modal-icon { width: 23px; height: 23px; flex-shrink: 0; color: #B8924F; }
 .cart-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(242,239,233,.08); }
 .cart-item-img { width: 50px; height: 50px; object-fit: cover; background: #141416; border: 1px solid rgba(242,239,233,.14); border-radius: 0; }
 .cart-item-info { flex: 1; }
