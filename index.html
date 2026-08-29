@@ -2109,6 +2109,47 @@
     </div>
   </div>
 
+  <!-- Publicar uma proposta como peça do catálogo. Categoria e preço
+       são decisão da loja, não vêm do formulário do cliente — o resto
+       chega preenchido com o que ele mandou. -->
+  <div id="publicarModal" class="modal" style="display:none;">
+    <div class="edit-modal-content">
+      <div class="modal-close" id="publicarClose">&times;</div>
+      <h3 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:1.4rem;margin:0 0 6px">Publicar no site</h3>
+      <p id="publicarResumo" style="font-size:.82rem;color:#8E8880;margin:0 0 18px"></p>
+
+      <div class="vender-campo">
+        <label for="publicarCategoria">Categoria <span>*</span></label>
+        <select id="publicarCategoria"></select>
+      </div>
+      <div class="vender-campo">
+        <label for="publicarPreco">Preço de venda <span>*</span></label>
+        <input type="text" id="publicarPreco" placeholder="R$ 0,00">
+      </div>
+      <div class="vender-campo">
+        <label for="publicarNome">Nome da peça na vitrine</label>
+        <input type="text" id="publicarNome">
+      </div>
+      <div class="vender-campo">
+        <label for="publicarMarca">Marca</label>
+        <input type="text" id="publicarMarca">
+      </div>
+      <div class="vender-campo" id="publicarCampoTamanho">
+        <label for="publicarTamanho">Tamanho</label>
+        <input type="text" id="publicarTamanho" placeholder="Ex: L · separe por vírgula se houver mais de um">
+      </div>
+
+      <div id="publicarFotos" style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 16px"></div>
+      <p style="font-size:.76rem;color:#6E6963;margin:0 0 16px;line-height:1.55">
+        A peça entra na vitrine com estas fotos, e o botão de WhatsApp dela abre a conversa com quem está vendendo —
+        não com a loja.
+      </p>
+
+      <p class="vender-erro" id="publicarErro" style="display:none"></p>
+      <button type="button" class="vender-enviar" id="publicarConfirmar">Publicar peça</button>
+    </div>
+  </div>
+
   <!-- Print ampliado. Sem isto o feedback é uma imagem de conversa
        pequena demais para alguém conseguir ler. -->
   <div id="printOverlay" class="print-overlay">

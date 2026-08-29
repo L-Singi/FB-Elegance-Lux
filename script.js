@@ -776,6 +776,23 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         try { history.replaceState(null, '', location.pathname); } catch (_) {}
     }
 
+    // Peça consignada: o link de WhatsApp dela vai para quem está
+    // vendendo, não para a loja. A FB aqui é a vitrine que liga as duas
+    // pontas — é o mesmo papel descrito na página /vender.
+    //
+    // `vendedor_telefone` só existe nas peças que vieram de uma proposta;
+    // nas peças da própria loja é null, e aí vale o número da FB.
+    const WHATSAPP_LOJA = '5543996179533';
+    function whatsappDaPeca(prod, texto) {
+        const numero = prod.vendedor_telefone || WHATSAPP_LOJA;
+        const mensagem = prod.vendedor_telefone
+            // Dizer de onde veio o contato importa: quem anunciou pela FB
+            // precisa reconhecer o lead, e não estranhar um desconhecido.
+            ? `Olá! Vi a sua peça "${prod.nome}" anunciada na FB Elegance Lux e tenho interesse.`
+            : texto;
+        return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+    }
+
     function criarCard(prod) {
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -1115,7 +1132,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
-        document.getElementById('mobileSheetWhatsapp').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
+        document.getElementById('mobileSheetWhatsapp').href = whatsappDaPeca(prod, 'Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra);
 
         const imgs = prod.images || [];
         let currentIdx = 0;
@@ -1255,7 +1272,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
-        document.getElementById('modalWhatsappBtn').href = `https://wa.me/5543996179533?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
+        document.getElementById('modalWhatsappBtn').href = whatsappDaPeca(prod, 'Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra);
         document.getElementById('productModal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
@@ -1742,6 +1759,32 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         }
     }
 
+    /** Mostra só as transições que fazem sentido a partir do estado
+     *  atual. Antes daqui os quatro botões apareciam sempre, então dava
+     *  para "aprovar" uma proposta já aprovada — ação que não muda nada e
+     *  só confunde quem está olhando a fila. */
+    function botoesDeStatus(p) {
+        const botao = (status, rotulo, fundo, cor, borda) =>
+            `<button type="button" class="adm-prop-status" data-id="${p.id}" data-status="${status}"
+               style="background:${fundo};color:${cor};border:1px solid ${borda};border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">${rotulo}</button>`;
+
+        const publicar = `<button type="button" class="adm-prop-publicar" data-id="${p.id}"
+               style="background:#B8924F;color:#0a0a0a;border:1px solid #B8924F;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Publicar no site</button>`;
+
+        if (p.status === 'aguardando') {
+            return (podeAcessar('produtos') ? publicar : '')
+                + botao('aprovada', 'Aprovar', '#12291a', '#5fd68a', '#1f4a30')
+                + botao('recusada', 'Recusar', '#2a1212', '#ff9999', '#4a1f1f');
+        }
+        if (p.status === 'aprovada') {
+            // Aprovada mas ainda não publicada continua podendo virar peça.
+            return (podeAcessar('produtos') ? publicar : '')
+                + botao('aguardando', 'Reabrir', '#1a1a1a', '#bbb', '#262626')
+                + botao('recusada', 'Recusar', '#2a1212', '#ff9999', '#4a1f1f');
+        }
+        return botao('aguardando', 'Reabrir', '#1a1a1a', '#bbb', '#262626');
+    }
+
     async function admRenderPropostas() {
         const wrap = admEl('adm-prop-lista');
         if (!wrap) return;
@@ -1799,12 +1842,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
               <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
                 <a href="${zap}" target="_blank" rel="noopener"
                    style="background:#14301f;color:#5fd68a;border:1px solid #1f4a30;border-radius:8px;padding:6px 12px;font-size:12px;text-decoration:none">WhatsApp</a>
-                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="aprovada"
-                   style="background:#12291a;color:#5fd68a;border:1px solid #1f4a30;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Aprovar</button>
-                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="recusada"
-                   style="background:#2a1212;color:#ff9999;border:1px solid #4a1f1f;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Recusar</button>
-                <button type="button" class="adm-prop-status" data-id="${p.id}" data-status="aguardando"
-                   style="background:#1a1a1a;color:#bbb;border:1px solid #262626;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">Reabrir</button>
+                ${botoesDeStatus(p)}
                 <button type="button" class="adm-prop-del" data-id="${p.id}"
                    style="background:#1a1a1a;color:#777;border:1px solid #262626;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Excluir</button>
               </div>
@@ -1817,6 +1855,11 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 admToast('Proposta atualizada');
                 admRenderPropostas();
             } catch (err) { admToast(err.message); }
+        }));
+
+        wrap.querySelectorAll('.adm-prop-publicar').forEach(b => b.addEventListener('click', () => {
+            const proposta = lista.find(x => String(x.id) === String(b.dataset.id));
+            if (proposta) abrirPublicarProposta(proposta);
         }));
 
         wrap.querySelectorAll('.adm-prop-del').forEach(b => b.addEventListener('click', async () => {
@@ -1833,6 +1876,84 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     // ─── FEEDBACKS (painel) ───────────────────────────────────────────────────
     let admFeedbacks = [];
+
+    // ─── PUBLICAR UMA PROPOSTA COMO PEÇA ──────────────────────────────────────
+    let propostaEmPublicacao = null;
+
+    function abrirPublicarProposta(p) {
+        propostaEmPublicacao = p;
+        const modal = document.getElementById('publicarModal');
+
+        document.getElementById('publicarResumo').textContent =
+            `${p.nome} · ${p.telefone}${p.valor ? ' · quer receber ' + p.valor : ''}`;
+
+        const seletor = document.getElementById('publicarCategoria');
+        seletor.innerHTML = '<option value="">Selecione</option>' +
+            CATS.map(c => `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label)}</option>`).join('');
+
+        // O valor pedido pelo cliente é o ponto de partida do preço, não o
+        // preço final — a margem é decisão da loja, então o campo abre
+        // preenchido e editável.
+        document.getElementById('publicarPreco').value = p.valor || '';
+        document.getElementById('publicarNome').value = [p.marca, p.peca].filter(Boolean).join(' ');
+        document.getElementById('publicarMarca').value = p.marca || '';
+        document.getElementById('publicarTamanho').value = p.tamanho || '';
+
+        const fotos = Array.isArray(p.imagens) ? p.imagens : [];
+        document.getElementById('publicarFotos').innerHTML = fotos.map(u =>
+            `<img src="${escapeHtml(u)}" style="width:56px;height:70px;object-fit:cover;border:1px solid rgba(242,239,233,.16)">`
+        ).join('');
+
+        document.getElementById('publicarErro').style.display = 'none';
+        modal.style.display = 'flex';
+    }
+
+    function fecharPublicarProposta() {
+        document.getElementById('publicarModal').style.display = 'none';
+        propostaEmPublicacao = null;
+    }
+
+    async function confirmarPublicacao() {
+        if (!propostaEmPublicacao) return;
+        const erroEl = document.getElementById('publicarErro');
+        const botao = document.getElementById('publicarConfirmar');
+        const categoria = document.getElementById('publicarCategoria').value;
+        const preco = document.getElementById('publicarPreco').value.trim();
+
+        const falhar = msg => { erroEl.textContent = msg; erroEl.style.display = 'block'; };
+        if (!categoria) return falhar('Escolha a categoria da peça.');
+        if (!preco) return falhar('Informe o preço de venda.');
+
+        // Tamanho só vale nas categorias que trabalham com tamanho; nas de
+        // numeração o mesmo campo vira numeração, e nas demais é ignorado.
+        const tamanhoBruto = document.getElementById('publicarTamanho').value.trim();
+        const corpo = {
+            categoria,
+            preco,
+            nome: document.getElementById('publicarNome').value.trim(),
+            marca: document.getElementById('publicarMarca').value.trim() || null,
+            descricao_completa: propostaEmPublicacao.observacoes || null,
+            tamanhos: TAMANHO_CATS.includes(categoria) && tamanhoBruto
+                ? tamanhoBruto.split(',').map(s => s.trim()).filter(Boolean)
+                : null,
+            numeracao: NUMERO_CATS.includes(categoria) && tamanhoBruto ? tamanhoBruto : null
+        };
+
+        botao.disabled = true;
+        erroEl.style.display = 'none';
+        try {
+            await apiFetch('POST', `/api/propostas/${propostaEmPublicacao.id}/publicar`, corpo);
+            admToast('Peça publicada na vitrine');
+            fecharPublicarProposta();
+            admRenderPropostas();
+            await carregarProdutos();   // a peça nova já aparece na loja
+            if (typeof admLoadData === 'function') await admLoadData();
+        } catch (err) {
+            falhar(err.message);
+        } finally {
+            botao.disabled = false;
+        }
+    }
 
     async function admRenderFeedbacks() {
         const wrap = admEl('adm-fb-lista');
@@ -2092,6 +2213,12 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             admRenderPropostas();
         }));
         admAtualizarBadgePropostas();
+
+        document.getElementById('publicarClose').addEventListener('click', fecharPublicarProposta);
+        document.getElementById('publicarConfirmar').addEventListener('click', confirmarPublicacao);
+        document.getElementById('publicarModal').addEventListener('click', e => {
+            if (e.target === document.getElementById('publicarModal')) fecharPublicarProposta();
+        });
 
         const btnCriarFeedback = admEl('adm-fb-criar');
         if (btnCriarFeedback) btnCriarFeedback.addEventListener('click', admCriarFeedback);

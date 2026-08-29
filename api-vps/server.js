@@ -1014,6 +1014,113 @@ app.put('/api/propostas/:id', requireAuth, requirePermissao('propostas'), async 
     }
 });
 
+/** Telefone no formato que o wa.me aceita: só dígitos, com o 55 na
+ *  frente. As pessoas digitam "(43) 99617-9533", "+55 43 99617 9533" e
+ *  "43996179533" no mesmo campo, e o link precisa dos três iguais. */
+function telefoneParaWhatsApp(bruto) {
+    const digitos = String(bruto || '').replace(/\D/g, '');
+    if (!digitos) return null;
+    // 10 (fixo com DDD) ou 11 (celular com DDD) → falta o país.
+    if (digitos.length === 10 || digitos.length === 11) return `55${digitos}`;
+    return digitos;
+}
+
+/**
+ * Publica uma proposta como peça do catálogo.
+ *
+ * Reaproveita as fotos que o cliente já enviou — elas estão na mesma
+ * pasta das fotos de produto, então basta copiar as URLs. Sem isto, o
+ * caminho seria rebaixar e reenviar as mesmas imagens, duplicando
+ * arquivo no disco por nada.
+ *
+ * Exige permissão de `produtos`, e não de `propostas`: o que acontece
+ * aqui é a criação de uma peça no catálogo. Quem só cuida da fila de
+ * propostas responde e recusa, mas não publica.
+ *
+ * As duas gravações vão numa transação porque precisam concordar: uma
+ * peça publicada cuja proposta continua "aguardando" reapareceria na
+ * fila para ser publicada de novo.
+ */
+app.post('/api/propostas/:id/publicar', requireAuth, requirePermissao('produtos'), async (req, res) => {
+    const { categoria, preco, nome, marca, tamanhos, numeracao, descricao_completa } = req.body || {};
+
+    if (!categoria || !String(categoria).trim()) {
+        return res.status(400).json({ error: 'Escolha a categoria da peça' });
+    }
+    if (!preco || !String(preco).trim()) {
+        return res.status(400).json({ error: 'Informe o preço de venda' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const { rows } = await client.query('SELECT * FROM propostas WHERE id = $1 FOR UPDATE', [req.params.id]);
+        const proposta = rows[0];
+        if (!proposta) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Proposta não encontrada' });
+        }
+
+        const jaPublicada = await client.query('SELECT id FROM produtos WHERE proposta_id = $1', [proposta.id]);
+        if (jaPublicada.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Esta proposta já virou uma peça do catálogo' });
+        }
+
+        // `slug` no banco é o que o resto do sistema chama de `value`
+        // (ver o mapeamento na carga de categorias do script.js) e é o
+        // que fica gravado em produtos.categoria.
+        const catValida = await client.query('SELECT 1 FROM categories WHERE slug = $1', [String(categoria).trim()]);
+        if (!catValida.rows.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Categoria inexistente' });
+        }
+
+        const imagens = Array.isArray(proposta.imagens) ? proposta.imagens : [];
+        if (!imagens.length) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Esta proposta não tem foto — não dá para publicar sem imagem' });
+        }
+
+        let tamanhosLista = null;
+        if (tamanhos) {
+            tamanhosLista = typeof tamanhos === 'string' ? JSON.parse(tamanhos) : tamanhos;
+        }
+
+        const produto = await client.query(
+            `INSERT INTO produtos
+               (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca,
+                vendedor_telefone, proposta_id)
+             VALUES ($1, $2, $3, $4, $5, 'disponiveis', $6, $7, $8, $9, $10)
+             RETURNING *`,
+            [
+                String(nome || proposta.peca).trim(),
+                descricao_completa !== undefined ? descricao_completa : (proposta.observacoes || null),
+                String(preco).trim(),
+                JSON.stringify(imagens),
+                String(categoria).trim(),
+                tamanhosLista ? JSON.stringify(tamanhosLista) : null,
+                numeracao !== undefined ? numeracao : null,
+                marca !== undefined ? marca : (proposta.marca || null),
+                telefoneParaWhatsApp(proposta.telefone),
+                proposta.id
+            ]
+        );
+
+        await client.query("UPDATE propostas SET status = 'aprovada' WHERE id = $1", [proposta.id]);
+        await client.query('COMMIT');
+
+        res.status(201).json(produto.rows[0]);
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        console.error('POST /api/propostas/:id/publicar error:', err);
+        res.status(500).json({ error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
 app.delete('/api/propostas/:id', requireAuth, requirePermissao('propostas'), async (req, res) => {
     try {
         const result = await pool.query('DELETE FROM propostas WHERE id = $1 RETURNING id', [req.params.id]);
