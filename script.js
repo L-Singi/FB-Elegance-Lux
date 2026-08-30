@@ -776,22 +776,16 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         try { history.replaceState(null, '', location.pathname); } catch (_) {}
     }
 
-    // Peça consignada: o link de WhatsApp dela vai para quem está
-    // vendendo, não para a loja. A FB aqui é a vitrine que liga as duas
-    // pontas — é o mesmo papel descrito na página /vender.
+    // Todo interesse de compra vai para a loja, inclusive nas peças que
+    // vieram de terceiros — nas duas modalidades descritas em /vender é
+    // a FB quem conduz a venda: na venda direta a peça já é dela, e na
+    // consignação o atendimento ao comprador faz parte do combinado.
     //
-    // `vendedor_telefone` só existe nas peças que vieram de uma proposta;
-    // nas peças da própria loja é null, e aí vale o número da FB.
+    // (Houve uma versão em que a peça consignada mandava o comprador
+    // direto para o dono dela. Foi revertido: tirava a FB da venda que
+    // ela mesma se comprometeu a conduzir. `produtos.vendedor_telefone`
+    // continua gravado, mas hoje serve só como procedência no painel.)
     const WHATSAPP_LOJA = '5543996179533';
-    function whatsappDaPeca(prod, texto) {
-        const numero = prod.vendedor_telefone || WHATSAPP_LOJA;
-        const mensagem = prod.vendedor_telefone
-            // Dizer de onde veio o contato importa: quem anunciou pela FB
-            // precisa reconhecer o lead, e não estranhar um desconhecido.
-            ? `Olá! Vi a sua peça "${prod.nome}" anunciada na FB Elegance Lux e tenho interesse.`
-            : texto;
-        return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
-    }
 
     function criarCard(prod) {
         const card = document.createElement('div');
@@ -1132,7 +1126,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
-        document.getElementById('mobileSheetWhatsapp').href = whatsappDaPeca(prod, 'Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra);
+        document.getElementById('mobileSheetWhatsapp').href = `https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
 
         const imgs = prod.images || [];
         let currentIdx = 0;
@@ -1272,7 +1266,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         let extra = '';
         if (TAMANHO_CATS.includes(prod.categoria)&&prod.tamanhos) extra = ` - Tamanhos: ${prod.tamanhos.join(', ')}`;
         if (NUMERO_CATS.includes(prod.categoria)&&prod.numeracao) extra = ` - Numeração: ${prod.numeracao}`;
-        document.getElementById('modalWhatsappBtn').href = whatsappDaPeca(prod, 'Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra);
+        document.getElementById('modalWhatsappBtn').href = `https://wa.me/${WHATSAPP_LOJA}?text=${encodeURIComponent('Olá! Tenho interesse: '+prod.nome+' - '+prod.preco+extra)}`;
         document.getElementById('productModal').style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }

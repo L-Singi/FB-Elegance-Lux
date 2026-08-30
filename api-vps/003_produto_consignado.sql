@@ -4,11 +4,16 @@
 -- Peças que a FB anuncia mas não são dela: vieram de um cliente
 -- pelo formulário em /vender.
 --
--- `vendedor_telefone` é o que muda o comportamento da vitrine —
--- quando está preenchido, o botão "Consultar via WhatsApp" daquela
--- peça abre a conversa com quem está vendendo, não com a loja. É
--- exatamente o papel de intermediária que a FB tem aqui: ela mostra
--- a peça e liga as duas pontas.
+-- ATUALIZAÇÃO (29/08): a coluna NÃO roteia mais o botão da vitrine.
+-- Ela nasceu para isso — a peça consignada mandava o comprador direto
+-- para o dono dela —, mas o modelo real da FB é outro: na venda direta
+-- a peça passa a ser da loja, e na consignação o atendimento ao
+-- comprador faz parte do que a FB assume. Mandar o comprador para o
+-- vendedor tirava a FB da venda que ela mesma conduz.
+--
+-- O que a coluna faz hoje: guarda a procedência — de quem veio esta
+-- peça — para consulta no painel. Todo interesse de compra vai para o
+-- número da loja, em qualquer peça.
 --
 -- Guardado já normalizado (só dígitos, com o 55 na frente), porque é
 -- o formato que o wa.me exige e porque a pessoa digita de um jeito
