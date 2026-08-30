@@ -686,6 +686,7 @@ body {
 }
 .feedback-card-print { cursor: zoom-in; padding: 0; }
 .feedback-card-print img { width: 100%; display: block; object-fit: cover; max-height: 380px; }
+.feedback-card-print .feedback-autor { padding: 14px 18px 16px; }
 
 .feedback-card-texto { padding: 26px 24px; justify-content: space-between; gap: 18px; }
 .feedback-aspas { font-family: 'Bodoni Moda', serif; font-size: 2.4rem; line-height: 1; color: #B8924F; }
