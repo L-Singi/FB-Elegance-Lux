@@ -61,8 +61,7 @@
         <div class="vender-passo">
           <span class="vender-passo-num">1</span>
           <h3>Você envia</h3>
-          <p>Preencha o formulário com os dados da peça e anexe fotos nítidas — etiqueta, costura e possíveis marcas de
-            uso.</p>
+          <p>Chame a gente no WhatsApp e mande fotos nítidas da peça — etiqueta, costura e possíveis marcas de uso.</p>
         </div>
         <div class="vender-passo">
           <span class="vender-passo-num">2</span>
@@ -79,85 +78,15 @@
       </section>
 
       <section class="vender-form-wrap">
-        <div class="vender-form-card">
+        <div class="vender-form-card vender-cta-card">
           <h2 class="vender-form-title">Conte sobre a peça</h2>
-
-          <form id="propostaForm" novalidate>
-            <div class="vender-grid">
-              <div class="vender-campo">
-                <label for="vNome">Seu nome <span>*</span></label>
-                <input type="text" id="vNome" name="nome" maxlength="120" autocomplete="name" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vTelefone">WhatsApp <span>*</span></label>
-                <input type="tel" id="vTelefone" name="telefone" maxlength="40" autocomplete="tel"
-                  placeholder="(43) 99999-9999" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vMarca">Marca</label>
-                <input type="text" id="vMarca" name="marca" maxlength="80" placeholder="Ex: Off-White">
-              </div>
-              <div class="vender-campo">
-                <label for="vPeca">Peça <span>*</span></label>
-                <input type="text" id="vPeca" name="peca" maxlength="160" placeholder="Ex: Hoodie Arrows" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vTamanho">Tamanho / numeração</label>
-                <input type="text" id="vTamanho" name="tamanho" maxlength="40" placeholder="Ex: L ou 42">
-              </div>
-              <div class="vender-campo">
-                <label for="vEstado">Estado de conservação</label>
-                <select id="vEstado" name="estado">
-                  <option value="">Selecione</option>
-                  <option value="Novo com etiqueta">Novo com etiqueta</option>
-                  <option value="Novo sem etiqueta">Novo sem etiqueta</option>
-                  <option value="Seminovo">Seminovo</option>
-                  <option value="Usado">Usado</option>
-                </select>
-              </div>
-              <div class="vender-campo">
-                <label for="vValor">Quanto quer receber</label>
-                <input type="text" id="vValor" name="valor" maxlength="40" placeholder="Ex: R$ 900 (opcional)">
-              </div>
-            </div>
-
-            <div class="vender-campo">
-              <label for="vObs">Observações</label>
-              <textarea id="vObs" name="observacoes" rows="3" maxlength="1000"
-                placeholder="Defeitos, tempo de uso, se tem caixa/nota fiscal…"></textarea>
-            </div>
-
-            <div class="vender-campo">
-              <label>Fotos da peça <span>*</span></label>
-              <p class="vender-dica">Até 6 fotos, de até 8&nbsp;MB cada. Quanto melhor a foto, mais rápida a avaliação.
-              </p>
-              <label class="vender-dropzone" for="vFotos" id="vDropzone">
-                <i class="fas fa-camera"></i>
-                <span id="vFotosLabel">Escolher fotos</span>
-              </label>
-              <input type="file" id="vFotos" name="imagens" accept="image/*" multiple hidden>
-              <div class="vender-previews" id="vPreviews"></div>
-            </div>
-
-            <p class="vender-erro" id="vErro" style="display:none"></p>
-
-            <button type="submit" class="vender-enviar" id="vEnviar">
-              <i class="fas fa-paper-plane"></i> Enviar para avaliação
-            </button>
-            <p class="vender-legal">Ao enviar, você concorda em ser contatado pela FB Elegance Lux no WhatsApp informado
-              e, caso a peça seja anunciada, em receber por esse mesmo número o contato de quem se interessar por
-              ela. Seus dados não são usados para nenhuma outra finalidade.</p>
-          </form>
-
-          <div class="vender-sucesso" id="vSucesso" style="display:none">
-            <i class="fas fa-circle-check"></i>
-            <h3>Recebemos a sua peça</h3>
-            <p>Vamos analisar as fotos e retornar pelo WhatsApp com as condições do anúncio. Se preferir
-              adiantar, chame a gente por lá.</p>
-            <a class="vender-sucesso-wpp" href="https://wa.me/5543996179533" target="_blank">
-              <i class="fab fa-whatsapp"></i> Falar no WhatsApp
-            </a>
-          </div>
+          <p>Envie fotos nítidas da peça — etiqueta, costura e possíveis marcas de uso — e a gente responde por lá
+            com a avaliação e as condições do anúncio.</p>
+          <a class="vender-sucesso-wpp"
+            href="https://wa.me/5543996179533?text=Ol%C3%A1!%20Quero%20vender%20uma%20pe%C3%A7a%20de%20luxo%20pela%20FB%20Elegance%20Lux."
+            target="_blank" rel="noopener">
+            <i class="fab fa-whatsapp"></i> Falar no WhatsApp
+          </a>
         </div>
       </section>
 
@@ -191,120 +120,6 @@
       <div class="company-info">FB Elegance Lux Ltda · CNPJ: 68.260.978/0001-26 · Londrina - PR</div>
     </div>
   </footer>
-
-  <script>
-    (function () {
-      'use strict';
-      var API = 'https://api.fbelegancelux.com.br';
-      var MAX_FOTOS = 6;
-      var MAX_BYTES = 8 * 1024 * 1024;
-
-      var form = document.getElementById('propostaForm');
-      var inputFotos = document.getElementById('vFotos');
-      var previews = document.getElementById('vPreviews');
-      var rotulo = document.getElementById('vFotosLabel');
-      var erroEl = document.getElementById('vErro');
-      var botao = document.getElementById('vEnviar');
-
-      // Lista própria em vez de ler input.files direto: o input não deixa
-      // remover um arquivo isolado, e sem isso quem anexa a foto errada
-      // tem que recomeçar a seleção inteira.
-      var fotos = [];
-
-      function mostrarErro(msg) {
-        erroEl.textContent = msg;
-        erroEl.style.display = msg ? 'block' : 'none';
-        if (msg) erroEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      function desenharPreviews() {
-        previews.innerHTML = '';
-        fotos.forEach(function (arquivo, i) {
-          var item = document.createElement('div');
-          item.className = 'vender-preview';
-          var img = document.createElement('img');
-          img.src = URL.createObjectURL(arquivo);
-          img.alt = 'Foto ' + (i + 1);
-          var remover = document.createElement('button');
-          remover.type = 'button';
-          remover.className = 'vender-preview-remover';
-          remover.setAttribute('aria-label', 'Remover foto ' + (i + 1));
-          remover.innerHTML = '&times;';
-          remover.addEventListener('click', function () {
-            URL.revokeObjectURL(img.src);
-            fotos.splice(i, 1);
-            desenharPreviews();
-          });
-          item.appendChild(img);
-          item.appendChild(remover);
-          previews.appendChild(item);
-        });
-        rotulo.textContent = fotos.length
-          ? fotos.length + (fotos.length === 1 ? ' foto escolhida' : ' fotos escolhidas') + ' — adicionar mais'
-          : 'Escolher fotos';
-      }
-
-      inputFotos.addEventListener('change', function () {
-        var novas = Array.prototype.slice.call(inputFotos.files);
-        var recusadas = [];
-        novas.forEach(function (arquivo) {
-          if (fotos.length >= MAX_FOTOS) { recusadas.push('limite de ' + MAX_FOTOS + ' fotos'); return; }
-          if (arquivo.size > MAX_BYTES) { recusadas.push(arquivo.name + ' passa de 8 MB'); return; }
-          fotos.push(arquivo);
-        });
-        // Zera o input para o mesmo arquivo poder ser escolhido de novo
-        // depois de removido.
-        inputFotos.value = '';
-        desenharPreviews();
-        mostrarErro(recusadas.length ? 'Não anexei: ' + recusadas.join('; ') + '.' : '');
-      });
-
-      form.addEventListener('submit', function (evento) {
-        evento.preventDefault();
-        mostrarErro('');
-
-        var nome = document.getElementById('vNome').value.trim();
-        var telefone = document.getElementById('vTelefone').value.trim();
-        var peca = document.getElementById('vPeca').value.trim();
-
-        if (!nome || !telefone || !peca) { mostrarErro('Preencha nome, WhatsApp e a peça.'); return; }
-        if (telefone.replace(/\D/g, '').length < 10) { mostrarErro('Confira o número do WhatsApp — faltam dígitos.'); return; }
-        if (!fotos.length) { mostrarErro('Anexe pelo menos uma foto da peça.'); return; }
-
-        var dados = new FormData();
-        dados.append('nome', nome);
-        dados.append('telefone', telefone);
-        dados.append('peca', peca);
-        dados.append('marca', document.getElementById('vMarca').value.trim());
-        dados.append('tamanho', document.getElementById('vTamanho').value.trim());
-        dados.append('estado', document.getElementById('vEstado').value);
-        dados.append('valor', document.getElementById('vValor').value.trim());
-        dados.append('observacoes', document.getElementById('vObs').value.trim());
-        fotos.forEach(function (arquivo) { dados.append('imagens', arquivo); });
-
-        botao.disabled = true;
-        botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando…';
-
-        fetch(API + '/api/propostas', { method: 'POST', body: dados })
-          .then(function (resposta) {
-            return resposta.json().catch(function () { return {}; }).then(function (corpo) {
-              if (!resposta.ok) throw new Error(corpo.error || 'Não foi possível enviar agora.');
-              return corpo;
-            });
-          })
-          .then(function () {
-            form.style.display = 'none';
-            document.getElementById('vSucesso').style.display = 'block';
-            document.getElementById('vSucesso').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          })
-          .catch(function (erro) {
-            mostrarErro(erro.message);
-            botao.disabled = false;
-            botao.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar para avaliação';
-          });
-      });
-    })();
-  </script>
 
 </body>
 

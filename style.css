@@ -810,12 +810,6 @@ body {
 }
 
 /* ========== CARRINHO ========== */
-/* O diálogo de publicar proposta é o único modal que abre de DENTRO do
-   painel admin, e o painel é z-index 2000 — acima dos 1100 de .modal.
-   Sem isto o diálogo aparece na tela mas o painel intercepta os cliques,
-   e nenhum botão dele funciona. */
-#publicarModal { z-index: 2100; }
-
 .cart-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .cart-modal-header h3 { display: flex; align-items: center; gap: 10px; font-family: 'Bodoni Moda', serif; font-weight: 400; font-size: 1.3rem; }
 .cart-modal-icon { width: 23px; height: 23px; flex-shrink: 0; color: #B8924F; }
@@ -1885,115 +1879,14 @@ body {
     margin: 0 0 26px;
     color: #F2EFE9;
 }
-.vender-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 20px; }
-.vender-campo { margin-bottom: 18px; }
-.vender-campo label {
-    display: block;
-    font-size: 0.66rem;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: #8E8880;
-    margin-bottom: 8px;
-}
-.vender-campo label span { color: #B8924F; }
-.vender-campo input,
-.vender-campo select,
-.vender-campo textarea {
-    width: 100%;
-    background: transparent;
-    border: 1px solid rgba(242, 239, 233, .18);
-    color: #F2EFE9;
-    font-family: 'Jost', sans-serif;
-    font-size: 0.92rem;
-    padding: 12px 14px;
-    outline: none;
-    border-radius: 0;
-    transition: border-color .2s;
-}
-.vender-campo textarea { resize: vertical; }
-.vender-campo input:focus,
-.vender-campo select:focus,
-.vender-campo textarea:focus { border-color: #B8924F; }
-.vender-campo select option { background: #141416; color: #F2EFE9; }
-.vender-dica { font-size: 0.78rem; color: #8E8880; margin: -2px 0 10px; }
-
-.vender-dropzone {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 26px;
-    border: 1px dashed rgba(242, 239, 233, .26);
+.vender-cta-card { text-align: center; }
+.vender-cta-card p {
     color: #A9A49C;
-    font-size: 0.76rem;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: .2s;
+    font-size: 0.94rem;
+    line-height: 1.7;
+    margin: 0 auto 28px;
+    max-width: 52ch;
 }
-.vender-dropzone:hover { border-color: #B8924F; color: #B8924F; }
-.vender-dropzone i { color: #B8924F; font-size: 1.1rem; }
-
-.vender-previews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.vender-preview { position: relative; width: 76px; height: 96px; }
-.vender-preview img { width: 100%; height: 100%; object-fit: cover; border: 1px solid rgba(242, 239, 233, .14); }
-.vender-preview-remover {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: #0A0A0B;
-    border: 1px solid rgba(242, 239, 233, .3);
-    color: #F2EFE9;
-    font-size: 15px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0;
-}
-.vender-preview-remover:hover { border-color: #c0392b; color: #ff9999; }
-
-.vender-erro {
-    background: rgba(192, 57, 43, .12);
-    border-left: 2px solid #c0392b;
-    color: #ff9999;
-    font-size: 0.86rem;
-    padding: 12px 14px;
-    margin: 0 0 18px;
-}
-.vender-enviar {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 16px 28px;
-    background: #B8924F;
-    border: none;
-    color: #0A0A0B;
-    font-family: 'Jost', sans-serif;
-    font-size: 0.76rem;
-    font-weight: 500;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: .2s;
-}
-.vender-enviar:hover:not(:disabled) { background: #d0a75c; }
-.vender-enviar:disabled { opacity: .6; cursor: default; }
-.vender-legal { font-size: 0.74rem; line-height: 1.6; color: #6E6963; margin: 16px 0 0; }
-
-.vender-sucesso { text-align: center; padding: 20px 0; }
-.vender-sucesso i { font-size: 2.6rem; color: #B8924F; }
-.vender-sucesso h3 {
-    font-family: 'Bodoni Moda', serif;
-    font-weight: 400;
-    font-size: 1.6rem;
-    color: #F2EFE9;
-    margin: 18px 0 10px;
-}
-.vender-sucesso p { font-size: 0.92rem; line-height: 1.7; color: #A9A49C; margin: 0 auto 22px; max-width: 44ch; }
 .vender-sucesso-wpp {
     display: inline-flex;
     align-items: center;
