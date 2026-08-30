@@ -59,56 +59,61 @@
 
       <!-- As duas modalidades vêm antes do formulário de propósito: a
            dúvida de quem chega aqui é "quanto eu recebo e quando", e é
-           isso que decide se a pessoa preenche. -->
+           isso que decide se a pessoa preenche.
+           Sem numeração aqui — o fluxo logo abaixo é que é uma sequência.
+           Duas contagens na mesma página só competem entre si. -->
       <section class="vender-modalidades">
         <article class="vender-modalidade">
-          <div class="vender-modalidade-num">1</div>
+          <div class="vender-modalidade-selo">Pagamento após a conferência</div>
           <h2>Venda direta</h2>
           <p class="vender-modalidade-linha">A FB compra a sua peça</p>
-          <p>Você envia fotos e informações, fazemos uma avaliação inicial e apresentamos uma proposta. Aceitando, você
-            manda a peça para nós. Depois da conferência física, autenticação e aprovação, pagamos o valor combinado
-            <strong>via Pix</strong>.</p>
-          <p class="vender-modalidade-nota">Nessa modalidade o valor costuma ser menor: a FB compra antes de revender e
+          <p>Fazemos a avaliação e apresentamos uma proposta. Aceitando, você manda a peça; depois da conferência
+            física, autenticação e aprovação, pagamos o valor combinado <strong>via Pix</strong>.</p>
+          <p class="vender-modalidade-nota">O valor costuma ser menor nessa modalidade: a FB compra antes de revender e
             assume todo o risco.</p>
         </article>
 
         <article class="vender-modalidade">
-          <div class="vender-modalidade-num">2</div>
+          <div class="vender-modalidade-selo">Pagamento após a venda</div>
           <h2>Consignação</h2>
           <p class="vender-modalidade-linha">A FB vende por você</p>
-          <p>Combinamos <strong>antes</strong> um valor exato e fixo que você vai receber — <strong>não cobramos
-              comissão percentual</strong>. Você envia a peça e a gente cuida de tudo: conferência, autenticação,
-            fotografias, criação do anúncio, divulgação, atendimento, pagamento e envio ao comprador.</p>
+          <p>Combinamos <strong>antes</strong> um valor exato e fixo que você vai receber — <strong>sem comissão
+              percentual</strong>. Você envia a peça e a gente cuida do resto: autenticação, fotos, anúncio,
+            divulgação, atendimento e envio ao comprador.</p>
           <p class="vender-modalidade-nota">Concluída a venda, pagamos <strong>via Pix</strong> o valor combinado.</p>
         </article>
       </section>
 
+      <!-- Rótulos curtos de propósito: o detalhe de cada etapa já está
+           nos cards acima. Aqui o que importa é enxergar o caminho
+           inteiro de uma vez, sem ler sete frases. -->
       <section class="vender-fluxo">
-        <h2 class="vender-fluxo-titulo">Como funciona, do começo ao fim</h2>
-        <ol class="vender-fluxo-lista">
-          <li><span>1</span>
-            <div>Você envia fotos e informações da peça.</div>
+        <h2 class="vender-fluxo-titulo">Como funciona</h2>
+        <ol class="vender-linha-tempo">
+          <li><span class="vender-bolha">1</span>
+            <p>Você envia as fotos</p>
           </li>
-          <li><span>2</span>
-            <div>A FB faz a avaliação inicial.</div>
+          <li><span class="vender-bolha">2</span>
+            <p>Avaliação inicial</p>
           </li>
-          <li><span>3</span>
-            <div>Apresentamos as modalidades e os valores.</div>
+          <li><span class="vender-bolha">3</span>
+            <p>Propostas e valores</p>
           </li>
-          <li><span>4</span>
-            <div>Você escolhe e aprova.</div>
+          <li><span class="vender-bolha">4</span>
+            <p>Você escolhe</p>
           </li>
-          <li><span>5</span>
-            <div>A peça é enviada à FB.</div>
+          <li><span class="vender-bolha">5</span>
+            <p>Peça enviada à FB</p>
           </li>
-          <li><span>6</span>
-            <div>Fazemos a conferência física e a autenticação.</div>
+          <li><span class="vender-bolha">6</span>
+            <p>Conferência e autenticação</p>
           </li>
-          <li><span>7</span>
-            <div>Na <strong>venda direta</strong>, pagamos logo após a aprovação. Na <strong>consignação</strong>,
-              anunciamos a peça e pagamos assim que ela for vendida.</div>
+          <li><span class="vender-bolha">7</span>
+            <p>Pagamento via Pix</p>
           </li>
         </ol>
+        <p class="vender-fluxo-nota">O último passo é o que muda entre as duas: na <strong>venda direta</strong> o Pix
+          sai logo após a aprovação; na <strong>consignação</strong>, assim que a peça for vendida.</p>
       </section>
 
       <section class="vender-form-wrap">
