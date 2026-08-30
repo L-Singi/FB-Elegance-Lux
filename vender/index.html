@@ -194,8 +194,11 @@
             <h3>Recebemos a sua peça</h3>
             <p>Vamos analisar as fotos e retornar pelo WhatsApp com a avaliação e os valores das duas modalidades. Se
               preferir adiantar, chame a gente por lá.</p>
-            <a class="vender-sucesso-wpp" href="https://wa.me/5543996179533" target="_blank">
-              <i class="fab fa-whatsapp"></i> Falar no WhatsApp
+            <!-- O href é reescrito no envio com os dados da peça; este
+                 valor é só a reserva para o caso improvável de o script
+                 não chegar a rodar. -->
+            <a class="vender-sucesso-wpp" id="vSucessoWpp" href="https://wa.me/5543996179533" target="_blank">
+              <i class="fab fa-whatsapp"></i> Falar no WhatsApp sobre esta proposta
             </a>
           </div>
         </div>
@@ -332,7 +335,26 @@
               return corpo;
             });
           })
-          .then(function () {
+          .then(function (corpo) {
+            // Deixa o WhatsApp já aberto com a proposta identificada. Sem
+            // isto a pessoa cai numa conversa em branco e precisa
+            // reexplicar tudo — e a FB recebe um "oi" solto que não dá
+            // para ligar a nenhuma das propostas da fila.
+            var peca = [
+              document.getElementById('vMarca').value.trim(),
+              document.getElementById('vPeca').value.trim()
+            ].filter(Boolean).join(' ');
+            var tamanho = document.getElementById('vTamanho').value.trim();
+
+            var texto = 'Olá! Acabei de enviar uma proposta de venda pelo site';
+            if (corpo && corpo.id) texto += ' (nº ' + corpo.id + ')';
+            texto += ': ' + peca;
+            if (tamanho) texto += ', tamanho ' + tamanho;
+            texto += '. Meu nome é ' + nome + '.';
+
+            document.getElementById('vSucessoWpp').href =
+              'https://wa.me/5543996179533?text=' + encodeURIComponent(texto);
+
             form.style.display = 'none';
             document.getElementById('vSucesso').style.display = 'block';
             document.getElementById('vSucesso').scrollIntoView({ behavior: 'smooth', block: 'center' });
