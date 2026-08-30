@@ -2028,6 +2028,87 @@ body {
     .vender-voltar span { display: none; }
 }
 
+/* Modalidades: os dois caminhos lado a lado, para a comparação ser
+   imediata — é a decisão que a pessoa veio tomar. */
+.vender-modalidades {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 22px;
+    margin-bottom: 56px;
+}
+.vender-modalidade {
+    background: #141416;
+    border: 1px solid rgba(242, 239, 233, .10);
+    padding: 30px 28px;
+}
+.vender-modalidade-num {
+    font-family: 'Bodoni Moda', serif;
+    font-size: 1.4rem;
+    color: #B8924F;
+    line-height: 1;
+    margin-bottom: 12px;
+}
+.vender-modalidade h2 {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 1.55rem;
+    color: #F2EFE9;
+    margin: 0 0 6px;
+}
+.vender-modalidade-linha {
+    font-size: 0.68rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: #B8924F;
+    margin: 0 0 18px;
+}
+.vender-modalidade p { font-size: 0.92rem; line-height: 1.7; color: #A9A49C; margin: 0 0 14px; }
+.vender-modalidade strong { color: #F2EFE9; font-weight: 500; }
+.vender-modalidade-nota {
+    border-left: 2px solid rgba(184, 146, 79, .45);
+    padding-left: 14px;
+    font-size: 0.86rem !important;
+    color: #8E8880 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Fluxo: numerado porque é uma ordem real de acontecimentos, não
+   enfeite — a pessoa precisa saber em que ponto ela recebe. */
+.vender-fluxo { max-width: 720px; margin: 0 auto 56px; }
+.vender-fluxo-titulo {
+    font-family: 'Bodoni Moda', serif;
+    font-weight: 400;
+    font-size: 1.5rem;
+    color: #F2EFE9;
+    margin: 0 0 24px;
+}
+.vender-fluxo-lista { list-style: none; margin: 0; padding: 0; }
+.vender-fluxo-lista li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 13px 0;
+    border-bottom: 1px solid rgba(242, 239, 233, .08);
+}
+.vender-fluxo-lista li:last-child { border-bottom: none; }
+.vender-fluxo-lista li span {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(184, 146, 79, .5);
+    border-radius: 50%;
+    font-size: 0.74rem;
+    color: #B8924F;
+    font-variant-numeric: tabular-nums;
+}
+.vender-fluxo-lista li div { font-size: 0.94rem; line-height: 1.65; color: #A9A49C; padding-top: 2px; }
+.vender-fluxo-lista li strong { color: #F2EFE9; font-weight: 500; }
+
+.vender-form-sub { font-size: 0.88rem; line-height: 1.65; color: #8E8880; margin: -14px 0 24px; }
+
 /* Chamada para a página de venda, no rodapé da loja */
 .footer-vender {
     display: inline-flex;

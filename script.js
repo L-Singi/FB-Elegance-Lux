@@ -290,7 +290,7 @@
         if (ex) ex.quantity++;
         else cart.push({ id:prod.id, nome:prod.nome, preco:prod.preco, images:prod.images, tamanhos:prod.tamanhos, numeracao:prod.numeracao, categoria:prod.categoria, quantity:1 });
         saveCart();
-        showToast('✓ ' + prod.nome + ' adicionado ao carrinho');
+        showToast('✓ ' + prod.nome + ' adicionado à sacola');
     }
     // Compara como texto: o id gravado no carrinho vem da API como
     // número, e o que volta do botão (dataset) é sempre string. Com `!==`
@@ -308,7 +308,7 @@
     function renderCartModal() {
         const c = document.getElementById('cartItemsList');
         if (!c) return;
-        if (!cart.length) { c.innerHTML = '<div style="text-align:center;padding:20px;">Seu carrinho está vazio.</div>'; document.getElementById('cartTotal').innerHTML = ''; return; }
+        if (!cart.length) { c.innerHTML = '<div style="text-align:center;padding:20px;">Sua sacola está vazia.</div>'; document.getElementById('cartTotal').innerHTML = ''; return; }
         let html = '', total = 0;
         cart.forEach(item => {
             total += precoNum(item.preco) * item.quantity;
@@ -325,7 +325,7 @@
     }
 
     function sendCartToWhatsApp() {
-        if (!cart.length) { showToast('Seu carrinho está vazio', true); return; }
+        if (!cart.length) { showToast('Sua sacola está vazia', true); return; }
         let msg = "🛍️ *Meu pedido:*%0A";
         cart.forEach(item => {
             let extra = '';
