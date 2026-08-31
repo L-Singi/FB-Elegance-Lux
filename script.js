@@ -528,22 +528,15 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     // ─── FEEDBACKS DE CLIENTES ────────────────────────────────────────────────
     function cardDeFeedback(f) {
-        const nome = (f.nome || '').trim();
-        const cidade = (f.cidade || '').trim();
-        const assinatura = (nome || cidade)
-            ? `<div class="feedback-autor">${nome ? `<strong>${escapeHtml(nome)}</strong>` : ''}${escapeHtml(cidade)}</div>`
-            : '';
         if (f.tipo === 'print') {
             if (!f.imagem) return '';
             return `<div class="feedback-card feedback-card-print" data-print="${escapeHtml(f.imagem)}">
                 <img src="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy">
-                ${assinatura}
             </div>`;
         }
         return `<div class="feedback-card feedback-card-texto">
             <div class="feedback-aspas">&ldquo;</div>
             <div class="feedback-texto">${escapeHtml(f.texto || '')}</div>
-            ${assinatura}
         </div>`;
     }
 

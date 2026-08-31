@@ -693,7 +693,6 @@ body {
 }
 .feedback-card-print { cursor: zoom-in; padding: 0; }
 .feedback-card-print img { width: 100%; display: block; object-fit: cover; max-height: 380px; }
-.feedback-card-print .feedback-autor { padding: 14px 18px 16px; }
 
 .feedback-card-texto { padding: 26px 24px; justify-content: space-between; gap: 18px; }
 .feedback-aspas { font-family: 'Bodoni Moda', serif; font-size: 2.4rem; line-height: 1; color: #B8924F; }
@@ -703,8 +702,6 @@ body {
     color: #D9D5CE;
     flex: 1;
 }
-.feedback-autor { font-size: 0.72rem; letter-spacing: .14em; text-transform: uppercase; color: #8E8880; }
-.feedback-autor strong { display: block; color: #F2EFE9; font-weight: 400; letter-spacing: .1em; margin-bottom: 3px; }
 
 .feedbacks-arrow {
     position: absolute;
