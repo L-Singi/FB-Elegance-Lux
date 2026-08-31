@@ -630,7 +630,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         }
 
         track.innerHTML = list.map((src, i) =>
-            `<img class="hero-img hero-slide${i === 0 ? ' is-active' : ''}" src="${src}" alt="FB Elegance Lux" loading="${i === 0 ? 'eager' : 'lazy'}">`
+            `<img class="hero-img hero-slide${i === 0 ? ' is-active' : ''}" src="${src}" alt="FB Elegance Lux" loading="${i === 0 ? 'eager' : 'lazy'}"${i === 0 ? ' fetchpriority="high"' : ''}>`
         ).join('');
         const slides = Array.from(track.querySelectorAll('.hero-slide'));
 
@@ -798,7 +798,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             <div class="product-image-container">
                 <span class="product-tag">${escapeHtml(tagLabel)}</span>
                 ${statusHtml}
-                <img class="product-image" src="${images[0]||'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" onerror="this.src='https://placehold.co/600x800?text=Indisponível'">
+                <img class="product-image" src="${images[0]||'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/600x800?text=Indisponível'">
                 ${images.length>1 ? `<div class="nav-arrow nav-arrow-left" data-dir="prev"><i class="fas fa-chevron-left"></i></div><div class="nav-arrow nav-arrow-right" data-dir="next"><i class="fas fa-chevron-right"></i></div>` : ''}
                 <button class="btn-favorite${isFav?' active':''}" title="Favoritar"><i class="${isFav?'fas':'far'} fa-heart"></i></button>
                 <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}>${isSold?'Indisponível':'Adicionar à sacola'}</button>
@@ -989,7 +989,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         grid.innerHTML = CATS.map(c => {
             const img = CAT_COVER_IMAGES[c.value] || (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]) || `https://placehold.co/500x650?text=${encodeURIComponent(c.label)}`;
             return `<button type="button" class="cat-tile" data-cat-tile="${c.value}">
-                <img src="${img}" alt="${escapeHtml(c.label)}">
+                <img src="${img}" alt="${escapeHtml(c.label)}" loading="lazy" decoding="async">
                 <span class="cat-tile-label">${c.label}</span>
             </button>`;
         }).join('');
@@ -1588,12 +1588,40 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         });
     });
 
-    function abrirAdminOverlay() {
+    // Ícones (Tabler) e gráfico (Chart.js) só existem pro painel — carregar
+    // os dois de cara pra todo visitante custaria uma folha de estilo e um
+    // script inteiros que 99% de quem entra no site nunca usa. Ficam pra
+    // trás do primeiro clique em "entrar no admin", e a promise em cache
+    // evita reinjetar as tags se o painel for reaberto na mesma sessão.
+    let adminAssetsPromise = null;
+    function carregarAdminAssets() {
+        if (adminAssetsPromise) return adminAssetsPromise;
+        const carregarLink = () => new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css';
+            link.onload = resolve;
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+        const carregarScript = () => new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+        adminAssetsPromise = Promise.all([carregarLink(), carregarScript()]);
+        return adminAssetsPromise;
+    }
+
+    async function abrirAdminOverlay() {
         const overlay = document.getElementById('adminOverlay');
         overlay.style.display = 'block';
         document.body.style.overflow = 'hidden';
         document.getElementById('backToAdminBtn').style.display = 'none';
         adminVisible = true;
+        await carregarAdminAssets();
         admInit();
         // Fora do admInit de propósito: ele só roda por completo na
         // primeira abertura, e as permissões podem ter mudado desde

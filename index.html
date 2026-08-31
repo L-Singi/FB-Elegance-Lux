@@ -24,8 +24,10 @@
   <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://api.fbelegancelux.com.br">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500;6..96,600&family=Jost:wght@300;400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400&family=Jost:wght@300;400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <link rel="stylesheet" href="style.css">
@@ -66,7 +68,7 @@
       <div class="hero-media" id="heroMedia">
         <div class="hero-carousel" id="heroCarousel">
           <img class="hero-img hero-slide is-active" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG"
-            alt="FB Elegance Lux">
+            alt="FB Elegance Lux" fetchpriority="high">
         </div>
         <button type="button" class="hero-nav hero-nav-prev" id="heroPrev" aria-label="Imagem anterior" style="display:none">
           <i class="ti ti-chevron-left"></i>
@@ -231,9 +233,12 @@
     <i class="ti ti-arrow-back-up"></i> Voltar ao admin
   </button>
 
-  <!-- ── PAINEL ADMIN v2 (oculto por padrão) ── -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <!-- ── PAINEL ADMIN v2 (oculto por padrão) ──
+       O CSS de ícones e o Chart.js só existem pra esta seção, mas quase
+       nenhum visitante do site é o admin — carregar os dois de cara pra
+       todo mundo é peso morto na primeira visita. Ambos entram sob
+       demanda, em carregarAdminAssets() no script.js, no instante em
+       que o painel é aberto pela primeira vez. -->
 
   <div id="adminOverlay"
     style="display:none; position:fixed; inset:0; background:#0a0a0a; z-index:2000; overflow-y:auto; padding:20px;">
