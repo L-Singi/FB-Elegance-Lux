@@ -116,6 +116,27 @@ function paginaDoProduto(p) {
 `;
 }
 
+/** sitemap.xml a partir da mesma lista de produtos — se ele fosse escrito
+ *  à mão ficaria desatualizado a cada peça nova, exatamente como o texto
+ *  fixo do hero que já corrigimos uma vez. Gerado toda hora, junto com as
+ *  páginas de preview, não tem como os dois divergirem. */
+function sitemapXml(produtos) {
+  const urls = [
+    { loc: `${SITE}/`, prioridade: '1.0' },
+    { loc: `${SITE}/vender/`, prioridade: '0.8' },
+    ...produtos
+      .slice()
+      .sort((a, b) => a.id - b.id)
+      .map(p => ({ loc: `${SITE}/?produto=${p.id}`, prioridade: '0.6' })),
+  ];
+
+  const itens = urls.map(({ loc, prioridade }) =>
+    `  <url>\n    <loc>${esc(loc)}</loc>\n    <priority>${prioridade}</priority>\n  </url>`
+  ).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${itens}\n</urlset>\n`;
+}
+
 async function main() {
   const resposta = await fetch(`${API}/api/produtos`);
   if (!resposta.ok) throw new Error(`API respondeu ${resposta.status}`);
@@ -146,7 +167,9 @@ async function main() {
     removidas += 1;
   }
 
-  console.log(`${esperadas.size} páginas geradas, ${removidas} removidas.`);
+  await fs.writeFile(path.join(RAIZ, 'sitemap.xml'), sitemapXml(produtos), 'utf-8');
+
+  console.log(`${esperadas.size} páginas geradas, ${removidas} removidas, sitemap.xml atualizado.`);
 }
 
 main().catch(err => {

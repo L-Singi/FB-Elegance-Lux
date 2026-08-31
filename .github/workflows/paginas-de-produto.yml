@@ -1,8 +1,9 @@
 name: Páginas de produto
 
-# Regera as pastas em /produto/, que dão cartão de preview aos links de
-# peça compartilhados no WhatsApp. O motivo de existirem está explicado
-# em scripts/gerar-paginas-produto.js.
+# Regera as pastas em /produto/ (cartão de preview aos links de peça
+# compartilhados no WhatsApp) e o sitemap.xml, os dois a partir da mesma
+# lista de produtos da API. O motivo de existirem está explicado em
+# scripts/gerar-paginas-produto.js.
 #
 # De hora em hora porque é a frequência com que peças novas entram no
 # catálogo. Enquanto a rodada não acontece, o link com ?produto=<id>
@@ -36,14 +37,14 @@ jobs:
 
       - name: Commitar se algo mudou
         run: |
-          if [ -z "$(git status --porcelain produto)" ]; then
+          if [ -z "$(git status --porcelain produto sitemap.xml)" ]; then
             echo "Catálogo sem novidade — nada a commitar."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add produto
-          git commit -m "chore: atualiza páginas de produto (preview de link)"
+          git add produto sitemap.xml
+          git commit -m "chore: atualiza páginas de produto e sitemap"
           # Alguém pode ter empurrado enquanto isto rodava; rebase antes
           # de tentar, para não falhar por divergência boba.
           git pull --rebase origin "${GITHUB_REF_NAME}"
