@@ -1017,37 +1017,6 @@
         margin-bottom: 10px
       }
 
-      .adm-badge {
-        margin-left: auto;
-        min-width: 18px;
-        height: 18px;
-        padding: 0 5px;
-        border-radius: 9px;
-        background: #B8924F;
-        color: #0a0a0a;
-        font-size: 11px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .adm-prop-filtro {
-        background: #151515;
-        color: #999;
-        border: 1px solid #262626;
-        border-radius: 8px;
-        padding: 6px 13px;
-        font-size: 12px;
-        cursor: pointer;
-      }
-
-      .adm-prop-filtro.active {
-        background: #B8924F;
-        color: #0a0a0a;
-        border-color: #B8924F;
-      }
-
       .adm-fr label {
         display: block;
         font-size: 11px;
@@ -1545,8 +1514,6 @@
           <div class="adm-n" data-adm-tab="categorias"><i class="ti ti-tag"></i><span>Categorias</span></div>
           <div class="adm-n" data-adm-tab="site"><i class="ti ti-photo"></i><span>Site</span></div>
           <div class="adm-n" data-adm-tab="feedbacks"><i class="ti ti-star"></i><span>Feedbacks</span></div>
-          <div class="adm-n" data-adm-tab="propostas"><i class="ti ti-inbox"></i><span>Propostas</span><span
-              class="adm-badge" id="adm-propostas-badge" style="display:none">0</span></div>
           <div class="adm-n" data-adm-tab="usuarios" id="adm-nav-usuarios" style="display:none"><i class="ti ti-users"></i><span>Usuários</span></div>
           <div class="adm-sep"></div>
           <div class="adm-n" id="viewSiteAdminBtn"><i class="ti ti-eye"></i><span>Ver site</span></div>
@@ -1863,20 +1830,6 @@
             </div>
           </div>
 
-          <div class="adm-panel" id="adm-tab-propostas">
-            <div class="adm-dc">
-              <div class="adm-dc-title">Propostas recebidas</div>
-              <div class="adm-dc-sub">Peças que clientes enviaram para a FB vender por eles</div>
-              <div style="display:flex;gap:8px;margin:14px 0 4px;flex-wrap:wrap">
-                <button type="button" class="adm-prop-filtro active" data-status="aguardando">Aguardando</button>
-                <button type="button" class="adm-prop-filtro" data-status="aprovada">Aprovadas</button>
-                <button type="button" class="adm-prop-filtro" data-status="recusada">Recusadas</button>
-                <button type="button" class="adm-prop-filtro" data-status="">Todas</button>
-              </div>
-              <div id="adm-prop-lista" style="margin-top:14px"></div>
-            </div>
-          </div>
-
           <div class="adm-panel" id="adm-tab-usuarios">
             <div class="adm-dc" style="max-width:560px">
               <div class="adm-dc-title">Novo usuário</div>
@@ -2106,47 +2059,6 @@
           <i class="fas fa-link"></i> Copiar link da peça
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- Publicar uma proposta como peça do catálogo. Categoria e preço
-       são decisão da loja, não vêm do formulário do cliente — o resto
-       chega preenchido com o que ele mandou. -->
-  <div id="publicarModal" class="modal" style="display:none;">
-    <div class="edit-modal-content">
-      <div class="modal-close" id="publicarClose">&times;</div>
-      <h3 style="font-family:'Bodoni Moda',serif;font-weight:400;font-size:1.4rem;margin:0 0 6px">Publicar no site</h3>
-      <p id="publicarResumo" style="font-size:.82rem;color:#8E8880;margin:0 0 18px"></p>
-
-      <div class="vender-campo">
-        <label for="publicarCategoria">Categoria <span>*</span></label>
-        <select id="publicarCategoria"></select>
-      </div>
-      <div class="vender-campo">
-        <label for="publicarPreco">Preço de venda <span>*</span></label>
-        <input type="text" id="publicarPreco" placeholder="R$ 0,00">
-      </div>
-      <div class="vender-campo">
-        <label for="publicarNome">Nome da peça na vitrine</label>
-        <input type="text" id="publicarNome">
-      </div>
-      <div class="vender-campo">
-        <label for="publicarMarca">Marca</label>
-        <input type="text" id="publicarMarca">
-      </div>
-      <div class="vender-campo" id="publicarCampoTamanho">
-        <label for="publicarTamanho">Tamanho</label>
-        <input type="text" id="publicarTamanho" placeholder="Ex: L · separe por vírgula se houver mais de um">
-      </div>
-
-      <div id="publicarFotos" style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 16px"></div>
-      <p style="font-size:.76rem;color:#6E6963;margin:0 0 16px;line-height:1.55">
-        A peça entra na vitrine com estas fotos. O interesse de compra chega no WhatsApp da loja, como em qualquer
-        outra peça — o contato de quem enviou fica registrado aqui no painel, não no site.
-      </p>
-
-      <p class="vender-erro" id="publicarErro" style="display:none"></p>
-      <button type="button" class="vender-enviar" id="publicarConfirmar">Publicar peça</button>
     </div>
   </div>
 

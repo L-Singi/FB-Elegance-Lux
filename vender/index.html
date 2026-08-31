@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Venda sua peça | FB Elegance Lux</title>
   <meta name="description"
-    content="Tem peças de luxo paradas? A FB Elegance Lux compra ou vende por você, em duas modalidades: venda direta com pagamento via Pix, ou consignação com valor fixo e sem comissão.">
+    content="Tem peças de luxo paradas? A FB Elegance Lux compra ou vende por você, em duas modalidades: compra direta com pagamento via Pix, ou consignação com valor fixo e sem comissão.">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <link rel="canonical" href="https://fbelegancelux.com.br/vender/">
 
@@ -15,7 +15,7 @@
   <meta property="og:url" content="https://fbelegancelux.com.br/vender/">
   <meta property="og:title" content="Tem peças paradas? A FB compra de você">
   <meta property="og:description"
-    content="Venda direta com pagamento via Pix, ou consignação com valor fixo e sem comissão. Envie as fotos da sua peça.">
+    content="Compra direta com pagamento via Pix, ou consignação com valor fixo e sem comissão. Envie as fotos da sua peça.">
   <meta property="og:image" content="https://fbelegancelux.com.br/logo.png">
   <meta property="og:locale" content="pt_BR">
 
@@ -65,8 +65,8 @@
       <section class="vender-modalidades">
         <article class="vender-modalidade">
           <div class="vender-modalidade-selo">Pagamento após a conferência</div>
-          <h2>Venda direta</h2>
-          <p class="vender-modalidade-linha">A FB compra a sua peça</p>
+          <h2>Compra Direta</h2>
+          <p class="vender-modalidade-linha">Nós compramos sua peça</p>
           <p>Fazemos a avaliação e apresentamos uma proposta. Aceitando, você manda a peça; depois da conferência
             física, autenticação e aprovação, pagamos o valor combinado <strong>via Pix</strong>.</p>
           <p class="vender-modalidade-nota">O valor costuma ser menor nessa modalidade: a FB compra antes de revender e
@@ -76,11 +76,12 @@
         <article class="vender-modalidade">
           <div class="vender-modalidade-selo">Pagamento após a venda</div>
           <h2>Consignação</h2>
-          <p class="vender-modalidade-linha">A FB vende por você</p>
-          <p>Combinamos <strong>antes</strong> um valor exato e fixo que você vai receber — <strong>sem comissão
-              percentual</strong>. Você envia a peça e a gente cuida do resto: autenticação, fotos, anúncio,
-            divulgação, atendimento e envio ao comprador.</p>
-          <p class="vender-modalidade-nota">Concluída a venda, pagamos <strong>via Pix</strong> o valor combinado.</p>
+          <p class="vender-modalidade-linha">Vendemos sua peça por você</p>
+          <p>Definimos <strong>antecipadamente</strong> o valor exato que você receberá — <strong>sem comissão
+              percentual</strong>. Após o envio da peça, nossa equipe cuida de todo o processo: autenticação,
+            fotografia, divulgação, atendimento e entrega ao comprador.</p>
+          <p class="vender-modalidade-nota">Assim que a venda for concluída, o valor combinado é pago <strong>via
+              Pix</strong>.</p>
         </article>
       </section>
 
@@ -112,102 +113,27 @@
             <p>Pagamento via Pix</p>
           </li>
         </ol>
-        <p class="vender-fluxo-nota">O último passo é o que muda entre as duas: na <strong>venda direta</strong> o Pix
+        <p class="vender-fluxo-nota">O último passo é o que muda entre as duas: na <strong>compra direta</strong> o Pix
           sai logo após a aprovação; na <strong>consignação</strong>, assim que a peça for vendida.</p>
       </section>
 
       <section class="vender-form-wrap">
-        <div class="vender-form-card">
+        <div class="vender-form-card vender-cta-card">
           <h2 class="vender-form-title">Conte sobre a peça</h2>
-          <p class="vender-form-sub">Preencha e envie as fotos. Voltamos com a avaliação e as duas propostas — venda
-            direta e consignação — para você escolher.</p>
-
-          <form id="propostaForm" novalidate>
-            <div class="vender-grid">
-              <div class="vender-campo">
-                <label for="vNome">Seu nome <span>*</span></label>
-                <input type="text" id="vNome" name="nome" maxlength="120" autocomplete="name" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vTelefone">WhatsApp <span>*</span></label>
-                <input type="tel" id="vTelefone" name="telefone" maxlength="40" autocomplete="tel"
-                  placeholder="(43) 99999-9999" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vMarca">Marca</label>
-                <input type="text" id="vMarca" name="marca" maxlength="80" placeholder="Ex: Off-White">
-              </div>
-              <div class="vender-campo">
-                <label for="vPeca">Peça <span>*</span></label>
-                <input type="text" id="vPeca" name="peca" maxlength="160" placeholder="Ex: Hoodie Arrows" required>
-              </div>
-              <div class="vender-campo">
-                <label for="vTamanho">Tamanho / numeração</label>
-                <input type="text" id="vTamanho" name="tamanho" maxlength="40" placeholder="Ex: L ou 42">
-              </div>
-              <div class="vender-campo">
-                <label for="vEstado">Estado de conservação</label>
-                <select id="vEstado" name="estado">
-                  <option value="">Selecione</option>
-                  <option value="Novo com etiqueta">Novo com etiqueta</option>
-                  <option value="Novo sem etiqueta">Novo sem etiqueta</option>
-                  <option value="Seminovo">Seminovo</option>
-                  <option value="Usado">Usado</option>
-                </select>
-              </div>
-              <div class="vender-campo">
-                <label for="vValor">Quanto gostaria de receber</label>
-                <input type="text" id="vValor" name="valor" maxlength="40" placeholder="Ex: R$ 900 (opcional)">
-              </div>
-            </div>
-
-            <div class="vender-campo">
-              <label for="vObs">Observações</label>
-              <textarea id="vObs" name="observacoes" rows="3" maxlength="1000"
-                placeholder="Defeitos, tempo de uso, se tem caixa/nota fiscal…"></textarea>
-            </div>
-
-            <div class="vender-campo">
-              <label>Fotos da peça <span>*</span></label>
-              <p class="vender-dica">Até 6 fotos, de até 8&nbsp;MB cada. Quanto melhor a foto, mais rápida a avaliação.
-              </p>
-              <label class="vender-dropzone" for="vFotos" id="vDropzone">
-                <i class="fas fa-camera"></i>
-                <span id="vFotosLabel">Escolher fotos</span>
-              </label>
-              <input type="file" id="vFotos" name="imagens" accept="image/*" multiple hidden>
-              <div class="vender-previews" id="vPreviews"></div>
-            </div>
-
-            <p class="vender-erro" id="vErro" style="display:none"></p>
-
-            <button type="submit" class="vender-enviar" id="vEnviar">
-              <i class="fas fa-paper-plane"></i> Enviar para avaliação
-            </button>
-            <p class="vender-legal">Ao enviar, você concorda em ser contatado pela FB Elegance Lux no WhatsApp informado
-              para tratar da avaliação e da negociação desta peça. Seus dados não são publicados no site nem usados
-              para nenhuma outra finalidade.</p>
-          </form>
-
-          <div class="vender-sucesso" id="vSucesso" style="display:none">
-            <i class="fas fa-circle-check"></i>
-            <h3>Recebemos a sua peça</h3>
-            <p>Vamos analisar as fotos e retornar pelo WhatsApp com a avaliação e os valores das duas modalidades. Se
-              preferir adiantar, chame a gente por lá.</p>
-            <!-- O href é reescrito no envio com os dados da peça; este
-                 valor é só a reserva para o caso improvável de o script
-                 não chegar a rodar. -->
-            <a class="vender-sucesso-wpp" id="vSucessoWpp" href="https://wa.me/5543996179533" target="_blank">
-              <i class="fab fa-whatsapp"></i> Falar no WhatsApp sobre esta proposta
-            </a>
-          </div>
+          <p>Envie fotos nítidas da peça — etiqueta, costura e possíveis marcas de uso — e a gente responde por lá
+            com a avaliação e os valores das duas modalidades.</p>
+          <a class="vender-sucesso-wpp"
+            href="https://wa.me/5543996179533?text=Ol%C3%A1!%20Quero%20vender%20uma%20pe%C3%A7a%20de%20luxo%20pela%20FB%20Elegance%20Lux."
+            target="_blank" rel="noopener">
+            <i class="fab fa-whatsapp"></i> Falar no WhatsApp
+          </a>
         </div>
       </section>
 
       <section class="vender-aceitamos">
         <h2>O que aceitamos</h2>
         <ul>
-          <li><i class="fas fa-check"></i> <span>Peças <strong>originais</strong> de grife, com procedência verificável</span></li>
+          <li><i class="fas fa-check"></i> <span>Peças <strong>originais</strong>, com procedência verificável</span></li>
           <li><i class="fas fa-check"></i> <span>Casacos, camisetas, shorts, calçados, acessórios e perfumes</span></li>
           <li><i class="fas fa-check"></i> <span>Bom estado de conservação, com ou sem etiqueta</span></li>
         </ul>
@@ -234,139 +160,6 @@
       <div class="company-info">FB Elegance Lux Ltda · CNPJ: 68.260.978/0001-26 · Londrina - PR</div>
     </div>
   </footer>
-
-  <script>
-    (function () {
-      'use strict';
-      var API = 'https://api.fbelegancelux.com.br';
-      var MAX_FOTOS = 6;
-      var MAX_BYTES = 8 * 1024 * 1024;
-
-      var form = document.getElementById('propostaForm');
-      var inputFotos = document.getElementById('vFotos');
-      var previews = document.getElementById('vPreviews');
-      var rotulo = document.getElementById('vFotosLabel');
-      var erroEl = document.getElementById('vErro');
-      var botao = document.getElementById('vEnviar');
-
-      // Lista própria em vez de ler input.files direto: o input não deixa
-      // remover um arquivo isolado, e sem isso quem anexa a foto errada
-      // tem que recomeçar a seleção inteira.
-      var fotos = [];
-
-      function mostrarErro(msg) {
-        erroEl.textContent = msg;
-        erroEl.style.display = msg ? 'block' : 'none';
-        if (msg) erroEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-
-      function desenharPreviews() {
-        previews.innerHTML = '';
-        fotos.forEach(function (arquivo, i) {
-          var item = document.createElement('div');
-          item.className = 'vender-preview';
-          var img = document.createElement('img');
-          img.src = URL.createObjectURL(arquivo);
-          img.alt = 'Foto ' + (i + 1);
-          var remover = document.createElement('button');
-          remover.type = 'button';
-          remover.className = 'vender-preview-remover';
-          remover.setAttribute('aria-label', 'Remover foto ' + (i + 1));
-          remover.innerHTML = '&times;';
-          remover.addEventListener('click', function () {
-            URL.revokeObjectURL(img.src);
-            fotos.splice(i, 1);
-            desenharPreviews();
-          });
-          item.appendChild(img);
-          item.appendChild(remover);
-          previews.appendChild(item);
-        });
-        rotulo.textContent = fotos.length
-          ? fotos.length + (fotos.length === 1 ? ' foto escolhida' : ' fotos escolhidas') + ' — adicionar mais'
-          : 'Escolher fotos';
-      }
-
-      inputFotos.addEventListener('change', function () {
-        var novas = Array.prototype.slice.call(inputFotos.files);
-        var recusadas = [];
-        novas.forEach(function (arquivo) {
-          if (fotos.length >= MAX_FOTOS) { recusadas.push('limite de ' + MAX_FOTOS + ' fotos'); return; }
-          if (arquivo.size > MAX_BYTES) { recusadas.push(arquivo.name + ' passa de 8 MB'); return; }
-          fotos.push(arquivo);
-        });
-        // Zera o input para o mesmo arquivo poder ser escolhido de novo
-        // depois de removido.
-        inputFotos.value = '';
-        desenharPreviews();
-        mostrarErro(recusadas.length ? 'Não anexei: ' + recusadas.join('; ') + '.' : '');
-      });
-
-      form.addEventListener('submit', function (evento) {
-        evento.preventDefault();
-        mostrarErro('');
-
-        var nome = document.getElementById('vNome').value.trim();
-        var telefone = document.getElementById('vTelefone').value.trim();
-        var peca = document.getElementById('vPeca').value.trim();
-
-        if (!nome || !telefone || !peca) { mostrarErro('Preencha nome, WhatsApp e a peça.'); return; }
-        if (telefone.replace(/\D/g, '').length < 10) { mostrarErro('Confira o número do WhatsApp — faltam dígitos.'); return; }
-        if (!fotos.length) { mostrarErro('Anexe pelo menos uma foto da peça.'); return; }
-
-        var dados = new FormData();
-        dados.append('nome', nome);
-        dados.append('telefone', telefone);
-        dados.append('peca', peca);
-        dados.append('marca', document.getElementById('vMarca').value.trim());
-        dados.append('tamanho', document.getElementById('vTamanho').value.trim());
-        dados.append('estado', document.getElementById('vEstado').value);
-        dados.append('valor', document.getElementById('vValor').value.trim());
-        dados.append('observacoes', document.getElementById('vObs').value.trim());
-        fotos.forEach(function (arquivo) { dados.append('imagens', arquivo); });
-
-        botao.disabled = true;
-        botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando…';
-
-        fetch(API + '/api/propostas', { method: 'POST', body: dados })
-          .then(function (resposta) {
-            return resposta.json().catch(function () { return {}; }).then(function (corpo) {
-              if (!resposta.ok) throw new Error(corpo.error || 'Não foi possível enviar agora.');
-              return corpo;
-            });
-          })
-          .then(function (corpo) {
-            // Deixa o WhatsApp já aberto com a proposta identificada. Sem
-            // isto a pessoa cai numa conversa em branco e precisa
-            // reexplicar tudo — e a FB recebe um "oi" solto que não dá
-            // para ligar a nenhuma das propostas da fila.
-            var peca = [
-              document.getElementById('vMarca').value.trim(),
-              document.getElementById('vPeca').value.trim()
-            ].filter(Boolean).join(' ');
-            var tamanho = document.getElementById('vTamanho').value.trim();
-
-            var texto = 'Olá! Acabei de enviar uma proposta de venda pelo site';
-            if (corpo && corpo.id) texto += ' (nº ' + corpo.id + ')';
-            texto += ': ' + peca;
-            if (tamanho) texto += ', tamanho ' + tamanho;
-            texto += '. Meu nome é ' + nome + '.';
-
-            document.getElementById('vSucessoWpp').href =
-              'https://wa.me/5543996179533?text=' + encodeURIComponent(texto);
-
-            form.style.display = 'none';
-            document.getElementById('vSucesso').style.display = 'block';
-            document.getElementById('vSucesso').scrollIntoView({ behavior: 'smooth', block: 'center' });
-          })
-          .catch(function (erro) {
-            mostrarErro(erro.message);
-            botao.disabled = false;
-            botao.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar para avaliação';
-          });
-      });
-    })();
-  </script>
 
 </body>
 

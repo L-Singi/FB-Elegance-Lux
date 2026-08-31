@@ -528,17 +528,18 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     // ─── FEEDBACKS DE CLIENTES ────────────────────────────────────────────────
     function cardDeFeedback(f) {
-        if (f.tipo === 'print') {
-            if (!f.imagem) return '';
-            return `<div class="feedback-card feedback-card-print" data-print="${escapeHtml(f.imagem)}">
-                <img src="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy">
-            </div>`;
-        }
         const nome = (f.nome || '').trim();
         const cidade = (f.cidade || '').trim();
         const assinatura = (nome || cidade)
             ? `<div class="feedback-autor">${nome ? `<strong>${escapeHtml(nome)}</strong>` : ''}${escapeHtml(cidade)}</div>`
             : '';
+        if (f.tipo === 'print') {
+            if (!f.imagem) return '';
+            return `<div class="feedback-card feedback-card-print" data-print="${escapeHtml(f.imagem)}">
+                <img src="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy">
+                ${assinatura}
+            </div>`;
+        }
         return `<div class="feedback-card feedback-card-texto">
             <div class="feedback-aspas">&ldquo;</div>
             <div class="feedback-texto">${escapeHtml(f.texto || '')}</div>
@@ -1719,9 +1720,9 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     const PERM_ROTULOS = {
         produtos: 'Produtos', categorias: 'Categorias',
         marcas: 'Marcas', tamanhos: 'Tamanhos', config: 'Site',
-        feedbacks: 'Feedbacks', propostas: 'Propostas'
+        feedbacks: 'Feedbacks'
     };
-    let admPermsDisponiveis = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config', 'feedbacks', 'propostas'];
+    let admPermsDisponiveis = ['produtos', 'categorias', 'marcas', 'tamanhos', 'config', 'feedbacks'];
 
     function admRenderPermCheckboxes() {
         const box = admEl('adm-u-perms');
@@ -1732,222 +1733,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             </label>`).join('');
     }
 
-    // ─── PROPOSTAS DE VENDA (painel) ──────────────────────────────────────────
-    let admPropFiltro = 'aguardando';
-
-    /** Contador na navegação: quantas propostas ainda não foram
-     *  respondidas. Sem ele, ninguém descobre que chegou peça nova sem
-     *  entrar na aba. */
-    async function admAtualizarBadgePropostas() {
-        const badge = admEl('adm-propostas-badge');
-        if (!badge) return;
-        try {
-            const lista = await apiFetch('GET', '/api/propostas?status=aguardando');
-            const n = Array.isArray(lista) ? lista.length : 0;
-            badge.textContent = n;
-            badge.style.display = n ? 'inline-flex' : 'none';
-        } catch (_) {
-            // Sem permissão de propostas ou API fora do ar: some o
-            // contador em vez de deixar um número errado na tela.
-            badge.style.display = 'none';
-        }
-    }
-
-    /** Mostra só as transições que fazem sentido a partir do estado
-     *  atual. Antes daqui os quatro botões apareciam sempre, então dava
-     *  para "aprovar" uma proposta já aprovada — ação que não muda nada e
-     *  só confunde quem está olhando a fila. */
-    function botoesDeStatus(p) {
-        const botao = (status, rotulo, fundo, cor, borda) =>
-            `<button type="button" class="adm-prop-status" data-id="${p.id}" data-status="${status}"
-               style="background:${fundo};color:${cor};border:1px solid ${borda};border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer">${rotulo}</button>`;
-
-        const publicar = `<button type="button" class="adm-prop-publicar" data-id="${p.id}"
-               style="background:#B8924F;color:#0a0a0a;border:1px solid #B8924F;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer">Publicar no site</button>`;
-
-        if (p.status === 'aguardando') {
-            return (podeAcessar('produtos') ? publicar : '')
-                + botao('aprovada', 'Aprovar', '#12291a', '#5fd68a', '#1f4a30')
-                + botao('recusada', 'Recusar', '#2a1212', '#ff9999', '#4a1f1f');
-        }
-        if (p.status === 'aprovada') {
-            // Aprovada mas ainda não publicada continua podendo virar peça.
-            return (podeAcessar('produtos') ? publicar : '')
-                + botao('aguardando', 'Reabrir', '#1a1a1a', '#bbb', '#262626')
-                + botao('recusada', 'Recusar', '#2a1212', '#ff9999', '#4a1f1f');
-        }
-        return botao('aguardando', 'Reabrir', '#1a1a1a', '#bbb', '#262626');
-    }
-
-    async function admRenderPropostas() {
-        const wrap = admEl('adm-prop-lista');
-        if (!wrap) return;
-        wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Carregando...</p>';
-
-        let lista = [];
-        try {
-            const query = admPropFiltro ? `?status=${admPropFiltro}` : '';
-            lista = await apiFetch('GET', `/api/propostas${query}`);
-        } catch (err) {
-            wrap.innerHTML = `<p style="color:#ff6b6b;font-size:13px">${admEsc(err.message)}</p>`;
-            return;
-        }
-
-        if (!lista.length) {
-            wrap.innerHTML = '<p style="opacity:.6;font-size:13px">Nenhuma proposta por aqui.</p>';
-            admAtualizarBadgePropostas();
-            return;
-        }
-
-        const cores = { aguardando: '#B8924F', aprovada: '#3f9a5c', recusada: '#8a4040' };
-        wrap.innerHTML = lista.map(p => {
-            const imagens = Array.isArray(p.imagens) ? p.imagens : [];
-            const fotos = imagens.map((url, i) => `
-                <a href="${admEsc(url)}" target="_blank" rel="noopener">
-                  <img src="${admEsc(url)}" alt="Foto ${i + 1}"
-                       style="width:64px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #262626">
-                </a>`).join('');
-            const detalhes = [
-                p.marca && `Marca: ${p.marca}`,
-                p.tamanho && `Tamanho: ${p.tamanho}`,
-                p.estado && `Estado: ${p.estado}`,
-                p.valor && `Pedido: ${p.valor}`
-            ].filter(Boolean).join(' · ');
-            // Abre a conversa já identificando a peça — evita o "oi, sobre
-            // qual peça mesmo?" que atrasa a resposta.
-            const zap = `https://wa.me/55${String(p.telefone || '').replace(/\D/g, '')}` +
-                `?text=${encodeURIComponent(`Olá, ${p.nome}! Recebemos a sua peça "${p.peca}" para avaliação no site da FB Elegance Lux.`)}`;
-
-            return `
-            <div style="border:1px solid #262626;border-radius:10px;padding:14px;margin-bottom:12px;background:#111">
-              <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
-                <div style="min-width:200px">
-                  <div style="font-weight:600">${admEsc(p.peca)}</div>
-                  <div style="font-size:12px;opacity:.65;margin-top:3px">${admEsc(p.nome)} · ${admEsc(p.telefone)}</div>
-                  ${detalhes ? `<div style="font-size:12px;opacity:.55;margin-top:4px">${admEsc(detalhes)}</div>` : ''}
-                  <div style="font-size:11px;opacity:.4;margin-top:4px">${admRt(p.created_at)}</div>
-                </div>
-                <span style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:4px 10px;border-radius:20px;background:${cores[p.status] || '#333'}22;color:${cores[p.status] || '#999'};border:1px solid ${cores[p.status] || '#333'}55">${p.status}</span>
-              </div>
-
-              ${p.observacoes ? `<div style="font-size:12px;opacity:.7;margin-top:10px;line-height:1.5">${admEsc(p.observacoes)}</div>` : ''}
-              ${fotos ? `<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">${fotos}</div>` : ''}
-
-              <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-                <a href="${zap}" target="_blank" rel="noopener"
-                   style="background:#14301f;color:#5fd68a;border:1px solid #1f4a30;border-radius:8px;padding:6px 12px;font-size:12px;text-decoration:none">WhatsApp</a>
-                ${botoesDeStatus(p)}
-                <button type="button" class="adm-prop-del" data-id="${p.id}"
-                   style="background:#1a1a1a;color:#777;border:1px solid #262626;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;margin-left:auto">Excluir</button>
-              </div>
-            </div>`;
-        }).join('');
-
-        wrap.querySelectorAll('.adm-prop-status').forEach(b => b.addEventListener('click', async () => {
-            try {
-                await apiFetch('PUT', `/api/propostas/${b.dataset.id}`, { status: b.dataset.status });
-                admToast('Proposta atualizada');
-                admRenderPropostas();
-            } catch (err) { admToast(err.message); }
-        }));
-
-        wrap.querySelectorAll('.adm-prop-publicar').forEach(b => b.addEventListener('click', () => {
-            const proposta = lista.find(x => String(x.id) === String(b.dataset.id));
-            if (proposta) abrirPublicarProposta(proposta);
-        }));
-
-        wrap.querySelectorAll('.adm-prop-del').forEach(b => b.addEventListener('click', async () => {
-            if (!confirm('Excluir esta proposta? Não dá para desfazer.')) return;
-            try {
-                await apiFetch('DELETE', `/api/propostas/${b.dataset.id}`);
-                admToast('Proposta excluída');
-                admRenderPropostas();
-            } catch (err) { admToast(err.message); }
-        }));
-
-        admAtualizarBadgePropostas();
-    }
-
     // ─── FEEDBACKS (painel) ───────────────────────────────────────────────────
     let admFeedbacks = [];
-
-    // ─── PUBLICAR UMA PROPOSTA COMO PEÇA ──────────────────────────────────────
-    let propostaEmPublicacao = null;
-
-    function abrirPublicarProposta(p) {
-        propostaEmPublicacao = p;
-        const modal = document.getElementById('publicarModal');
-
-        document.getElementById('publicarResumo').textContent =
-            `${p.nome} · ${p.telefone}${p.valor ? ' · quer receber ' + p.valor : ''}`;
-
-        const seletor = document.getElementById('publicarCategoria');
-        seletor.innerHTML = '<option value="">Selecione</option>' +
-            CATS.map(c => `<option value="${escapeHtml(c.value)}">${escapeHtml(c.label)}</option>`).join('');
-
-        // O valor pedido pelo cliente é o ponto de partida do preço, não o
-        // preço final — a margem é decisão da loja, então o campo abre
-        // preenchido e editável.
-        document.getElementById('publicarPreco').value = p.valor || '';
-        document.getElementById('publicarNome').value = [p.marca, p.peca].filter(Boolean).join(' ');
-        document.getElementById('publicarMarca').value = p.marca || '';
-        document.getElementById('publicarTamanho').value = p.tamanho || '';
-
-        const fotos = Array.isArray(p.imagens) ? p.imagens : [];
-        document.getElementById('publicarFotos').innerHTML = fotos.map(u =>
-            `<img src="${escapeHtml(u)}" style="width:56px;height:70px;object-fit:cover;border:1px solid rgba(242,239,233,.16)">`
-        ).join('');
-
-        document.getElementById('publicarErro').style.display = 'none';
-        modal.style.display = 'flex';
-    }
-
-    function fecharPublicarProposta() {
-        document.getElementById('publicarModal').style.display = 'none';
-        propostaEmPublicacao = null;
-    }
-
-    async function confirmarPublicacao() {
-        if (!propostaEmPublicacao) return;
-        const erroEl = document.getElementById('publicarErro');
-        const botao = document.getElementById('publicarConfirmar');
-        const categoria = document.getElementById('publicarCategoria').value;
-        const preco = document.getElementById('publicarPreco').value.trim();
-
-        const falhar = msg => { erroEl.textContent = msg; erroEl.style.display = 'block'; };
-        if (!categoria) return falhar('Escolha a categoria da peça.');
-        if (!preco) return falhar('Informe o preço de venda.');
-
-        // Tamanho só vale nas categorias que trabalham com tamanho; nas de
-        // numeração o mesmo campo vira numeração, e nas demais é ignorado.
-        const tamanhoBruto = document.getElementById('publicarTamanho').value.trim();
-        const corpo = {
-            categoria,
-            preco,
-            nome: document.getElementById('publicarNome').value.trim(),
-            marca: document.getElementById('publicarMarca').value.trim() || null,
-            descricao_completa: propostaEmPublicacao.observacoes || null,
-            tamanhos: TAMANHO_CATS.includes(categoria) && tamanhoBruto
-                ? tamanhoBruto.split(',').map(s => s.trim()).filter(Boolean)
-                : null,
-            numeracao: NUMERO_CATS.includes(categoria) && tamanhoBruto ? tamanhoBruto : null
-        };
-
-        botao.disabled = true;
-        erroEl.style.display = 'none';
-        try {
-            await apiFetch('POST', `/api/propostas/${propostaEmPublicacao.id}/publicar`, corpo);
-            admToast('Peça publicada na vitrine');
-            fecharPublicarProposta();
-            admRenderPropostas();
-            await carregarProdutos();   // a peça nova já aparece na loja
-            if (typeof admLoadData === 'function') await admLoadData();
-        } catch (err) {
-            falhar(err.message);
-        } finally {
-            botao.disabled = false;
-        }
-    }
 
     async function admRenderFeedbacks() {
         const wrap = admEl('adm-fb-lista');
@@ -2180,7 +1967,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
      *  É conveniência de interface, não segurança: quem editar o HTML
      *  reexibe a aba, mas a API recusa a chamada de qualquer forma. */
     function admAplicarPermissoesNaNav() {
-        const mapa = { estoque: 'produtos', categorias: 'categorias', site: 'config', feedbacks: 'feedbacks', propostas: 'propostas' };
+        const mapa = { estoque: 'produtos', categorias: 'categorias', site: 'config', feedbacks: 'feedbacks' };
         document.querySelectorAll('.adm-n[data-adm-tab]').forEach((el) => {
             const tab = el.dataset.admTab;
             if (tab === 'usuarios') {
@@ -2200,19 +1987,6 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         admRenderPermCheckboxes();
         admAplicarPermissoesNaNav();
         const btnCriarUsuario = admEl('adm-u-criar');
-        document.querySelectorAll('.adm-prop-filtro').forEach(b => b.addEventListener('click', () => {
-            document.querySelectorAll('.adm-prop-filtro').forEach(x => x.classList.remove('active'));
-            b.classList.add('active');
-            admPropFiltro = b.dataset.status;
-            admRenderPropostas();
-        }));
-        admAtualizarBadgePropostas();
-
-        document.getElementById('publicarClose').addEventListener('click', fecharPublicarProposta);
-        document.getElementById('publicarConfirmar').addEventListener('click', confirmarPublicacao);
-        document.getElementById('publicarModal').addEventListener('click', e => {
-            if (e.target === document.getElementById('publicarModal')) fecharPublicarProposta();
-        });
 
         const btnCriarFeedback = admEl('adm-fb-criar');
         if (btnCriarFeedback) btnCriarFeedback.addEventListener('click', admCriarFeedback);
@@ -2232,16 +2006,15 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 admTab = el.dataset.admTab;
                 document.querySelectorAll('.adm-panel').forEach(p=>p.classList.remove('active'));
                 admEl('adm-tab-'+admTab).classList.add('active');
-                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site',feedbacks:'Feedbacks de clientes',propostas:'Propostas de venda',usuarios:'Usuários e permissões'};
+                const titles = {dashboard:'Dashboard de vendas',estoque:'Controle de estoque',categorias:'Categorias',site:'Site',feedbacks:'Feedbacks de clientes',usuarios:'Usuários e permissões'};
                 admEl('adm-tb-title').textContent = titles[admTab]||admTab;
                 admEl('adm-ptabs').style.display = admTab==='dashboard'?'flex':'none';
-                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site'||admTab==='feedbacks'||admTab==='propostas'||admTab==='usuarios')?'none':'flex';
+                admEl('adm-btn-add').style.display = (admTab==='categorias'||admTab==='site'||admTab==='feedbacks'||admTab==='usuarios')?'none':'flex';
                 if(admTab==='dashboard') admRenderDash();
                 if(admTab==='categorias') { admRenderCats(); admRenderCatsManage(); admRenderSizeOpts(); admRenderBrands(); }
                 if(admTab==='estoque') admRenderStock();
                 if(admTab==='site') admRenderSite();
                 if(admTab==='feedbacks') admRenderFeedbacks();
-                if(admTab==='propostas') admRenderPropostas();
                 if(admTab==='usuarios') admRenderUsuarios();
             });
         });
