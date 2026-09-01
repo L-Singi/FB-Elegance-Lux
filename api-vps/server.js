@@ -386,7 +386,7 @@ app.get('/api/produtos/:id', async (req, res) => {
 
 app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.array('images', 10), async (req, res) => {
     try {
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, marca } = req.body;
+        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, marca, mais_procurado } = req.body;
 
         if (!nome || !nome.trim()) {
             return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -409,8 +409,8 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
         }
 
         const result = await pool.query(
-            `INSERT INTO produtos (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            `INSERT INTO produtos (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca, mais_procurado)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
             [
                 nome.trim(),
                 descricao_completa || '',
@@ -420,7 +420,8 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
                 status || 'disponiveis',
                 parsedTamanhos ? JSON.stringify(parsedTamanhos) : null,
                 numeracao || null,
-                marca || null
+                marca || null,
+                mais_procurado === 'true'
             ]
         );
 
@@ -453,7 +454,7 @@ app.put('/api/produtos/reorder', requireAuth, requirePermissao('produtos'), asyn
 app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.array('newImages', 10), async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages, marca } = req.body;
+        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages, marca, mais_procurado } = req.body;
 
         const current = await pool.query('SELECT * FROM produtos WHERE id = $1', [id]);
         if (current.rows.length === 0) {
@@ -491,8 +492,9 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 status = COALESCE($6, status),
                 tamanhos = $7,
                 numeracao = $8,
-                marca = $9
-             WHERE id = $10 RETURNING *`,
+                marca = $9,
+                mais_procurado = COALESCE($10, mais_procurado)
+             WHERE id = $11 RETURNING *`,
             [
                 nome || null,
                 descricao_completa || null,
@@ -503,6 +505,7 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 parsedTamanhos ? JSON.stringify(parsedTamanhos) : null,
                 numeracao || null,
                 marca || null,
+                mais_procurado === undefined ? null : mais_procurado === 'true',
                 id
             ]
         );

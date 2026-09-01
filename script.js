@@ -881,9 +881,16 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         // e os filtros laterais ficam de fora; voltam a valer sozinhos
         // assim que o campo esvazia.
         const buscando = termoBusca.trim().length > 0;
-        let f = (buscando || filtroCategoria === 'procurados')
+        // "Mais Procurados" mostra só as peças marcadas com o selecionável
+        // do painel. Enquanto ninguém marcou nenhuma (catálogo migrado, ou
+        // loja nova), cai pro catálogo inteiro — do jeito que era antes —
+        // pra aba nunca aparecer vazia.
+        const procuradas = filtroCategoria === 'procurados' ? produtos.filter(p => p.mais_procurado) : null;
+        let f = buscando
             ? produtos.slice()
-            : produtos.filter(p => p.categoria===filtroCategoria);
+            : filtroCategoria === 'procurados'
+                ? (procuradas.length ? procuradas : produtos.slice())
+                : produtos.filter(p => p.categoria===filtroCategoria);
         if (buscando) {
             const b = normalizarBusca(termoBusca);
             // Segunda comparação sem espaço nenhum: as marcas são escritas
@@ -2087,6 +2094,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             const tamanhosStr = admEl('adm-f-tamanhos')?.value.trim() || '';
             const tamanhos = tamanhosStr ? tamanhosStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
             const marca = admEl('adm-f-marca')?.value.trim() || '';
+            const maisProcurado = admEl('adm-f-mais-procurado')?.checked || false;
 
             const pv = admEl('adm-f-images-preview');
             const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
@@ -2108,6 +2116,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             if(numeracao) fd.append('numeracao', numeracao);
             if(tamanhos.length) fd.append('tamanhos', JSON.stringify(tamanhos));
             if(marca) fd.append('marca', marca);
+            fd.append('mais_procurado', maisProcurado ? 'true' : 'false');
 
             if(admEditId){
                 fd.append('existingImages', JSON.stringify(finalImgs));
@@ -2178,6 +2187,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         admEl('adm-f-cat').value = p?p.categoria||'casacos':'casacos';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
+        if (admEl('adm-f-mais-procurado')) admEl('adm-f-mais-procurado').checked = p ? !!p.mais_procurado : false;
         // campos novos
         admEl('adm-f-numeracao').value = p? (p.numeracao||'') : '';
         admEl('adm-f-tamanhos').value = p? (Array.isArray(p.tamanhos)?p.tamanhos.join(','):(p.tamanhos||'')) : '';
@@ -2338,7 +2348,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                             <i class="ti ${icon}" style="font-size:13px;color:#B8924F"></i>
                         </div>
                         <div style="min-width:0">
-                            <div style="font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${admEsc(p.nome)}</div>
+                            <div style="font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${p.mais_procurado?'<i class="ti ti-star-filled" style="color:#B8924F;font-size:11px" title="Em Mais Procurados"></i> ':''}${admEsc(p.nome)}</div>
                             ${p.descricao_completa?`<div style="font-size:10px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${admEsc(p.descricao_completa)}</div>`:''}
                         </div>
                     </div>
