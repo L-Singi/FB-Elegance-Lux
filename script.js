@@ -2317,7 +2317,12 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const sort=admEl('adm-s-sort').value;
         let list=admProds.filter(p=>{
             if(srch&&!(p.nome||'').toLowerCase().includes(srch))return false;
-            if(catF&&p.categoria!==catF)return false;
+            // "__procurados" não é categoria de produto — é o recorte do
+            // que aparece na aba Mais Procurados da vitrine. Fica aqui
+            // junto dos outros filtros para o arrastar continuar valendo:
+            // filtro só esconde linha, não muda a ordem relativa.
+            if(catF==='__procurados'){ if(!p.mais_procurado) return false; }
+            else if(catF&&p.categoria!==catF)return false;
             if(stF&&p.status!==stF)return false;
             return true;
         });
