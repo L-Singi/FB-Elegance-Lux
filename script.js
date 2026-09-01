@@ -2349,9 +2349,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 <td style="color:#444;text-align:center" ${podeArrastar?'title="Arraste para reordenar"':''}><i class="ti ti-grip-vertical" style="font-size:14px;${podeArrastar?'cursor:grab':'opacity:.25'}"></i></td>
                 <td>
                     <div style="display:flex;align-items:center;gap:8px">
-                        <div style="width:26px;height:26px;border-radius:6px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <i class="ti ${icon}" style="font-size:13px;color:#B8924F"></i>
-                        </div>
+                        ${admMiniatura(p, icon)}
                         <div style="min-width:0">
                             <div style="font-weight:500;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff">${p.mais_procurado?'<i class="ti ti-star-filled" style="color:#B8924F;font-size:11px" title="Em Mais Procurados"></i> ':''}${admEsc(p.nome)}</div>
                             ${p.descricao_completa?`<div style="font-size:10px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px">${admEsc(p.descricao_completa)}</div>`:''}
@@ -2424,6 +2422,68 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             row.addEventListener('dragend',()=>body.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over')));
         });
     }
+
+    /**
+     * Miniatura do produto na tabela do painel.
+     *
+     * Usa a versão reduzida gerada pelo servidor (~6 KB) e não a foto
+     * original (500 a 700 KB): com 20 linhas na tela, a diferença é entre
+     * 120 KB e 10 MB para simplesmente listar produtos.
+     *
+     * `loading="lazy"` é o que garante que abrir o painel não puxe as fotos
+     * de tudo: o navegador só busca as das linhas que aparecem. Filtrando
+     * por categoria, só aquelas existem na tela — então só elas carregam.
+     *
+     * `width`/`height` reservam o espaço antes de a imagem chegar, senão a
+     * tabela pula enquanto carrega — e pular no meio de um arrastar é
+     * péssimo.
+     *
+     * Sem miniatura (produto antigo, ou geração que falhou), cai no ícone
+     * da categoria em vez de mostrar imagem quebrada.
+     */
+    function admMiniatura(p, icon) {
+        const original = (p.images && p.images[0]) || '';
+        const cai = `<div class="adm-mini adm-mini-fallback"><i class="ti ${icon}"></i></div>`;
+        if (!original) return cai;
+
+        // .../uploads/produtos/foto.jpg  →  .../uploads/produtos/thumbs/foto.jpg.webp
+        const thumb = original.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/thumbs/$1.webp');
+
+        return `<img class="adm-mini" src="${admEsc(thumb)}" alt=""
+                     loading="lazy" decoding="async" width="34" height="34"
+                     data-full="${admEsc(original)}" data-nome="${admEsc(p.nome || '')}"
+                     title="Clique para ampliar"
+                     onerror="this.outerHTML=\`${cai.replace(/`/g, '\\`')}\`">`;
+    }
+
+    /** Abre a foto em tamanho real. Só aqui a imagem original é baixada. */
+    function admAbrirFoto(src, nome) {
+        const fundo = document.createElement('div');
+        fundo.className = 'adm-lightbox';
+        fundo.innerHTML = `
+            <button class="adm-lightbox-x" aria-label="Fechar">&times;</button>
+            <figure>
+                <img src="${admEsc(src)}" alt="${admEsc(nome)}">
+                ${nome ? `<figcaption>${admEsc(nome)}</figcaption>` : ''}
+            </figure>`;
+
+        const fechar = () => { fundo.remove(); document.removeEventListener('keydown', porEsc); };
+        const porEsc = (e) => { if (e.key === 'Escape') fechar(); };
+
+        // Clicar fora fecha; clicar na própria foto, não — senão fecha ao
+        // tentar olhar de perto.
+        fundo.addEventListener('click', (e) => { if (e.target === fundo || e.target.closest('.adm-lightbox-x')) fechar(); });
+        document.addEventListener('keydown', porEsc);
+        document.body.appendChild(fundo);
+    }
+
+    // Um só ouvinte para a tabela inteira, em vez de um por linha: a lista
+    // e redesenhada a cada filtro, e prender ouvinte em cada imagem
+    // vazaria memoria a cada redesenho.
+    document.addEventListener('click', (e) => {
+        const img = e.target.closest('img.adm-mini[data-full]');
+        if (img) admAbrirFoto(img.dataset.full, img.dataset.nome || '');
+    });
 
     function admRenderCats() {
         const cats=Object.keys(ADM_CATS);

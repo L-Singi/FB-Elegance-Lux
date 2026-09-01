@@ -2,12 +2,42 @@ const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const multer = require('multer');
+const sharp = require('sharp');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3005;
+
+// ─── Miniaturas ──────────────────────────────────────────────────────────
+//
+// As fotos de produto tem 500 a 700 KB cada. Mostra-las na tabela do painel
+// faria cada linha visivel baixar meio megabyte — com 20 linhas na tela,
+// mais de 10 MB so para listar.
+//
+// A miniatura tem ~6 KB: 160px de largura em WebP, o suficiente para o
+// tamanho que aparece na tabela e para uma tela retina. A foto original so
+// e baixada quando alguem clica para ampliar.
+const THUMB_DIR = '/app/uploads/produtos/thumbs';
+const THUMB_LARGURA = 160;
+
+async function gerarMiniatura(nomeArquivo) {
+    try {
+        await fs.promises.mkdir(THUMB_DIR, { recursive: true });
+        await sharp(`/app/uploads/produtos/${nomeArquivo}`)
+            .rotate()                      // respeita o EXIF: foto de celular vem deitada
+            .resize({ width: THUMB_LARGURA, withoutEnlargement: true })
+            .webp({ quality: 72 })
+            .toFile(`${THUMB_DIR}/${nomeArquivo}.webp`);
+        return true;
+    } catch (err) {
+        // Falha em miniatura NAO derruba o upload: o produto e a foto sao o
+        // que importa. O painel cai no icone quando a miniatura nao existe.
+        console.error(`[miniatura] ${nomeArquivo}:`, err.message);
+        return false;
+    }
+}
 
 const pool = new Pool({
     host: process.env.DB_HOST || 'db',
@@ -410,6 +440,10 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
             for (const file of req.files) {
                 imageUrls.push(`${getBaseUrl(req)}/uploads/produtos/${file.filename}`);
             }
+            // A miniatura e gerada aqui, no upload, e nao sob demanda: o
+            // custo acontece uma vez, com o admin esperando o cadastro que
+            // ele mesmo iniciou, em vez de a cada abertura do painel.
+            await Promise.all(req.files.map(f => gerarMiniatura(f.filename)));
         }
 
         if (imageUrls.length === 0) {
@@ -511,6 +545,7 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
             for (const file of req.files) {
                 newImageUrls.push(`${getBaseUrl(req)}/uploads/produtos/${file.filename}`);
             }
+            await Promise.all(req.files.map(f => gerarMiniatura(f.filename)));
         }
 
         const allImages = [...oldImages, ...newImageUrls];

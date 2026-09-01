@@ -811,6 +811,100 @@
         padding-top: 10px
       }
 
+      /* Miniatura do produto na tabela do estoque. 34px porque a linha
+         tem 40 de altura — maior que isso e a lista deixa de caber na
+         tela sem rolar, e o painel existe para varrer muitos itens. */
+      .adm-mini {
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        object-fit: cover;
+        background: #1a1a1a;
+        flex-shrink: 0;
+        cursor: zoom-in;
+        border: 1px solid #242424;
+        transition: border-color .15s
+      }
+
+      .adm-mini:hover {
+        border-color: #B8924F
+      }
+
+      /* Sem miniatura: cai no icone da categoria, no mesmo tamanho, para
+         a coluna nao desalinhar. */
+      .adm-mini-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: default
+      }
+
+      .adm-mini-fallback i {
+        font-size: 15px;
+        color: #B8924F
+      }
+
+      .adm-lightbox {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(0, 0, 0, .88);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px;
+        cursor: zoom-out;
+        animation: admFade .12s ease-out
+      }
+
+      @keyframes admFade {
+        from { opacity: 0 }
+        to { opacity: 1 }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .adm-lightbox { animation: none }
+      }
+
+      .adm-lightbox figure {
+        margin: 0;
+        max-width: 100%;
+        max-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        cursor: default
+      }
+
+      .adm-lightbox img {
+        max-width: 100%;
+        /* Desconta a legenda para a foto nunca ser cortada embaixo. */
+        max-height: calc(100vh - 130px);
+        object-fit: contain;
+        border-radius: 8px
+      }
+
+      .adm-lightbox figcaption {
+        color: #eaeaea;
+        font-size: 13px;
+        text-align: center;
+        max-width: 60ch
+      }
+
+      .adm-lightbox-x {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        background: none;
+        border: 0;
+        color: #eaeaea;
+        font-size: 34px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 4px 10px
+      }
+
       .adm-sbox {
         flex: 1;
         min-width: 110px;
