@@ -441,7 +441,16 @@
     }
 
     let siteConfig = {};
+    // Textos que dependem da config (hero, selos, "sobre nós") nascem com
+    // .aguardando-conteudo no HTML — escondidos até aqui decidir o valor
+    // final, pra edição no painel nunca aparecer como "pisca" entre o
+    // texto de reserva antigo e o novo. Timeout é rede muito lenta ou
+    // travada: melhor mostrar a reserva do que deixar em branco pra sempre.
+    function revelarConteudoDinamico() {
+        document.querySelectorAll('.aguardando-conteudo').forEach(el => el.classList.remove('aguardando-conteudo'));
+    }
     async function carregarCapaDoSite() {
+        const timeoutRevelar = setTimeout(revelarConteudoDinamico, 3000);
         try {
             const cfg = await dbGetConfig();
             siteConfig = cfg || {};
@@ -479,7 +488,14 @@
             renderizarDestaque(cfg);
             renderizarFeatureBanner(cfg);
             renderizarSobre(cfg);
-        } catch(err) { console.warn('capa do site: usando conteúdo padrão', err); renderizarCatShowcase({}); renderizarSobre({}); }
+        } catch(err) {
+            console.warn('capa do site: usando conteúdo padrão', err);
+            renderizarCatShowcase({});
+            renderizarSobre({});
+        } finally {
+            clearTimeout(timeoutRevelar);
+            revelarConteudoDinamico();
+        }
     }
 
     // ─── SOBRE NÓS ────────────────────────────────────────────────────────────

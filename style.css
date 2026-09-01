@@ -46,6 +46,14 @@ body {
     color: #B8924F;
     margin-bottom: 22px;
 }
+/* Escondido até o JS decidir o texto final (config do painel ou, na
+   falta dela, o valor de reserva que já está aqui embaixo) — sem isto,
+   toda vez que alguém edita esse texto pelo painel, quem abre o site vê
+   por um instante o texto de reserva antigo antes da troca. Reservar o
+   espaço com visibility (não display) evita esse conteúdo pular quando
+   aparece. */
+.aguardando-conteudo { visibility: hidden; }
+
 .hero-title {
     font-family: 'Bodoni Moda', serif;
     font-weight: 400;
