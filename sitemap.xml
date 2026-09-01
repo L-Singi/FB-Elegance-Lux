@@ -93,10 +93,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/?produto=48</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/?produto=49</loc>
     <priority>0.6</priority>
   </url>
@@ -249,19 +245,11 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/?produto=104</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/?produto=105</loc>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/?produto=106</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/?produto=107</loc>
     <priority>0.6</priority>
   </url>
   <url>
@@ -549,10 +537,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/?produto=184</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/?produto=185</loc>
     <priority>0.6</priority>
   </url>
@@ -682,14 +666,6 @@
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/?produto=220</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/?produto=221</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/?produto=222</loc>
     <priority>0.6</priority>
   </url>
   <url>
@@ -837,10 +813,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/?produto=264</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/?produto=265</loc>
     <priority>0.6</priority>
   </url>
@@ -950,6 +922,10 @@
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/?produto=295</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/?produto=297</loc>
     <priority>0.6</priority>
   </url>
 </urlset>
