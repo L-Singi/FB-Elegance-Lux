@@ -2449,11 +2449,16 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         // .../uploads/produtos/foto.jpg  →  .../uploads/produtos/thumbs/foto.jpg.webp
         const thumb = original.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/thumbs/$1.webp');
 
+        // Sem `onerror` embutido: o HTML de reserva tem aspas duplas
+        // (class="..."), e dentro de um atributo que também usa aspas
+        // duplas a primeira delas fechava o atributo antes da hora — o
+        // resto vazava como texto visível na página. Quem troca a imagem
+        // quebrada pelo ícone é o ouvinte de erro logo abaixo.
         return `<img class="adm-mini" src="${admEsc(thumb)}" alt=""
                      loading="lazy" decoding="async" width="34" height="34"
                      data-full="${admEsc(original)}" data-nome="${admEsc(p.nome || '')}"
-                     title="Clique para ampliar"
-                     onerror="this.outerHTML=\`${cai.replace(/`/g, '\\`')}\`">`;
+                     data-icon="${admEsc(icon)}"
+                     title="Clique para ampliar">`;
     }
 
     /** Abre a foto em tamanho real. Só aqui a imagem original é baixada. */
@@ -2476,6 +2481,22 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         document.addEventListener('keydown', porEsc);
         document.body.appendChild(fundo);
     }
+
+    // Miniatura que não carrega (3 arquivos do acervo estão corrompidos)
+    // vira o ícone da categoria, em vez de mostrar imagem quebrada.
+    //
+    // Fase de captura (`true`) porque evento de erro em <img> não sobe a
+    // árvore — sem isso o ouvinte no document nunca seria chamado.
+    document.addEventListener('error', (e) => {
+        const img = e.target;
+        if (!(img instanceof HTMLImageElement) || !img.classList.contains('adm-mini')) return;
+        const div = document.createElement('div');
+        div.className = 'adm-mini adm-mini-fallback';
+        const i = document.createElement('i');
+        i.className = `ti ${img.dataset.icon || 'ti-box'}`;
+        div.appendChild(i);
+        img.replaceWith(div);
+    }, true);
 
     // Um só ouvinte para a tabela inteira, em vez de um por linha: a lista
     // e redesenhada a cada filtro, e prender ouvinte em cada imagem
