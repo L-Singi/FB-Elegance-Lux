@@ -363,7 +363,20 @@ app.delete('/api/usuarios/:id', requireAuth, requireAdmin, async (req, res) => {
 
 app.get('/api/produtos', async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM produtos ORDER BY created_at DESC');
+        // Ordena pela posição manual definida no admin (arrastar na aba
+        // Estoque). Antes era só `created_at DESC`, e a coluna `ordem` era
+        // ignorada aqui: o admin salvava a nova ordem, recarregava a lista
+        // desta rota e recebia tudo de volta em ordem de cadastro — parecia
+        // que o arrastar não tinha funcionado, embora o banco estivesse
+        // certo. O site público não mostrava o problema porque reordena no
+        // navegador; quem via o bug era só quem administra.
+        //
+        // NULLS LAST põe produto recém-cadastrado (ainda sem posição) no
+        // fim, e não no começo — que é onde o Postgres coloca NULL por
+        // padrão em ordem crescente.
+        const result = await pool.query(
+            'SELECT * FROM produtos ORDER BY ordem ASC NULLS LAST, created_at DESC'
+        );
         res.json(result.rows);
     } catch (err) {
         console.error('GET /api/produtos error:', err);
