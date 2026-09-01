@@ -454,10 +454,35 @@ app.put('/api/produtos/reorder', requireAuth, requirePermissao('produtos'), asyn
         if (!Array.isArray(order) || !order.length) {
             return res.status(400).json({ error: 'order deve ser um array de ids' });
         }
-        await Promise.all(order.map((id, idx) =>
-            pool.query('UPDATE produtos SET ordem = $1 WHERE id = $2', [idx, id])
-        ));
-        res.json({ success: true });
+
+        // Ids vêm do cliente; qualquer coisa que não seja número inteiro é
+        // descartada antes de chegar ao banco.
+        const ids = order.map(Number).filter(Number.isInteger);
+        if (ids.length !== order.length) {
+            return res.status(400).json({ error: 'order contém id inválido' });
+        }
+
+        // UMA instrução, e não um UPDATE por produto.
+        //
+        // Antes eram tantos UPDATEs simultâneos quantos produtos (hoje 230)
+        // contra um pool de 20 conexões, sem transação. Funcionava, mas se
+        // um falhasse no meio — conexão caída, timeout — os outros já
+        // teriam gravado: a ordem ficaria metade nova e metade velha, com
+        // posições repetidas. E posição repetida faz o navegador desempatar
+        // sozinho, então os produtos passariam a trocar de lugar entre
+        // recarregamentos. Exatamente o bug relatado, de volta e agora
+        // intermitente.
+        //
+        // Assim é atômico: ou toda a ordem é gravada, ou nenhuma parte é.
+        const posicoes = ids.map((_, idx) => idx);
+        await pool.query(
+            `UPDATE produtos AS p
+                SET ordem = v.idx
+               FROM unnest($1::int[], $2::int[]) AS v(id, idx)
+              WHERE p.id = v.id`,
+            [ids, posicoes]
+        );
+        res.json({ success: true, atualizados: ids.length });
     } catch (err) {
         console.error('PUT /api/produtos/reorder error:', err);
         res.status(500).json({ error: err.message });
