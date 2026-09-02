@@ -681,10 +681,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/?produto=227</loc>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/?produto=228</loc>
     <priority>0.6</priority>
   </url>
@@ -926,6 +922,10 @@
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/?produto=297</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/?produto=299</loc>
     <priority>0.6</priority>
   </url>
 </urlset>
