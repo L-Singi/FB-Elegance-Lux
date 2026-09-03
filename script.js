@@ -810,9 +810,33 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
      * ou o lote ainda não rodou no servidor), `fbFotoFalhou` troca pela
      * original: fica lento, não fica quebrado.
      */
+    // Sondagem: o servidor já tem as fotos de vitrine?
+    //
+    // Enquanto a API nova não for publicada e o lote não rodar, a pasta
+    // /vitrine/ não existe. Sem esta checagem, CADA foto da grade faria
+    // um 404 antes de cair na original — uma requisição perdida por
+    // card, deixando o site mais lento do que antes da mudança.
+    //
+    // Aqui é UMA requisição para a página inteira. Deu certo, a loja usa
+    // as fotos leves; deu 404, usa as originais e nem tenta. Quando o
+    // servidor for atualizado, passa a funcionar sozinho — sem mexer
+    // neste arquivo de novo.
+    let vitrineDisponivel = null; // null = ainda não sei
+
     function fotoVitrine(original) {
-        if (!original) return '';
+        if (!original || vitrineDisponivel === false) return original || '';
         return original.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/vitrine/$1.webp');
+    }
+
+    function sondarVitrine(exemplo) {
+        if (vitrineDisponivel !== null || !exemplo) return;
+        const alvo = exemplo.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/vitrine/$1.webp');
+        if (alvo === exemplo) { vitrineDisponivel = false; return; }
+
+        const teste = new Image();
+        teste.onload = () => { vitrineDisponivel = true; };
+        teste.onerror = () => { vitrineDisponivel = false; };
+        teste.src = alvo;
     }
 
     /**
@@ -835,6 +859,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     };
 
     function criarCard(prod) {
+        // A primeira foto que passa por aqui serve de amostra.
+        sondarVitrine((prod.images || [])[0]);
         const card = document.createElement('div');
         card.className = 'product-card';
         const [sLabel, sClass] = STATUS[prod.status] || ['',''];

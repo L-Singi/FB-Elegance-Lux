@@ -1,0 +1,134 @@
+name: Deploy da API na VPS
+
+# Publica a pasta api-vps/ no servidor e reinicia o container.
+#
+# Existe porque a rede da faculdade bloqueia a porta 22: daqui o SSH
+# nao passa, e o deploy ficava travado ate voltar para uma rede livre.
+# O runner do GitHub nao tem esse bloqueio.
+#
+# So roda quando alguem manda rodar. Deploy automatico a cada push
+# publicaria um commit de teste na loja no ar.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gerar_fotos:
+        description: 'Gerar as fotos reduzidas do acervo antigo (demora alguns minutos)'
+        type: boolean
+        default: true
+
+# Duas rodadas ao mesmo tempo reiniciariam o container uma por cima da
+# outra, e a loja ficaria fora do ar no meio.
+concurrency:
+  group: deploy-api-fb
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    env:
+      VPS_HOST: 137.131.233.254
+      VPS_USER: ubuntu
+      CONTAINER: fbelegance-api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar a chave
+        env:
+          CHAVE: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST_KEY: ${{ vars.VPS_HOST_KEY }}
+        run: |
+          if [ -z "$CHAVE" ]; then
+            echo "::error::O segredo VPS_SSH_KEY nao esta configurado no repositorio."
+            echo "Settings -> Secrets and variables -> Actions -> New repository secret"
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CHAVE" > ~/.ssh/deploy
+          chmod 600 ~/.ssh/deploy
+
+          # Com VPS_HOST_KEY definida a identidade do servidor e FIXADA:
+          # so aquele servidor e aceito. Sem ela, o keyscan pergunta ao
+          # proprio IP quem ele e e acredita na resposta — protege pouco
+          # mais que desligar a verificacao, e o log precisa dizer isso
+          # em vez de dar a impressao de que conferiu alguma coisa.
+          if [ -n "$VPS_HOST_KEY" ]; then
+            printf '%s\n' "$VPS_HOST_KEY" > ~/.ssh/known_hosts
+            echo "Chave de host fixada pela variavel VPS_HOST_KEY."
+          else
+            echo "::warning::VPS_HOST_KEY nao definida — aceitando a chave que o IP $VPS_HOST devolver agora, sem conferir. Para fixar: rode 'ssh-keyscan -H $VPS_HOST' de uma rede confiavel e salve a saida na variavel VPS_HOST_KEY do repositorio."
+            if ! ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/tmp/keyscan.err; then
+              echo "::error::ssh-keyscan falhou para $VPS_HOST"
+              cat /tmp/keyscan.err
+              exit 1
+            fi
+          fi
+
+          if ! ssh-keygen -F "$VPS_HOST" -f ~/.ssh/known_hosts >/dev/null 2>&1; then
+            echo "::error::Nenhuma chave de host para $VPS_HOST — a porta 22 esta acessivel daqui?"
+            exit 1
+          fi
+
+      - name: Descobrir onde a API mora no servidor
+        id: onde
+        run: |
+          # O caminho nao esta escrito em lugar nenhum do repositorio, e
+          # chutar significaria publicar por cima da pasta errada. O
+          # proprio Docker sabe: o container guarda o diretorio do
+          # compose que o criou numa etiqueta.
+          PASTA=$(ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" \
+            "sudo docker inspect -f '{{ index .Config.Labels \"com.docker.compose.project.working_dir\" }}' $CONTAINER 2>/dev/null" | tr -d '\r')
+
+          if [ -z "$PASTA" ] || [ "$PASTA" = "<no value>" ]; then
+            echo "::error::Nao descobri a pasta do container $CONTAINER."
+            echo "Rode no servidor: sudo docker inspect $CONTAINER | grep working_dir"
+            echo "e informe o caminho para quem mantem este workflow."
+            exit 1
+          fi
+
+          echo "A API mora em: $PASTA"
+          echo "pasta=$PASTA" >> "$GITHUB_OUTPUT"
+
+      - name: Enviar os arquivos
+        run: |
+          # Só o codigo da API. Sem --delete: a pasta no servidor pode ter
+          # .env e uploads, e apagar qualquer um dos dois derruba a loja.
+          rsync -az --checksum \
+            -e "ssh -i ~/.ssh/deploy" \
+            api-vps/server.js api-vps/gerar-miniaturas.js api-vps/package.json \
+            "$VPS_USER@$VPS_HOST:${{ steps.onde.outputs.pasta }}/api-vps/"
+
+      - name: Reiniciar e conferir se subiu
+        run: |
+          ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" bash -s <<EOF
+            set -e
+            cd '${{ steps.onde.outputs.pasta }}'
+            sudo docker compose up -d --build $CONTAINER
+          EOF
+
+          # O container "estar de pe" nao significa que a API responde.
+          # Sem esta espera, o passo passaria verde com a loja fora do ar.
+          for i in \$(seq 1 20); do
+            if curl -fsS -m 10 -o /dev/null https://api.fbelegancelux.com.br/api/produtos; then
+              echo "✓ API respondendo"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "::error::A API nao respondeu depois do restart. Logs:"
+          ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" "sudo docker logs --tail 40 $CONTAINER"
+          exit 1
+
+      - name: Gerar as fotos reduzidas do acervo
+        if: ${{ inputs.gerar_fotos }}
+        run: |
+          # Idempotente: pula o que ja existe. Rodar de novo retoma de
+          # onde parou se algo falhar no meio.
+          ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" \
+            "sudo docker exec $CONTAINER node gerar-miniaturas.js"
+
+      - name: Apagar a chave
+        if: always()
+        run: rm -f ~/.ssh/deploy
