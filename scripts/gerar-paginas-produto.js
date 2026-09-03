@@ -97,7 +97,14 @@ function paginaDoProduto(p, endereco, destino) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(titulo)}</title>
   <meta name="description" content="${esc(descricao)}">
+  <link rel="icon" type="image/svg+xml" href="${SITE}/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="${SITE}/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="${SITE}/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="${SITE}/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="${SITE}/favicon-512x512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="${SITE}/apple-touch-icon.png">
   <link rel="shortcut icon" href="${SITE}/favicon.ico" type="image/x-icon">
+  <link rel="manifest" href="${SITE}/site.webmanifest">
   <link rel="canonical" href="${esc(endereco)}">
 
   <meta property="og:type" content="product">
@@ -144,7 +151,14 @@ function paginaDaCategoria(catKey, catLabel) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(titulo)}</title>
   <meta name="description" content="${esc(descricao)}">
+  <link rel="icon" type="image/svg+xml" href="${SITE}/favicon.svg">
+  <link rel="icon" type="image/png" sizes="48x48" href="${SITE}/favicon-48x48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="${SITE}/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="${SITE}/favicon-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="${SITE}/favicon-512x512.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="${SITE}/apple-touch-icon.png">
   <link rel="shortcut icon" href="${SITE}/favicon.ico" type="image/x-icon">
+  <link rel="manifest" href="${SITE}/site.webmanifest">
   <link rel="canonical" href="${esc(endereco)}">
 
   <meta property="og:type" content="website">
