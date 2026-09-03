@@ -21,6 +21,7 @@ const PORT = process.env.PORT || 3005;
 // e baixada quando alguem clica para ampliar.
 const THUMB_DIR = '/app/uploads/produtos/thumbs';
 const VITRINE_DIR = '/app/uploads/produtos/vitrine';
+const GRANDE_DIR = '/app/uploads/produtos/grande';
 const THUMB_LARGURA = 160;
 
 // Largura da foto que a LOJA mostra na grade.
@@ -31,6 +32,16 @@ const THUMB_LARGURA = 160;
 // primeira tela. A miniatura de 160px do painel nao serve aqui: fica
 // borrada num card desse tamanho.
 const VITRINE_LARGURA = 700;
+
+// Largura da foto GRANDE: capa do site e a foto aberta no modal.
+//
+// A capa ocupa a largura toda da tela e tinha fetchpriority="high" —
+// ela e a primeira coisa que o navegador baixa, e estava baixando a
+// original de 2,5 MB. Era esse o atraso para a pagina aparecer.
+//
+// 1400px cobre tela cheia em notebook e o modal em retina. Fica em
+// torno de 90 KB, contra 2,5 MB.
+const GRANDE_LARGURA = 1400;
 
 async function gerarMiniatura(nomeArquivo) {
     let ok = true;
@@ -61,6 +72,18 @@ async function gerarMiniatura(nomeArquivo) {
         // Idem: a loja cai na foto original quando a vitrine nao existe.
         // Fica lento, nao fica quebrado.
         console.error(`[vitrine] ${nomeArquivo}:`, err.message);
+        ok = false;
+    }
+
+    try {
+        await fs.promises.mkdir(GRANDE_DIR, { recursive: true });
+        await sharp(origem)
+            .rotate()
+            .resize({ width: GRANDE_LARGURA, withoutEnlargement: true })
+            .webp({ quality: 82 })
+            .toFile(`${GRANDE_DIR}/${nomeArquivo}.webp`);
+    } catch (err) {
+        console.error(`[grande] ${nomeArquivo}:`, err.message);
         ok = false;
     }
 

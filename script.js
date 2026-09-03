@@ -314,7 +314,7 @@
             total += precoNum(item.preco) * item.quantity;
             const img = (item.images||[])[0] || 'https://placehold.co/100x100?text=Sem+imagem';
             html += `<div class="cart-item">
-                <img class="cart-item-img" src="${img}" alt="${escapeHtml(item.nome)}">
+                <img class="cart-item-img" src="${fotoThumb(img)}" data-original="${img}" alt="${escapeHtml(item.nome)}" loading="lazy" decoding="async" onerror="fbFotoFalhou(this)">
                 <div class="cart-item-info"><strong>${escapeHtml(item.nome)}</strong><span>${item.preco} x ${item.quantity}</span></div>
                 <button class="cart-item-remove" data-id="${item.id}"><i class="fas fa-trash-alt"></i></button>
             </div>`;
@@ -536,7 +536,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const img = document.getElementById('sobreImagem');
         if (media && img) {
             const temImagem = !!(cfg && cfg.sobre_imagem);
-            if (temImagem) img.src = cfg.sobre_imagem;
+            if (temImagem) definirFoto(img, cfg.sobre_imagem, 'vitrine');
             media.style.display = temImagem ? '' : 'none';
             document.querySelector('.sobre-inner')?.classList.toggle('sobre-sem-imagem', !temImagem);
         }
@@ -547,7 +547,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         if (f.tipo === 'print') {
             if (!f.imagem) return '';
             return `<div class="feedback-card feedback-card-print" data-print="${escapeHtml(f.imagem)}">
-                <img src="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy">
+                <img src="${escapeHtml(fotoVitrine(f.imagem))}" data-original="${escapeHtml(f.imagem)}" alt="Feedback de cliente" loading="lazy" decoding="async" onerror="fbFotoFalhou(this)">
             </div>`;
         }
         return `<div class="feedback-card feedback-card-texto">
@@ -612,7 +612,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const wrap = document.getElementById('featureBannerWrap');
         if (!wrap) return;
         if (!cfg || !cfg.feature_banner_image) { wrap.style.display = 'none'; return; }
-        document.getElementById('featureBannerImg').src = cfg.feature_banner_image;
+        definirFoto(document.getElementById('featureBannerImg'), cfg.feature_banner_image, 'grande');
         wrap.style.display = 'block';
     }
 
@@ -646,7 +646,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         }
 
         track.innerHTML = list.map((src, i) =>
-            `<img class="hero-img hero-slide${i === 0 ? ' is-active' : ''}" src="${src}" alt="FB Elegance Lux" loading="${i === 0 ? 'eager' : 'lazy'}"${i === 0 ? ' fetchpriority="high"' : ''}>`
+            `<img class="hero-img hero-slide${i === 0 ? ' is-active' : ''}" src="${fotoGrande(src)}" data-original="${src}" alt="FB Elegance Lux" decoding="${i === 0 ? 'sync' : 'async'}" loading="${i === 0 ? 'eager' : 'lazy'}"${i === 0 ? ' fetchpriority="high"' : ''} onerror="fbFotoFalhou(this)">`
         ).join('');
         const slides = Array.from(track.querySelectorAll('.hero-slide'));
 
@@ -702,7 +702,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const section = document.getElementById('featuredBanner');
         if (!section) return;
         if (!cfg || !cfg.feat_image || !cfg.feat_name) { section.style.display = 'none'; return; }
-        document.getElementById('featuredImg').src = cfg.feat_image;
+        definirFoto(document.getElementById('featuredImg'), cfg.feat_image, 'vitrine');
         document.getElementById('featuredImg').alt = cfg.feat_name;
         document.getElementById('featuredBadge').textContent = cfg.feat_badge || 'Mais vendido';
         document.getElementById('featuredName').textContent = cfg.feat_name;
@@ -810,33 +810,61 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
      * ou o lote ainda não rodou no servidor), `fbFotoFalhou` troca pela
      * original: fica lento, não fica quebrado.
      */
-    // Sondagem: o servidor já tem as fotos de vitrine?
+    // ─── FOTOS REDUZIDAS ──────────────────────────────────────────────
     //
-    // Enquanto a API nova não for publicada e o lote não rodar, a pasta
-    // /vitrine/ não existe. Sem esta checagem, CADA foto da grade faria
-    // um 404 antes de cair na original — uma requisição perdida por
-    // card, deixando o site mais lento do que antes da mudança.
+    // O servidor guarda cada foto em quatro versoes. A original e' foto
+    // de celular: 2 a 6 MB. As reduzidas sao WebP e pesam entre 4 KB e
+    // 90 KB — usar a original em qualquer lugar da tela e' o que fazia
+    // a pagina demorar a aparecer.
     //
-    // Aqui é UMA requisição para a página inteira. Deu certo, a loja usa
-    // as fotos leves; deu 404, usa as originais e nem tenta. Quando o
-    // servidor for atualizado, passa a funcionar sozinho — sem mexer
-    // neste arquivo de novo.
-    let vitrineDisponivel = null; // null = ainda não sei
+    //   thumbs   160px  — carrinho, miniaturas do modal, painel admin
+    //   vitrine  700px  — cards da grade, categorias, depoimentos
+    //   grande  1400px  — capa do site e a foto aberta no modal
+    //
+    // A original fica reservada para quem realmente amplia (a lupa).
+    //
+    // A sondagem existe porque a pasta pode nao existir ainda: enquanto
+    // a API nova nao for publicada e o lote nao rodar, pedir a versao
+    // reduzida daria 404 em CADA foto — uma requisicao perdida por
+    // imagem, deixando o site mais lento do que antes. Aqui e' UMA
+    // requisicao para a pagina inteira; deu 404, tudo usa as originais e
+    // nem tenta. Quando o servidor atualiza, passa a funcionar sozinho.
+    let reduzidasDisponiveis = null; // null = ainda não sei
 
-    function fotoVitrine(original) {
-        if (!original || vitrineDisponivel === false) return original || '';
-        return original.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/vitrine/$1.webp');
+    function versaoReduzida(original, pasta) {
+        if (!original || reduzidasDisponiveis === false) return original || '';
+        return original.replace(/\/uploads\/produtos\/([^/]+)$/, `/uploads/produtos/${pasta}/$1.webp`);
     }
 
-    function sondarVitrine(exemplo) {
-        if (vitrineDisponivel !== null || !exemplo) return;
+    const fotoThumb   = (o) => versaoReduzida(o, 'thumbs');
+    const fotoVitrine = (o) => versaoReduzida(o, 'vitrine');
+    const fotoGrande  = (o) => versaoReduzida(o, 'grande');
+
+    function sondarReduzidas(exemplo) {
+        if (reduzidasDisponiveis !== null || !exemplo) return;
         const alvo = exemplo.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/vitrine/$1.webp');
-        if (alvo === exemplo) { vitrineDisponivel = false; return; }
+        if (alvo === exemplo) { reduzidasDisponiveis = false; return; }
 
         const teste = new Image();
-        teste.onload = () => { vitrineDisponivel = true; };
-        teste.onerror = () => { vitrineDisponivel = false; };
+        teste.onload = () => { reduzidasDisponiveis = true; };
+        teste.onerror = () => { reduzidasDisponiveis = false; };
         teste.src = alvo;
+    }
+
+    /**
+     * Troca a foto de um <img> pela versao reduzida, caindo na original
+     * se ela nao existir.
+     *
+     * Usada nos lugares que definem `.src` direto (capa, destaque,
+     * modal). O `onerror` cuida disso nos que passam por HTML.
+     */
+    function definirFoto(el, original, pasta) {
+        if (!el || !original) return;
+        const reduzida = versaoReduzida(original, pasta);
+        if (reduzida === original) { el.src = original; return; }
+
+        el.onerror = () => { el.onerror = null; el.src = original; };
+        el.src = reduzida;
     }
 
     /**
@@ -860,7 +888,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     function criarCard(prod) {
         // A primeira foto que passa por aqui serve de amostra.
-        sondarVitrine((prod.images || [])[0]);
+        sondarReduzidas((prod.images || [])[0]);
         const card = document.createElement('div');
         card.className = 'product-card';
         const [sLabel, sClass] = STATUS[prod.status] || ['',''];
@@ -1094,7 +1122,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         grid.innerHTML = CATS.map(c => {
             const img = CAT_COVER_IMAGES[c.value] || (cfg && cfg[CAT_IMAGE_FIELDS[c.value]]) || `https://placehold.co/500x650?text=${encodeURIComponent(c.label)}`;
             return `<button type="button" class="cat-tile" data-cat-tile="${c.value}">
-                <img src="${img}" alt="${escapeHtml(c.label)}" loading="lazy" decoding="async">
+                <img src="${fotoVitrine(img)}" data-original="${img}" alt="${escapeHtml(c.label)}" loading="lazy" decoding="async" onerror="fbFotoFalhou(this)">
                 <span class="cat-tile-label">${c.label}</span>
             </button>`;
         }).join('');
@@ -1235,8 +1263,13 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             currentIdx = (idx + imgs.length) % imgs.length;
             mainImg.style.opacity = '0';
             const tmp = new Image();
-            tmp.onload = () => { mainImg.src = imgs[currentIdx]; mainImg.style.opacity = '1'; };
-            tmp.src = imgs[currentIdx];
+            // A foto que o modal mostra e' a GRANDE (1400px, ~90 KB),
+            // nao a original de 2 a 6 MB. So quem amplia de verdade
+            // (a lupa) precisa da original.
+            const alvo = fotoGrande(imgs[currentIdx]);
+            tmp.onload = () => { mainImg.src = alvo; mainImg.style.opacity = '1'; };
+            tmp.onerror = () => { mainImg.src = imgs[currentIdx]; mainImg.style.opacity = '1'; };
+            tmp.src = alvo;
             thumbsDiv.querySelectorAll('.mobile-sheet-thumb').forEach((t,i) => t.classList.toggle('active', i===currentIdx));
         }
 
@@ -1244,8 +1277,10 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         if (imgs.length) {
             mainImg.style.opacity = '0';
             const tmp0 = new Image();
-            tmp0.onload = () => { mainImg.src = imgs[0]; mainImg.style.opacity = '1'; };
-            tmp0.src = imgs[0];
+            const alvo0 = fotoGrande(imgs[0]);
+            tmp0.onload = () => { mainImg.src = alvo0; mainImg.style.opacity = '1'; };
+            tmp0.onerror = () => { mainImg.src = imgs[0]; mainImg.style.opacity = '1'; };
+            tmp0.src = alvo0;
         } else {
             mainImg.src = 'https://placehold.co/600x450?text=Sem+imagem';
         }
@@ -1254,7 +1289,9 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         thumbsDiv.innerHTML = '';
         imgs.forEach((src, i) => {
             const t = document.createElement('img');
-            t.src = src; t.loading = 'lazy'; t.className = 'mobile-sheet-thumb';
+            t.src = fotoThumb(src); t.dataset.original = src;
+            t.onerror = () => fbFotoFalhou(t);
+            t.loading = 'lazy'; t.decoding = 'async'; t.className = 'mobile-sheet-thumb';
             if (i === 0) t.classList.add('active');
             t.addEventListener('click', () => goTo(i));
             thumbsDiv.appendChild(t);
@@ -1327,14 +1364,26 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             // preload then fade in
             mainImg.style.opacity = '0';
             const tmp = new Image();
-            tmp.onload = () => { mainImg.src = newSrc; mainImg.style.opacity = '1'; };
-            tmp.src = newSrc;
+            const alvoModal = fotoGrande(newSrc);
+            tmp.onload = () => { mainImg.src = alvoModal; mainImg.style.opacity = '1'; };
+            tmp.onerror = () => { mainImg.src = newSrc; mainImg.style.opacity = '1'; };
+            tmp.src = alvoModal;
             thumbsDiv.querySelectorAll('.modal-thumb').forEach((t,i) => t.classList.toggle('active', i===currentIdx));
         }
-        if(imgs.length) { mainImg.style.opacity='0'; const tmp0=new Image(); tmp0.onload=()=>{ mainImg.src=imgs[0]; mainImg.style.opacity='1'; }; tmp0.src=imgs[0]; }
+        if(imgs.length) {
+            mainImg.style.opacity='0';
+            const tmp0=new Image();
+            const alvo0=fotoGrande(imgs[0]);
+            tmp0.onload=()=>{ mainImg.src=alvo0; mainImg.style.opacity='1'; };
+            tmp0.onerror=()=>{ mainImg.src=imgs[0]; mainImg.style.opacity='1'; };
+            tmp0.src=alvo0;
+        }
         thumbsDiv.innerHTML = '';
         imgs.forEach((img,i) => {
-            const t = document.createElement('img'); t.src=img; t.loading='lazy'; t.className='modal-thumb'; if(i===0) t.classList.add('active');
+            const t = document.createElement('img');
+            t.src=fotoThumb(img); t.dataset.original=img;
+            t.onerror=()=>fbFotoFalhou(t);
+            t.loading='lazy'; t.decoding='async'; t.className='modal-thumb'; if(i===0) t.classList.add('active');
             t.addEventListener('click', () => goToImg(i));
             thumbsDiv.appendChild(t);
         });

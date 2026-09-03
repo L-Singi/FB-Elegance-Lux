@@ -32,6 +32,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://api.fbelegancelux.com.br">
+  <!-- Comeca a baixar a capa junto com o CSS, sem esperar o resto do
+       HTML nem o JavaScript. E' a imagem que define quanto tempo a
+       pagina leva para "aparecer pronta". -->
+  <link rel="preload" as="image" href="https://api.fbelegancelux.com.br/uploads/produtos/grande/1787683753755_ckd0eh4oow.jpeg.webp" fetchpriority="high">
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400&family=Jost:wght@300;400;500;600&display=swap"
@@ -79,8 +83,22 @@
       </div>
       <div class="hero-media" id="heroMedia">
         <div class="hero-carousel" id="heroCarousel">
-          <img class="hero-img hero-slide is-active" src="https://api.fbelegancelux.com.br/uploads/produtos/1784988240520_vg887f3f8i8.JPG"
-            alt="FB Elegance Lux" fetchpriority="high">
+          <!-- Esta foto e' a maior coisa da primeira tela, e o navegador a
+               baixa antes de o JavaScript rodar. Duas coisas mudaram aqui:
+
+               1. O endereco anterior nao existia mais: devolvia 404. O
+                  navegador gastava uma requisicao no vazio, e a capa so
+                  aparecia depois de o JS buscar a configuracao na API.
+               2. Agora aponta para a versao reduzida (WebP ~90 KB) em vez
+                  da original (2 a 6 MB).
+
+               Se a capa for trocada no painel, o JS substitui esta por
+               aqui mesmo — esta serve para a primeira tela ter algo certo
+               enquanto a configuracao nao chega. -->
+          <img class="hero-img hero-slide is-active" src="https://api.fbelegancelux.com.br/uploads/produtos/grande/1787683753755_ckd0eh4oow.jpeg.webp"
+            data-original="https://api.fbelegancelux.com.br/uploads/produtos/1787683753755_ckd0eh4oow.jpeg" onerror="fbFotoFalhou(this)"
+            alt="FB Elegance Lux" width="1400" height="1750"
+            fetchpriority="high" decoding="async">
         </div>
         <button type="button" class="hero-nav hero-nav-prev" id="heroPrev" aria-label="Imagem anterior" style="display:none">
           <i class="ti ti-chevron-left"></i>

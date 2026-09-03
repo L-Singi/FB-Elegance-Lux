@@ -21,6 +21,10 @@ const TAMANHOS = [
   // A foto que a LOJA mostra na grade. E' o que tira a lentidao de
   // abrir e rolar o site: a original e' foto de celular de 3 a 6 MB.
   { destino: path.join(ORIGEM, 'vitrine'), largura: 700, qualidade: 80 },
+  // Capa do site e foto aberta no modal. A capa tem fetchpriority alto
+  // e e' a primeira coisa que o navegador baixa — era ela que segurava
+  // a pagina para aparecer.
+  { destino: path.join(ORIGEM, 'grande'), largura: 1400, qualidade: 82 },
 ];
 
 // Uma de cada vez, de propósito. O objetivo é não competir por CPU com a
