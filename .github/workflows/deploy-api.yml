@@ -90,26 +90,56 @@ jobs:
           echo "A API mora em: $PASTA"
           echo "pasta=$PASTA" >> "$GITHUB_OUTPUT"
 
+      - name: Guardar a versao que esta no ar
+        run: |
+          # Backup antes de sobrescrever, com carimbo de data. E o que
+          # permite voltar em um comando se a versao nova tiver problema:
+          #   cp server.js.bak-deploy-<carimbo> server.js && docker compose up -d --build app
+          CARIMBO=$(date +%Y%m%d-%H%M%S)
+          echo "carimbo=$CARIMBO" >> "$GITHUB_ENV"
+          ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" \
+            "cd '${{ steps.onde.outputs.pasta }}' && cp server.js server.js.bak-deploy-$CARIMBO && cp gerar-miniaturas.js gerar-miniaturas.js.bak-deploy-$CARIMBO"
+          echo "Backup: server.js.bak-deploy-$CARIMBO"
+
       - name: Enviar os arquivos
         run: |
-          # Só o codigo da API. Sem --delete: a pasta no servidor pode ter
-          # .env e uploads, e apagar qualquer um dos dois derruba a loja.
+          # Direto na RAIZ da pasta, nao num subdiretorio api-vps/: no
+          # servidor o server.js fica ao lado do Dockerfile e do
+          # docker-compose.yml, e o Dockerfile faz `COPY server.js ./`
+          # a partir dali.
+          #
+          # package.json NAO vai junto de proposito: mexer nele dispara
+          # `npm install` no rebuild, e uma divergencia entre o
+          # package-lock do servidor e o do repositorio derrubaria a API
+          # por causa de um deploy que so queria trocar o server.js.
+          #
+          # Sem --delete: a pasta tem .env, certificados e os backups
+          # acima; apagar qualquer um derruba a loja.
           rsync -az --checksum \
             -e "ssh -i ~/.ssh/deploy" \
-            api-vps/server.js api-vps/gerar-miniaturas.js api-vps/package.json \
-            "$VPS_USER@$VPS_HOST:${{ steps.onde.outputs.pasta }}/api-vps/"
+            api-vps/server.js api-vps/gerar-miniaturas.js \
+            "$VPS_USER@$VPS_HOST:${{ steps.onde.outputs.pasta }}/"
 
       - name: Reiniciar e conferir se subiu
         run: |
+          # `app` e o nome do SERVICO no docker-compose.yml. O
+          # container se chama fbelegance-api (container_name), e o
+          # compose nao aceita o nome do container aqui — passaria
+          # "no such service".
           ssh -i ~/.ssh/deploy "$VPS_USER@$VPS_HOST" bash -s <<EOF
             set -e
             cd '${{ steps.onde.outputs.pasta }}'
-            sudo docker compose up -d --build $CONTAINER
+            sudo docker compose up -d --build app
           EOF
 
           # O container "estar de pe" nao significa que a API responde.
           # Sem esta espera, o passo passaria verde com a loja fora do ar.
-          for i in \$(seq 1 20); do
+          #
+          # `$(seq ...)` sem barra invertida: aqui ja estamos fora do
+          # heredoc acima. Com `\$` o bash trataria como texto literal e
+          # o laco percorreria as palavras "$(seq", "1", "20)" — tres
+          # voltas sem sentido, e a verificacao passaria por acidente.
+          for i in $(seq 1 20); do
             if curl -fsS -m 10 -o /dev/null https://api.fbelegancelux.com.br/api/produtos; then
               echo "✓ API respondendo"
               exit 0
