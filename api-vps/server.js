@@ -20,23 +20,51 @@ const PORT = process.env.PORT || 3005;
 // tamanho que aparece na tabela e para uma tela retina. A foto original so
 // e baixada quando alguem clica para ampliar.
 const THUMB_DIR = '/app/uploads/produtos/thumbs';
+const VITRINE_DIR = '/app/uploads/produtos/vitrine';
 const THUMB_LARGURA = 160;
 
+// Largura da foto que a LOJA mostra na grade.
+//
+// 700px cobre o card em tela retina (o card tem ~350px de largura) sem
+// carregar a foto original. A original e' foto de celular: 3 a 6 MB
+// cada, e a grade abre com 12 delas — eram 40 MB para desenhar a
+// primeira tela. A miniatura de 160px do painel nao serve aqui: fica
+// borrada num card desse tamanho.
+const VITRINE_LARGURA = 700;
+
 async function gerarMiniatura(nomeArquivo) {
+    let ok = true;
+    const origem = `/app/uploads/produtos/${nomeArquivo}`;
+
     try {
         await fs.promises.mkdir(THUMB_DIR, { recursive: true });
-        await sharp(`/app/uploads/produtos/${nomeArquivo}`)
+        await sharp(origem)
             .rotate()                      // respeita o EXIF: foto de celular vem deitada
             .resize({ width: THUMB_LARGURA, withoutEnlargement: true })
             .webp({ quality: 72 })
             .toFile(`${THUMB_DIR}/${nomeArquivo}.webp`);
-        return true;
     } catch (err) {
         // Falha em miniatura NAO derruba o upload: o produto e a foto sao o
         // que importa. O painel cai no icone quando a miniatura nao existe.
         console.error(`[miniatura] ${nomeArquivo}:`, err.message);
-        return false;
+        ok = false;
     }
+
+    try {
+        await fs.promises.mkdir(VITRINE_DIR, { recursive: true });
+        await sharp(origem)
+            .rotate()
+            .resize({ width: VITRINE_LARGURA, withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toFile(`${VITRINE_DIR}/${nomeArquivo}.webp`);
+    } catch (err) {
+        // Idem: a loja cai na foto original quando a vitrine nao existe.
+        // Fica lento, nao fica quebrado.
+        console.error(`[vitrine] ${nomeArquivo}:`, err.message);
+        ok = false;
+    }
+
+    return ok;
 }
 
 const pool = new Pool({

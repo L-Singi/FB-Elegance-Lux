@@ -797,6 +797,43 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     // continua gravado, mas hoje serve só como procedência no painel.)
     const WHATSAPP_LOJA = '5543996179533';
 
+    /**
+     * A versão de VITRINE da foto — a que a grade da loja mostra.
+     *
+     * A original é foto de celular: 3 a 6 MB cada. Com uma dúzia de
+     * cards na primeira tela, eram dezenas de megabytes só para
+     * desenhar a página, e é isso que fazia abrir e rolar o site ficar
+     * lento. A vitrine tem 700px em WebP — cobre o card em tela retina
+     * e pesa uns 60 KB.
+     *
+     * Se o arquivo ainda não existe (foto enviada antes desta mudança,
+     * ou o lote ainda não rodou no servidor), `fbFotoFalhou` troca pela
+     * original: fica lento, não fica quebrado.
+     */
+    function fotoVitrine(original) {
+        if (!original) return '';
+        return original.replace(/\/uploads\/produtos\/([^/]+)$/, '/uploads/produtos/vitrine/$1.webp');
+    }
+
+    /**
+     * Queda em dois degraus, chamada pelo `onerror` do card.
+     *
+     * 1º erro → tenta a foto original (a vitrine ainda não existe).
+     * 2º erro → o cartão de indisponível.
+     *
+     * Sem o controle por `data-tentou`, uma original também quebrada
+     * entraria em laço: erro → troca → erro → troca.
+     */
+    window.fbFotoFalhou = function (img) {
+        if (img.dataset.tentou !== '1' && img.dataset.original) {
+            img.dataset.tentou = '1';
+            img.src = img.dataset.original;
+            return;
+        }
+        img.onerror = null;
+        img.src = 'https://placehold.co/600x800?text=Indispon%C3%ADvel';
+    };
+
     function criarCard(prod) {
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -814,7 +851,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             <div class="product-image-container">
                 <span class="product-tag">${escapeHtml(tagLabel)}</span>
                 ${statusHtml}
-                <img class="product-image" src="${images[0]||'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" loading="lazy" decoding="async" onerror="this.src='https://placehold.co/600x800?text=Indisponível'">
+                <img class="product-image" src="${images[0] ? escapeHtml(fotoVitrine(images[0])) : 'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" loading="lazy" decoding="async" width="600" height="800" data-original="${escapeHtml(images[0]||'')}" onerror="fbFotoFalhou(this)">
                 ${images.length>1 ? `<div class="nav-arrow nav-arrow-left" data-dir="prev"><i class="fas fa-chevron-left"></i></div><div class="nav-arrow nav-arrow-right" data-dir="next"><i class="fas fa-chevron-right"></i></div>` : ''}
                 <button class="btn-favorite${isFav?' active':''}" title="Favoritar"><i class="${isFav?'fas':'far'} fa-heart"></i></button>
                 <button class="btn-add-cart${isSold?' disabled':''}" ${isSold?'disabled':''}>${isSold?'Indisponível':'Adicionar à sacola'}</button>
@@ -848,7 +885,26 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const imgEl = card.querySelector('.product-image');
         if(imgEl){
             imgEl.style.opacity = '0';
-            const tmp = new Image(); tmp.onload = () => { imgEl.src = imgs[idx]; imgEl.style.opacity = '1'; }; tmp.src = imgs[idx];
+            // Também pela vitrine: sem isto, a primeira foto era leve e a
+            // segunda voltava a ser a original de vários MB — a lentidão
+            // reapareceria assim que alguém usasse as setas.
+            const vitrine = fotoVitrine(imgs[idx]);
+            const tmp = new Image();
+            tmp.onload = () => {
+                imgEl.dataset.original = imgs[idx];
+                imgEl.dataset.tentou = '';
+                imgEl.src = vitrine;
+                imgEl.style.opacity = '1';
+            };
+            // A vitrine pode não existir para esta foto: cai na original
+            // em vez de deixar o card apagado (opacity 0) para sempre.
+            tmp.onerror = () => {
+                imgEl.dataset.original = imgs[idx];
+                imgEl.dataset.tentou = '1';
+                imgEl.src = imgs[idx];
+                imgEl.style.opacity = '1';
+            };
+            tmp.src = vitrine;
         }
     }
 
