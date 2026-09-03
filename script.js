@@ -761,7 +761,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             .slice(0, 60) || 'peca';
     }
     function linkDoProduto(prod) {
-        return `${location.origin}/produto/${prod.id}-${slugProduto(prod)}/`;
+        const cat = normalizeCategoria(prod.categoria) || 'produtos';
+        return `${location.origin}/${cat}/${slugProduto(prod)}/`;
     }
     async function copiarLinkDoProduto(prod) {
         const link = linkDoProduto(prod);
@@ -776,14 +777,30 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         }
     }
     // Deixa o endereço da barra sempre compartilhável enquanto a peça
-    // está aberta. replaceState em vez de pushState de propósito: assim
-    // o botão "voltar" continua saindo do site, como antes, em vez de
-    // acumular uma entrada por peça espiada.
+    // está aberta no formato /<categoria>/<slugProduto>/
     function marcarProdutoNoEndereco(prod) {
-        try { history.replaceState(null, '', `?produto=${prod.id}`); } catch (_) {}
+        try {
+            const cat = normalizeCategoria(prod.categoria) || 'produtos';
+            history.replaceState(null, '', `/${cat}/${slugProduto(prod)}/`);
+        } catch (_) {}
     }
     function limparProdutoDoEndereco() {
-        try { history.replaceState(null, '', location.pathname); } catch (_) {}
+        try {
+            if (filtroCategoria && filtroCategoria !== 'procurados') {
+                history.replaceState(null, '', `/${filtroCategoria}/`);
+            } else {
+                history.replaceState(null, '', '/');
+            }
+        } catch (_) {}
+    }
+    function marcarCategoriaNoEndereco(cat) {
+        try {
+            if (cat && cat !== 'procurados') {
+                history.replaceState(null, '', `/${cat}/`);
+            } else {
+                history.replaceState(null, '', '/');
+            }
+        } catch (_) {}
     }
 
     // Todo interesse de compra vai para a loja, inclusive nas peças que
@@ -1090,13 +1107,17 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         if (lancamentos) lancamentos.style.display = buscando ? 'none' : (lancamentosTemItens ? 'block' : 'none');
     }
 
-    function mudarCategoria(cat) {
+    function mudarCategoria(cat, atualizarUrl = true) {
         filtroCategoria = cat;
         filtroTamanho = []; filtroNumero = []; filtroMarca = [];
         procuradosPage = 0;
         renderizarCatalogo();
+        renderizarCatTabs();
+        if (atualizarUrl) {
+            marcarCategoriaNoEndereco(cat);
+        }
         const grid = document.getElementById('product-grid');
-        if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (grid && atualizarUrl) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // ─── ABAS DE CATEGORIA (abaixo do banner) ──────────────────────────────────
@@ -1218,16 +1239,87 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     }
 
     // Abre direto a peça pedida no endereço — é o que um link
-    // compartilhado carrega ao chegar aqui.
+    // compartilhado no formato /<categoria>/<slugProduto>/ carrega ao chegar aqui.
     function abrirProdutoDoEndereco() {
-        const id = new URLSearchParams(location.search).get('produto');
-        if (!id) return;
-        const prod = produtos.find(p => String(p.id) === String(id));
-        if (prod) { abrirProduto(prod); return; }
-        // Peça vendida ou removida: dizer isso é melhor do que largar a
-        // pessoa na home sem explicação nenhuma.
-        limparProdutoDoEndereco();
-        showToast('Essa peça não está mais no catálogo', true);
+        const urlParams = new URLSearchParams(location.search);
+        const idParam = urlParams.get('produto');
+        const rotaParam = urlParams.get('rota');
+
+        // Se veio por ?produto=10
+        if (idParam) {
+            const prod = produtos.find(p => String(p.id) === String(idParam));
+            if (prod) {
+                abrirProduto(prod);
+                return;
+            }
+            limparProdutoDoEndereco();
+            showToast('Essa peça não está mais no catálogo', true);
+            return;
+        }
+
+        // Se veio por rota (ex: /casacos/talproduto ou ?rota=casacos/talproduto)
+        const rawPath = rotaParam ? decodeURIComponent(rotaParam) : location.pathname;
+        const cleanPath = rawPath.replace(/^\/+|\/+$/g, '');
+        if (!cleanPath) return;
+
+        const parts = cleanPath.split('/');
+
+        // Se for página especial ou asset, não intercepta
+        if (['vender', 'admin', 'index.html', 'favicon.ico', 'sitemap.xml'].includes(parts[0])) return;
+
+        // Caso 1: /casacos/talproduto ou /produto/10-talproduto
+        if (parts.length >= 2) {
+            const catPart = parts[0];
+            const prodPart = parts[1];
+
+            // Tenta achar ID no início (ex: "10-golden-goose" ou "10")
+            let targetId = null;
+            const idMatch = prodPart.match(/^(\d+)(?:-|$)/);
+            if (idMatch) {
+                targetId = idMatch[1];
+            }
+
+            let prod = null;
+            if (targetId) {
+                prod = produtos.find(p => String(p.id) === String(targetId));
+            }
+            if (!prod) {
+                // Tenta achar pelo slugProduto exato
+                const targetSlug = prodPart.toLowerCase();
+                prod = produtos.find(p => slugProduto(p) === targetSlug);
+            }
+            if (!prod && catPart !== 'produto') {
+                // Tenta achar pelo slug dentro da categoria
+                const catNorm = normalizeCategoria(catPart);
+                const targetSlug = prodPart.toLowerCase();
+                prod = produtos.find(p => normalizeCategoria(p.categoria) === catNorm && slugProduto(p).includes(targetSlug));
+            }
+
+            if (prod) {
+                // Sincroniza categoria na vitrine por baixo
+                const catNorm = normalizeCategoria(prod.categoria);
+                if (catNorm && CATS.some(c => c.value === catNorm)) {
+                    filtroCategoria = catNorm;
+                    renderizarCatTabs();
+                    renderizarCatalogo();
+                }
+                abrirProduto(prod);
+                return;
+            }
+
+            limparProdutoDoEndereco();
+            showToast('Essa peça não está mais no catálogo', true);
+            return;
+        }
+
+        // Caso 2: /casacos/ (apenas a categoria no endereço)
+        if (parts.length === 1) {
+            const catNorm = normalizeCategoria(parts[0]);
+            const existeCat = CATS.some(c => c.value === catNorm) || catNorm === 'procurados';
+            if (existeCat) {
+                mudarCategoria(catNorm, false);
+            }
+        }
     }
 
     // ─── MOBILE BOTTOM SHEET ─────────────────────────────────────────────────

@@ -37,14 +37,14 @@ jobs:
 
       - name: Commitar se algo mudou
         run: |
-          if [ -z "$(git status --porcelain produto sitemap.xml)" ]; then
+          if [ -z "$(git status --porcelain)" ]; then
             echo "Catálogo sem novidade — nada a commitar."
             exit 0
           fi
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add produto sitemap.xml
-          git commit -m "chore: atualiza páginas de produto e sitemap"
+          git add -A
+          git commit -m "chore: atualiza páginas de categoria, produto e sitemap"
           # Alguém pode ter empurrado enquanto isto rodava; rebase antes
           # de tentar, para não falhar por divergência boba.
           git pull --rebase origin "${GITHUB_REF_NAME}"
