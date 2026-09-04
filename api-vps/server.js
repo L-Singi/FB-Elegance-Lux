@@ -105,6 +105,14 @@ pool.on('error', (err) => {
     console.error('Unexpected PG error:', err);
 });
 
+// Migração idempotente para garantir a coluna quantidade
+pool.query(`
+    ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 1;
+    CREATE INDEX IF NOT EXISTS idx_produtos_quantidade ON produtos (quantidade);
+`).catch(err => {
+    console.error('[migracao] Falha ao verificar/adicionar coluna quantidade:', err.message);
+});
+
 const UPLOAD_DIR = '/app/uploads/produtos';
 
 const storage = multer.diskStorage({
@@ -480,7 +488,7 @@ app.get('/api/produtos/:id', async (req, res) => {
 
 app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.array('images', 10), async (req, res) => {
     try {
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, marca, mais_procurado } = req.body;
+        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade } = req.body;
 
         if (!nome || !nome.trim()) {
             return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -506,9 +514,13 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
             parsedTamanhos = typeof tamanhos === 'string' ? JSON.parse(tamanhos) : tamanhos;
         }
 
+        const qtdVal = (quantidade !== undefined && quantidade !== null && !isNaN(parseInt(quantidade, 10)))
+            ? Math.max(0, parseInt(quantidade, 10))
+            : 1;
+
         const result = await pool.query(
-            `INSERT INTO produtos (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca, mais_procurado)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+            `INSERT INTO produtos (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
             [
                 nome.trim(),
                 descricao_completa || '',
@@ -519,7 +531,8 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
                 parsedTamanhos ? JSON.stringify(parsedTamanhos) : null,
                 numeracao || null,
                 marca || null,
-                mais_procurado === 'true'
+                mais_procurado === 'true',
+                qtdVal
             ]
         );
 
@@ -574,10 +587,46 @@ app.put('/api/produtos/reorder', requireAuth, requirePermissao('produtos'), asyn
     }
 });
 
+// Atualização rápida de quantidade em estoque (botões + e - ou valor direto no painel)
+app.put('/api/produtos/:id/estoque', requireAuth, requirePermissao('produtos'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { delta, quantidade } = req.body;
+
+        let query, params;
+        if (delta !== undefined) {
+            query = `UPDATE produtos
+                        SET quantidade = GREATEST(0, COALESCE(quantidade, 1) + $1)
+                      WHERE id = $2
+                  RETURNING id, quantidade, status, nome`;
+            params = [parseInt(delta, 10) || 0, id];
+        } else if (quantidade !== undefined) {
+            const qtd = Math.max(0, parseInt(quantidade, 10) || 0);
+            query = `UPDATE produtos
+                        SET quantidade = $1
+                      WHERE id = $2
+                  RETURNING id, quantidade, status, nome`;
+            params = [qtd, id];
+        } else {
+            return res.status(400).json({ error: 'delta ou quantidade obrigatório' });
+        }
+
+        const result = await pool.query(query, params);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Produto não encontrado' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('PUT /api/produtos/:id/estoque error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.array('newImages', 10), async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages, marca, mais_procurado } = req.body;
+        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages, marca, mais_procurado, quantidade } = req.body;
 
         const current = await pool.query('SELECT * FROM produtos WHERE id = $1', [id]);
         if (current.rows.length === 0) {
@@ -606,6 +655,12 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
             parsedTamanhos = typeof tamanhos === 'string' ? JSON.parse(tamanhos) : tamanhos;
         }
 
+        let qtdVal = null;
+        if (quantidade !== undefined && quantidade !== null && String(quantidade).trim() !== '') {
+            const parsed = parseInt(quantidade, 10);
+            if (!isNaN(parsed)) qtdVal = Math.max(0, parsed);
+        }
+
         const result = await pool.query(
             `UPDATE produtos SET
                 nome = COALESCE($1, nome),
@@ -617,8 +672,9 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 tamanhos = $7,
                 numeracao = $8,
                 marca = $9,
-                mais_procurado = COALESCE($10, mais_procurado)
-             WHERE id = $11 RETURNING *`,
+                mais_procurado = COALESCE($10, mais_procurado),
+                quantidade = COALESCE($11, quantidade)
+             WHERE id = $12 RETURNING *`,
             [
                 nome || null,
                 descricao_completa || null,
@@ -630,6 +686,7 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 numeracao || null,
                 marca || null,
                 mais_procurado === undefined ? null : mais_procurado === 'true',
+                qtdVal,
                 id
             ]
         );

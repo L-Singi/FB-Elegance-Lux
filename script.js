@@ -198,6 +198,7 @@
         // garante arrays definidos
         if(!Array.isArray(np.images)) np.images = Array.isArray(p.images)?p.images:[];
         if(!Array.isArray(np.tamanhos) && np.tamanhos) np.tamanhos = String(np.tamanhos).split(',').map(x=>x.trim()).filter(Boolean);
+        np.quantidade = (p.quantidade !== undefined && p.quantidade !== null) ? Math.max(0, parseInt(p.quantidade, 10) || 0) : 1;
         return np;
     }
 
@@ -2318,6 +2319,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             const tamanhos = tamanhosStr ? tamanhosStr.split(',').map(x=>x.trim()).filter(Boolean) : [];
             const marca = admEl('adm-f-marca')?.value.trim() || '';
             const maisProcurado = admEl('adm-f-mais-procurado')?.checked || false;
+            const rawQtd = admEl('adm-f-quantidade') ? parseInt(admEl('adm-f-quantidade').value, 10) : 1;
+            const quantidade = (!isNaN(rawQtd) && rawQtd >= 0) ? rawQtd : 1;
 
             const pv = admEl('adm-f-images-preview');
             const existing = (admProds.find(x=>x.id===admEditId)||{}).images||[];
@@ -2336,6 +2339,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             fd.append('categoria', categoria);
             fd.append('status', status);
             fd.append('descricao_completa', descricao_completa);
+            fd.append('quantidade', String(quantidade));
             if(numeracao) fd.append('numeracao', numeracao);
             if(tamanhos.length) fd.append('tamanhos', JSON.stringify(tamanhos));
             if(marca) fd.append('marca', marca);
@@ -2410,6 +2414,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         admEl('adm-f-cat').value = p?p.categoria||'casacos':'casacos';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
+        if (admEl('adm-f-quantidade')) admEl('adm-f-quantidade').value = (p && p.quantidade !== undefined && p.quantidade !== null) ? p.quantidade : 1;
         if (admEl('adm-f-mais-procurado')) admEl('adm-f-mais-procurado').checked = p ? !!p.mais_procurado : false;
         // campos novos
         admEl('adm-f-numeracao').value = p? (p.numeracao||'') : '';
@@ -2568,6 +2573,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             // em admProds continua correto. Só a ORDENAÇÃO (nome/preço) desalinha
             // a posição visual do índice real, por isso só ela desabilita o arrastar.
             const podeArrastar = sort === 'newest';
+            const qtd = (p.quantidade !== undefined && p.quantidade !== null) ? p.quantidade : 1;
             return `<tr draggable="${podeArrastar}" data-id="${p.id}">
                 <td style="color:#444;text-align:center" ${podeArrastar?'title="Arraste para reordenar"':''}><i class="ti ti-grip-vertical" style="font-size:14px;${podeArrastar?'cursor:grab':'opacity:.25'}"></i></td>
                 <td>
@@ -2581,6 +2587,13 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 </td>
                 <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span>${p.marca?`<div style="font-size:10px;color:#555;margin-top:2px">${admEsc(p.marca)}</div>`:''}</td>
                 <td style="font-weight:500;color:#B8924F">${p.preco||'—'}</td>
+                <td>
+                    <div class="adm-qty-ctrl" data-id="${p.id}">
+                        <button type="button" class="adm-qty-btn minus" data-qty-delta="-1" data-id="${p.id}" title="Diminuir estoque">−</button>
+                        <input type="number" class="adm-qty-input" data-id="${p.id}" value="${qtd}" min="0" step="1" title="Quantidade em estoque">
+                        <button type="button" class="adm-qty-btn plus" data-qty-delta="1" data-id="${p.id}" title="Aumentar estoque">+</button>
+                    </div>
+                </td>
                 <td>
                     <div style="display:flex;align-items:center;gap:6px">
                         <span class="adm-pill ${sCls}">${sLbl}</span>
@@ -2596,6 +2609,53 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 </td>
             </tr>`;
         }).join('');
+
+        async function salvarEstoque(id, novaQtd, inputEl) {
+            const prod = admProds.find(x => x.id === id);
+            const qtdAnterior = prod ? (prod.quantidade ?? 1) : 1;
+            const finalQtd = Math.max(0, parseInt(novaQtd, 10) || 0);
+
+            // Atualização visual otimista
+            if (prod) prod.quantidade = finalQtd;
+            if (inputEl) inputEl.value = finalQtd;
+
+            try {
+                await apiFetch('PUT', `/api/produtos/${id}/estoque`, { quantidade: finalQtd });
+                admToast(`Estoque de "${prod?.nome || 'produto'}": ${finalQtd}`);
+            } catch (err) {
+                if (prod) prod.quantidade = qtdAnterior;
+                if (inputEl) inputEl.value = qtdAnterior;
+                admToast('Erro ao atualizar estoque: ' + err.message);
+            }
+        }
+
+        body.querySelectorAll('.adm-qty-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const id = Number(btn.dataset.id);
+                const delta = Number(btn.dataset.qtyDelta);
+                const container = btn.closest('.adm-qty-ctrl');
+                const input = container ? container.querySelector('.adm-qty-input') : null;
+                const prod = admProds.find(x => x.id === id);
+                const atual = prod ? (prod.quantidade ?? 1) : (input ? parseInt(input.value, 10) || 0 : 0);
+                const nova = Math.max(0, atual + delta);
+                await salvarEstoque(id, nova, input);
+            });
+        });
+
+        body.querySelectorAll('.adm-qty-input').forEach(input => {
+            input.addEventListener('click', e => e.stopPropagation());
+            input.addEventListener('change', async () => {
+                const id = Number(input.dataset.id);
+                const nova = Math.max(0, parseInt(input.value, 10) || 0);
+                await salvarEstoque(id, nova, input);
+            });
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    input.blur();
+                }
+            });
+        });
 
         body.querySelectorAll('[data-edit]').forEach(btn=>{
             btn.addEventListener('click',()=>{const p=admProds.find(x=>x.id===Number(btn.dataset.edit));if(p)admOpenModal(p);});

@@ -845,14 +845,71 @@
       .adm-toolbar {
         display: flex;
         align-items: center;
-        gap: 8px;
-        margin-bottom: 12px;
+        gap: 10px;
+        margin-bottom: 16px;
         flex-wrap: wrap;
-        position: sticky;
-        top: 52px;
-        z-index: 15;
-        background: #111;
-        padding-top: 10px
+      }
+
+      .adm-qty-ctrl {
+        display: inline-flex;
+        align-items: center;
+        background: #161616;
+        border: 1px solid #282828;
+        border-radius: 6px;
+        overflow: hidden;
+        height: 28px;
+        user-select: none;
+      }
+
+      .adm-qty-btn {
+        width: 26px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: #888;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+        transition: background .15s, color .15s;
+      }
+
+      .adm-qty-btn:hover {
+        background: #252525;
+        color: #B8924F;
+      }
+
+      .adm-qty-btn:active {
+        background: #333;
+      }
+
+      .adm-qty-input {
+        width: 38px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: #eaeaea;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+        padding: 0;
+        outline: none;
+        -moz-appearance: textfield;
+        font-family: inherit;
+      }
+
+      .adm-qty-input::-webkit-outer-spin-button,
+      .adm-qty-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      .adm-qty-input:focus {
+        background: #202020;
+        color: #B8924F;
       }
 
       /* Miniatura do produto na tabela do estoque. 34px porque a linha
@@ -1471,13 +1528,8 @@
         .adm-toolbar {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 6px;
-          margin-bottom: 8px;
-          position: sticky;
-          top: 44px;
-          background: #111;
-          padding: 8px 0 6px;
-          z-index: 15
+          gap: 8px;
+          margin-bottom: 12px;
         }
 
         .adm-sbox {
@@ -1514,7 +1566,7 @@
           flex-direction: column;
           padding: 10px 10px 8px;
           border-bottom: 1px solid #1a1a1a;
-          gap: 5px
+          gap: 6px
         }
 
         .adm-stbl tbody tr td {
@@ -1534,11 +1586,6 @@
           order: 1
         }
 
-        /* Status */
-        .adm-stbl tbody tr td:nth-child(5) {
-          order: 2
-        }
-
         /* Categoria + preço row */
         .adm-stbl tbody tr td:nth-child(3),
         .adm-stbl tbody tr td:nth-child(4) {
@@ -1547,22 +1594,39 @@
         }
 
         .adm-stbl tbody tr td:nth-child(3) {
-          order: 3;
+          order: 2;
           margin-right: 6px
         }
 
         .adm-stbl tbody tr td:nth-child(4) {
-          order: 4;
+          order: 3;
           font-size: 12px
         }
 
-        /* Ações */
+        /* Estoque */
+        .adm-stbl tbody tr td:nth-child(5) {
+          order: 4;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 4px 0
+        }
+
+        /* Status */
         .adm-stbl tbody tr td:nth-child(6) {
           order: 5;
           display: flex;
+          align-items: center;
+          gap: 6px
+        }
+
+        /* Ações */
+        .adm-stbl tbody tr td:nth-child(7) {
+          order: 6;
+          display: flex;
           gap: 8px;
           align-items: center;
-          margin-top: 2px
+          margin-top: 4px
         }
 
         .adm-abtn {
@@ -1784,10 +1848,11 @@
                 <thead>
                   <tr>
                     <th style="width:32px"></th>
-                    <th style="width:36%">Nome</th>
-                    <th style="width:15%">Categoria</th>
-                    <th style="width:14%">Preço</th>
-                    <th style="width:22%">Status</th>
+                    <th style="width:30%">Nome</th>
+                    <th style="width:14%">Categoria</th>
+                    <th style="width:12%">Preço</th>
+                    <th style="width:115px">Estoque</th>
+                    <th style="width:18%">Status</th>
                     <th style="width:80px">Ações</th>
                   </tr>
                 </thead>
@@ -2037,13 +2102,18 @@
               </select>
             </div>
           </div>
-          <div class="adm-fr"><label>Status</label>
-            <select id="adm-f-status">
-              <option value="disponiveis">Disponível</option>
-              <option value="lancamentos">Lançamento</option>
-              <option value="embreve">Em breve</option>
-              <option value="vendido">Vendido</option>
-            </select>
+          <div class="adm-f2">
+            <div class="adm-fr"><label>Status</label>
+              <select id="adm-f-status">
+                <option value="disponiveis">Disponível</option>
+                <option value="lancamentos">Lançamento</option>
+                <option value="embreve">Em breve</option>
+                <option value="vendido">Vendido</option>
+              </select>
+            </div>
+            <div class="adm-fr"><label>Quantidade no estoque</label>
+              <input type="number" id="adm-f-quantidade" min="0" step="1" value="1" placeholder="1">
+            </div>
           </div>
           <div class="adm-fr">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
