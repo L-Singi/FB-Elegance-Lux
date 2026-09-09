@@ -1032,7 +1032,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     function tamanhoMatches(prodTamanhos, selecionados) {
         if (!Array.isArray(prodTamanhos) || !prodTamanhos.length) return false;
-        if (!selecionados || !selecionados.length) return true;
+        if (!selecionados || !selecionados.length) return false;
         const setSelecionados = expandirTamanhosEquivalentes(selecionados);
         const setProd = expandirTamanhosEquivalentes(prodTamanhos);
         for (const t of setSelecionados) {
@@ -1293,9 +1293,10 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         return `<div class="plp-group${open?' open':''}">
             <div class="plp-group-head" data-toggle-group="${key}">${label}<i class="fas fa-chevron-down"></i></div>
             <div class="plp-group-body">${options.map(o => {
-                const active = group === 'tamanho'
+                const hasAtivos = Array.isArray(ativos) && ativos.length > 0;
+                const active = hasAtivos && (group === 'tamanho'
                     ? tamanhoMatches([o], ativos)
-                    : (group === 'numero' ? numeroMatches(o, ativos) : (ativos || []).includes(o));
+                    : (group === 'numero' ? numeroMatches(o, ativos) : ativos.includes(o)));
                 const display = labelFormatter ? labelFormatter(o) : o;
                 return `<button type="button" class="plp-option${active?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}"><span class="plp-option-box">${active?'<i class="fas fa-check"></i>':''}</span>${escapeHtml(display)}</button>`;
             }).join('')}</div>
