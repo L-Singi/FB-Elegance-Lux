@@ -698,11 +698,16 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         startAutoplay();
     }
 
-    // ─── DESTAQUE (produto mais vendido) ───────────────────────────────────────
+    let destaqueTemItem = false;
     function renderizarDestaque(cfg) {
         const section = document.getElementById('featuredBanner');
         if (!section) return;
-        if (!cfg || !cfg.feat_image || !cfg.feat_name) { section.style.display = 'none'; return; }
+        if (!cfg || !cfg.feat_image || !cfg.feat_name) {
+            destaqueTemItem = false;
+            section.style.display = 'none';
+            return;
+        }
+        destaqueTemItem = true;
         definirFoto(document.getElementById('featuredImg'), cfg.feat_image, 'vitrine');
         document.getElementById('featuredImg').alt = cfg.feat_name;
         document.getElementById('featuredBadge').textContent = cfg.feat_badge || 'Mais vendido';
@@ -723,7 +728,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 window.open(fallbackLink, '_blank');
             }
         };
-        section.style.display = 'block';
+        const buscando = termoBusca.trim().length > 0;
+        section.style.display = buscando ? 'none' : 'block';
     }
 
     // ─── SEÇÕES CURADAS ───────────────────────────────────────────────────────
@@ -1233,6 +1239,10 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         // String vazia devolve o controle ao CSS — importante no botão de
         // filtros, que só aparece a partir de certa largura de tela.
         const oculto = buscando ? 'none' : '';
+        const hero = document.querySelector('.hero');
+        if (hero) hero.style.display = oculto;
+        const bannerDestaque = document.getElementById('featuredBanner');
+        if (bannerDestaque) bannerDestaque.style.display = buscando ? 'none' : (destaqueTemItem ? 'block' : 'none');
         const showcase = document.querySelector('.cat-showcase');
         if (showcase) showcase.style.display = oculto;
         const abas = document.querySelector('.cat-tabs');
