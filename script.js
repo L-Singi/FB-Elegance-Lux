@@ -989,6 +989,142 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
         .replace(/[^a-z0-9]+/g,' ')
         .trim();
+
+    // Mapeamento de equivalências de tamanhos (BR <-> Internacional)
+    const SIZE_EQUIVALENTS = {
+        'xxs': ['xxs', 'ppp'],
+        'ppp': ['xxs', 'ppp'],
+        'xs':  ['xs', 'pp'],
+        'pp':  ['xs', 'pp'],
+        's':   ['s', 'p'],
+        'p':   ['s', 'p'],
+        'm':   ['m'],
+        'l':   ['l', 'g'],
+        'g':   ['l', 'g'],
+        'xl':  ['xl', 'gg'],
+        'gg':  ['xl', 'gg'],
+        'xxl': ['xxl', 'xg', 'xgg', '2xl'],
+        'xg':  ['xxl', 'xg', 'xgg', '2xl'],
+        'xgg': ['xxl', 'xg', 'xgg', '2xl'],
+        '2xl': ['xxl', 'xg', 'xgg', '2xl']
+    };
+
+    function expandirTamanhosEquivalentes(lista) {
+        const out = new Set();
+        (lista || []).forEach(item => {
+            const limpo = String(item || '').toLowerCase().trim();
+            if (!limpo) return;
+            out.add(limpo);
+            const equiv = SIZE_EQUIVALENTS[limpo];
+            if (equiv) equiv.forEach(e => out.add(e));
+            if (limpo.includes('/') || limpo.includes('-') || limpo.includes(' ')) {
+                limpo.split(/[\/\-\s]+/).forEach(sub => {
+                    const s = sub.trim();
+                    if (s) {
+                        out.add(s);
+                        if (SIZE_EQUIVALENTS[s]) SIZE_EQUIVALENTS[s].forEach(e => out.add(e));
+                    }
+                });
+            }
+        });
+        return out;
+    }
+
+    function tamanhoMatches(prodTamanhos, selecionados) {
+        if (!Array.isArray(prodTamanhos) || !prodTamanhos.length) return false;
+        if (!selecionados || !selecionados.length) return true;
+        const setSelecionados = expandirTamanhosEquivalentes(selecionados);
+        const setProd = expandirTamanhosEquivalentes(prodTamanhos);
+        for (const t of setSelecionados) {
+            if (setProd.has(t)) return true;
+        }
+        return false;
+    }
+
+    function rotuloExibicaoTamanho(t) {
+        const up = String(t || '').toUpperCase().trim();
+        const map = {
+            'XXS': 'XXS',
+            'XS':  'PP (XS)',
+            'PP':  'PP (XS)',
+            'S':   'P (S)',
+            'P':   'P (S)',
+            'M':   'M',
+            'L':   'G (L)',
+            'G':   'G (L)',
+            'XL':  'GG (XL)',
+            'GG':  'GG (XL)',
+            'XXL': 'XG (XXL)',
+            'XG':  'XG (XXL)',
+            'XGG': 'XG (XXL)'
+        };
+        return map[up] || up;
+    }
+
+    const VALID_SEARCH_SIZES = new Set(['xxs', 'xs', 'pp', 'p', 's', 'm', 'g', 'l', 'gg', 'xl', 'xg', 'xgg', 'xxl', '2xl']);
+
+    // Extrai da barra de busca tanto a marca/termo textual quanto o tamanho (ex: "sundek p") ou numeração (ex: "nike 41")
+    function parsearTermoBusca(termoBruto) {
+        if (!termoBruto || !termoBruto.trim()) {
+            return { texto: '', tamanho: null, numero: null };
+        }
+        let raw = termoBruto.trim();
+        let tamanho = null;
+        let numero = null;
+
+        // 1. Verifica indicação explícita de número de calçado (ex: "tam 41", "nº 41", "41 br", "41")
+        const numRegex = /(?:^|\s)(?:tam(?:anho)?|n(?:umero|úmero|º|\.)?)?\s*([3-4][0-9])(?:\s*br)?(?:\s|$)/i;
+        const numMatch = raw.match(numRegex);
+        if (numMatch) {
+            numero = numMatch[1];
+            raw = raw.replace(numMatch[0], ' ').trim();
+        }
+
+        // 2. Verifica indicação explícita de tamanho (ex: "tam p", "tamanho m", "tam: g")
+        const explicitSizeRegex = /(?:^|\s)(?:tam(?:anho)?(?:\s*[:=-])?)\s*([a-z0-9]{1,3})(?:\s|$)/i;
+        const expMatch = raw.match(explicitSizeRegex);
+        if (expMatch && VALID_SEARCH_SIZES.has(expMatch[1].toLowerCase())) {
+            tamanho = expMatch[1].toLowerCase();
+            raw = raw.replace(expMatch[0], ' ').trim();
+        }
+
+        // 3. Se ainda não achou tamanho nem número, analisa tokens isolados
+        // Ex: "sundek p" (último token "p"), "p sundek" (primeiro token "p"), ou apenas "p" / "41"
+        if (!tamanho && !numero) {
+            const tokens = raw.split(/\s+/).filter(Boolean);
+            if (tokens.length > 1) {
+                const last = tokens[tokens.length - 1].toLowerCase();
+                if (VALID_SEARCH_SIZES.has(last)) {
+                    tamanho = last;
+                    tokens.pop();
+                    raw = tokens.join(' ');
+                } else {
+                    const first = tokens[0].toLowerCase();
+                    if (VALID_SEARCH_SIZES.has(first)) {
+                        tamanho = first;
+                        tokens.shift();
+                        raw = tokens.join(' ');
+                    }
+                }
+            } else if (tokens.length === 1) {
+                const single = tokens[0].toLowerCase();
+                if (VALID_SEARCH_SIZES.has(single)) {
+                    tamanho = single;
+                    raw = '';
+                } else if (/^[3-4][0-9]$/.test(single)) {
+                    numero = single;
+                    raw = '';
+                }
+            }
+        }
+
+        return {
+            texto: raw.trim(),
+            tamanho,
+            numero
+        };
+    }
+
     let ordenacao = 'newest';
     // "Mais Procurados" mostra 18 produtos no total, 6 por vez, navegados
     // pelas setas ao lado da grade (ver PROCURADOS_POR_PAGINA/PROCURADOS_MAX).
@@ -1001,54 +1137,51 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     }
     function renderizarCatalogo() {
         const grid = document.getElementById('product-grid');
-        // "Mais Procurados" é uma vitrine com produtos de todas as categorias
-        // (sem filtro), diferente das demais abas que filtram por categoria real.
-        // A busca é global de propósito: quem digita "Off-White" na lupa
-        // quer a marca inteira, não o que sobrou dela dentro da aba que
-        // por acaso estava aberta. Enquanto há texto no campo, a categoria
-        // e os filtros laterais ficam de fora; voltam a valer sozinhos
-        // assim que o campo esvazia.
+        // A busca é global de propósito: quem digita na lupa quer encontrar a marca/produto
+        // em todo o catálogo, podendo refinar por tamanho ou categoria.
         const buscando = termoBusca.trim().length > 0;
-        // "Mais Procurados" mostra só as peças marcadas com o selecionável
-        // do painel. Enquanto ninguém marcou nenhuma (catálogo migrado, ou
-        // loja nova), cai pro catálogo inteiro — do jeito que era antes —
-        // pra aba nunca aparecer vazia.
+        const parsedBusca = buscando ? parsearTermoBusca(termoBusca) : { texto: '', tamanho: null, numero: null };
+
         const procuradas = filtroCategoria === 'procurados' ? produtos.filter(p => p.mais_procurado) : null;
         let f = buscando
             ? produtos.slice()
             : filtroCategoria === 'procurados'
                 ? (procuradas.length ? procuradas : produtos.slice())
                 : produtos.filter(p => p.categoria===filtroCategoria);
-        if (buscando) {
-            const b = normalizarBusca(termoBusca);
-            // Segunda comparação sem espaço nenhum: as marcas são escritas
-            // de um jeito no cadastro e de outro por quem procura —
-            // "AllSaints" é uma palavra só, "Off-White" tem hífen. Sem isto,
-            // quem digita "all saints" ou "offwhite" não acha nada.
+
+        if (buscando && parsedBusca.texto) {
+            const b = normalizarBusca(parsedBusca.texto);
             const bColado = b.replace(/ /g, '');
-            // Procura no nome, na marca e na categoria. Só o nome não basta:
-            // "Off-White" é a marca de dezenas de peças cujo nome não repete
-            // a palavra.
             f = f.filter(p => {
                 const alvo = normalizarBusca(`${p.nome} ${p.marca||''} ${CAT_LABEL[p.categoria]||''}`);
                 return alvo.includes(b) || alvo.replace(/ /g, '').includes(bColado);
             });
         }
-        if (!buscando && TAMANHO_CATS.includes(filtroCategoria) && filtroTamanho.length) {
-            f = f.filter(p => Array.isArray(p.tamanhos) && p.tamanhos.some(t => filtroTamanho.includes(t)));
+
+        // Filtro por tamanho: unifica os filtros da sidebar e o tamanho digitado na busca (ex: "sundek p")
+        const tamanhosEfetivos = filtroTamanho.length > 0
+            ? filtroTamanho
+            : (buscando && parsedBusca.tamanho ? [parsedBusca.tamanho] : []);
+        if (tamanhosEfetivos.length > 0) {
+            f = f.filter(p => tamanhoMatches(p.tamanhos, tamanhosEfetivos));
         }
-        if (!buscando && NUMERO_CATS.includes(filtroCategoria) && filtroNumero.length) {
-            f = f.filter(p => numeroMatches(p.numeracao, filtroNumero));
+
+        // Filtro por numeração (calçados): sidebar ou número digitado na busca (ex: "nike 41")
+        const numerosEfetivos = filtroNumero.length > 0
+            ? filtroNumero
+            : (buscando && parsedBusca.numero ? [parsedBusca.numero] : []);
+        if (numerosEfetivos.length > 0) {
+            f = f.filter(p => numeroMatches(p.numeracao, numerosEfetivos));
         }
-        if (!buscando && BRANDS_BY_CAT[filtroCategoria] && filtroMarca.length) {
+
+        // Filtro por marca
+        if (filtroMarca.length > 0) {
             f = f.filter(p => filtroMarca.includes(p.marca));
         }
+
         if (ordenacao==='preco_asc') f.sort((a,b) => precoNum(a.preco)-precoNum(b.preco));
         else if (ordenacao==='preco_desc') f.sort((a,b) => precoNum(b.preco)-precoNum(a.preco));
         else f.sort((a,b) => {
-            // Ordem manual definida pelo admin (arrastar na aba Estoque) tem
-            // prioridade; produtos sem ordem definida (novos, ainda não
-            // organizados) caem pra depois, ordenados por mais recentes.
             const ao = Number.isFinite(a.ordem) ? a.ordem : Infinity;
             const bo = Number.isFinite(b.ordem) ? b.ordem : Infinity;
             if (ao !== bo) return ao - bo;
@@ -1093,7 +1226,9 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     // renderizarFiltroMenu(), que reescreve o H1 com o nome da categoria.
     function aplicarModoBusca(buscando) {
         const label = document.getElementById('filterMenuLabel');
-        if (label && buscando) label.childNodes[0].nodeValue = `Resultados para “${termoBusca.trim()}” `;
+        if (label && buscando) {
+            label.childNodes[0].nodeValue = `Resultados para “${termoBusca.trim()}” `;
+        }
 
         // String vazia devolve o controle ao CSS — importante no botão de
         // filtros, que só aparece a partir de certa largura de tela.
@@ -1102,14 +1237,18 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         if (showcase) showcase.style.display = oculto;
         const abas = document.querySelector('.cat-tabs');
         if (abas) abas.style.display = oculto;
+        // Não oculta botão de filtros no mobile quando busca, para permitir filtrar por tamanho/marca
         const filtros = document.getElementById('filterMenuToggle');
-        if (filtros) filtros.style.display = oculto;
+        if (filtros) filtros.style.display = '';
         const lancamentos = document.getElementById('lancamentosSection');
         if (lancamentos) lancamentos.style.display = buscando ? 'none' : (lancamentosTemItens ? 'block' : 'none');
     }
 
     function mudarCategoria(cat, atualizarUrl = true) {
         filtroCategoria = cat;
+        termoBusca = '';
+        const si = document.getElementById('searchInput');
+        if (si) si.value = '';
         filtroTamanho = []; filtroNumero = []; filtroMarca = [];
         procuradosPage = 0;
         renderizarCatalogo();
@@ -1130,10 +1269,6 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     }
 
     // ─── VITRINE DE CATEGORIAS (abaixo de Mais procurados) ─────────────────────
-    // Legado: antes de categories.cover_image existir, a imagem de cada categoria
-    // vinha de uma coluna fixa em config (cat_img_*). Mantido só como fallback
-    // para nunca deixar a vitrine sem imagem se a categoria ainda não tiver
-    // cover_image cadastrado.
     const CAT_IMAGE_FIELDS = {
         casacos: 'cat_img_casacos', camisetas: 'cat_img_camisetas', shorts: 'cat_img_shorts',
         calcados: 'cat_img_calcados', acessorios: 'cat_img_acessorios', perfumes: 'cat_img_perfumes'
@@ -1152,17 +1287,21 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     }
 
     // ─── SIDEBAR DE FILTROS: peça / tamanho / número / marca ──────────────────
-    let sidebarGroupsOpen = { peca: true, tamanho: true, marca: true };
-    function sidebarGroup(key, label, options, ativos, group) {
+    let sidebarGroupsOpen = { peca: true, tamanho: true, numero: true, marca: true };
+    function sidebarGroup(key, label, options, ativos, group, labelFormatter) {
         const open = sidebarGroupsOpen[key] !== false;
         return `<div class="plp-group${open?' open':''}">
             <div class="plp-group-head" data-toggle-group="${key}">${label}<i class="fas fa-chevron-down"></i></div>
             <div class="plp-group-body">${options.map(o => {
-                const active = ativos.includes(o);
-                return `<button type="button" class="plp-option${active?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}"><span class="plp-option-box">${active?'<i class="fas fa-check"></i>':''}</span>${escapeHtml(o)}</button>`;
+                const active = group === 'tamanho'
+                    ? tamanhoMatches([o], ativos)
+                    : (group === 'numero' ? numeroMatches(o, ativos) : (ativos || []).includes(o));
+                const display = labelFormatter ? labelFormatter(o) : o;
+                return `<button type="button" class="plp-option${active?' active':''}" data-group="${group}" data-val="${escapeHtml(o)}"><span class="plp-option-box">${active?'<i class="fas fa-check"></i>':''}</span>${escapeHtml(display)}</button>`;
             }).join('')}</div>
         </div>`;
     }
+
     function renderizarFiltroMenu() {
         const label = document.getElementById('filterMenuLabel');
         const panel = document.getElementById('filterMenuPanelBody');
@@ -1170,38 +1309,72 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const breadcrumb = document.getElementById('plpBreadcrumbCat');
         if (!label || !panel) return;
 
+        const buscando = termoBusca.trim().length > 0;
+        const parsedBusca = buscando ? parsearTermoBusca(termoBusca) : { texto: '', tamanho: null, numero: null };
+
         const catObj = NAV_TABS.find(c => c.value === filtroCategoria);
         const catLabel = catObj ? catObj.label : filtroCategoria;
         label.childNodes[0].nodeValue = catLabel + ' ';
-        if (breadcrumb) breadcrumb.textContent = catLabel;
+        if (breadcrumb) breadcrumb.textContent = buscando ? 'Busca' : catLabel;
 
-        const activeCount = filtroTamanho.length + filtroNumero.length + filtroMarca.length;
+        const countTamanho = filtroTamanho.length || (buscando && parsedBusca.tamanho ? 1 : 0);
+        const countNumero = filtroNumero.length || (buscando && parsedBusca.numero ? 1 : 0);
+        const activeCount = countTamanho + countNumero + filtroMarca.length;
         if (activeCount) { badge.style.display = 'inline-flex'; badge.textContent = activeCount; }
         else { badge.style.display = 'none'; }
 
         let html = '';
+        let temTamanho = false;
+        let temNumero = false;
+        let temMarca = false;
+        let marcasDisponiveis = [];
 
-        const temTamanho = TAMANHO_CATS.includes(filtroCategoria);
-        const temNumero = !temTamanho && NUMERO_CATS.includes(filtroCategoria);
-        const temMarca = !!BRANDS_BY_CAT[filtroCategoria];
-        if (temTamanho) {
-            html += sidebarGroup('tamanho', 'Tamanho', SIZES, filtroTamanho, 'tamanho');
-        } else if (temNumero) {
-            html += sidebarGroup('tamanho', 'Número', NUMEROS, filtroNumero, 'numero');
+        if (buscando) {
+            const b = parsedBusca.texto ? normalizarBusca(parsedBusca.texto) : '';
+            const bColado = b.replace(/ /g, '');
+            const baseBusca = produtos.filter(p => {
+                if (!b) return true;
+                const alvo = normalizarBusca(`${p.nome} ${p.marca||''} ${CAT_LABEL[p.categoria]||''}`);
+                return alvo.includes(b) || alvo.replace(/ /g, '').includes(bColado);
+            });
+
+            temTamanho = baseBusca.some(p => (Array.isArray(p.tamanhos) && p.tamanhos.length > 0) || TAMANHO_CATS.includes(p.categoria));
+            temNumero = baseBusca.some(p => p.numeracao || NUMERO_CATS.includes(p.categoria));
+
+            const marcasSet = new Set();
+            baseBusca.forEach(p => { if (p.marca) marcasSet.add(p.marca); });
+            marcasDisponiveis = Array.from(marcasSet).sort();
+            temMarca = marcasDisponiveis.length > 1;
+        } else {
+            temTamanho = TAMANHO_CATS.includes(filtroCategoria);
+            temNumero = !temTamanho && NUMERO_CATS.includes(filtroCategoria);
+            temMarca = !!BRANDS_BY_CAT[filtroCategoria];
+            marcasDisponiveis = BRANDS_BY_CAT[filtroCategoria] || [];
         }
-        if (temMarca) {
-            html += sidebarGroup('marca', 'Marca', BRANDS_BY_CAT[filtroCategoria], filtroMarca, 'marca');
+
+        const ativosTamanho = filtroTamanho.length > 0
+            ? filtroTamanho
+            : (buscando && parsedBusca.tamanho ? [parsedBusca.tamanho] : []);
+
+        const ativosNumero = filtroNumero.length > 0
+            ? filtroNumero
+            : (buscando && parsedBusca.numero ? [parsedBusca.numero] : []);
+
+        if (temTamanho) {
+            html += sidebarGroup('tamanho', 'Tamanho', SIZES, ativosTamanho, 'tamanho', rotuloExibicaoTamanho);
+        }
+        if (temNumero) {
+            html += sidebarGroup('numero', 'Número', NUMEROS, ativosNumero, 'numero');
+        }
+        if (temMarca && marcasDisponiveis.length) {
+            html += sidebarGroup('marca', 'Marca', marcasDisponiveis, filtroMarca, 'marca');
         }
         if (activeCount) {
             html += `<button type="button" class="chip-clear" id="filterMenuClear">Limpar filtros</button>`;
         }
         panel.innerHTML = html;
 
-        // Categoria sem nenhum filtro disponível (ex: "Mais Procurados") —
-        // não faz sentido reservar a coluna da sidebar nem deixar os produtos
-        // grudados à esquerda quando a última linha não fecha; centraliza a
-        // grade inteira (ver CSS .plp-body.no-filter / .product-grid.is-centered).
-        const semFiltro = !temTamanho && !temNumero && !temMarca;
+        const semFiltro = !temTamanho && !temNumero && (!temMarca || !marcasDisponiveis.length);
         const plpBody = document.querySelector('.plp-body');
         const grid = document.getElementById('product-grid');
         if (plpBody) plpBody.classList.toggle('no-filter', semFiltro);
@@ -1213,18 +1386,65 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             sidebarGroupsOpen[key] = !(sidebarGroupsOpen[key] !== false);
             head.closest('.plp-group').classList.toggle('open', sidebarGroupsOpen[key]);
         }));
+
         panel.querySelectorAll('[data-group]').forEach(btn => btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const group = btn.dataset.group, val = btn.dataset.val;
-            const arr = group==='tamanho' ? filtroTamanho : group==='numero' ? filtroNumero : filtroMarca;
-            const idx = arr.indexOf(val);
-            if (idx===-1) arr.push(val); else arr.splice(idx,1);
+            if (group === 'tamanho') {
+                const parsed = parsearTermoBusca(termoBusca);
+                if (buscando && parsed.tamanho && !filtroTamanho.length) {
+                    if (tamanhoMatches([val], [parsed.tamanho])) {
+                        termoBusca = parsed.texto;
+                        const si = document.getElementById('searchInput');
+                        if (si) si.value = termoBusca;
+                        filtroTamanho = [];
+                    } else {
+                        termoBusca = parsed.texto;
+                        const si = document.getElementById('searchInput');
+                        if (si) si.value = termoBusca;
+                        filtroTamanho = [val];
+                    }
+                } else {
+                    const idx = filtroTamanho.findIndex(t => tamanhoMatches([t], [val]));
+                    if (idx === -1) filtroTamanho.push(val);
+                    else filtroTamanho.splice(idx, 1);
+                }
+            } else if (group === 'numero') {
+                const parsed = parsearTermoBusca(termoBusca);
+                if (buscando && parsed.numero && !filtroNumero.length) {
+                    if (parsed.numero === val) {
+                        termoBusca = parsed.texto;
+                        const si = document.getElementById('searchInput');
+                        if (si) si.value = termoBusca;
+                        filtroNumero = [];
+                    } else {
+                        termoBusca = parsed.texto;
+                        const si = document.getElementById('searchInput');
+                        if (si) si.value = termoBusca;
+                        filtroNumero = [val];
+                    }
+                } else {
+                    const idx = filtroNumero.indexOf(val);
+                    if (idx === -1) filtroNumero.push(val);
+                    else filtroNumero.splice(idx, 1);
+                }
+            } else {
+                const idx = filtroMarca.indexOf(val);
+                if (idx === -1) filtroMarca.push(val);
+                else filtroMarca.splice(idx, 1);
+            }
             renderizarCatalogo();
         }));
+
         const clearBtn = document.getElementById('filterMenuClear');
         if (clearBtn) clearBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             filtroTamanho = []; filtroNumero = []; filtroMarca = [];
+            if (buscando && (parsedBusca.tamanho || parsedBusca.numero)) {
+                termoBusca = parsedBusca.texto;
+                const si = document.getElementById('searchInput');
+                if (si) si.value = termoBusca;
+            }
             renderizarCatalogo();
         });
     }
@@ -3227,6 +3447,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     document.getElementById('searchInput').addEventListener('input', e => {
         const buscavaAntes = termoBusca.trim().length > 0;
         termoBusca = e.target.value;
+        filtroTamanho = []; filtroNumero = []; filtroMarca = [];
         renderizarCatalogo();
         // Só na primeira letra: rolar a cada tecla deixaria a página
         // saltando enquanto a pessoa ainda está digitando.
