@@ -997,27 +997,15 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/casacos/camiseta-all-saints-grey/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/casacos/camiseta-all-saints-brown/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/casacos/polo-ralph-lauren-purple/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://fbelegancelux.com.br/camisetas/camiseta-all-saints-grey/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/camisetas/camiseta-all-saints-brown/</loc>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/camisetas/polo-ralph-lauren-purple/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/camisetas/camiseta-all-saints-grey/</loc>
     <priority>0.7</priority>
   </url>
   <url>
