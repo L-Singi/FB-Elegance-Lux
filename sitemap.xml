@@ -717,10 +717,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://fbelegancelux.com.br/camisetas/camiseta-bape-logo/</loc>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://fbelegancelux.com.br/shorts/vilebrequin-pink-kombi/</loc>
     <priority>0.7</priority>
   </url>
@@ -1074,6 +1070,18 @@
   </url>
   <url>
     <loc>https://fbelegancelux.com.br/camisetas/camisa-ralph-lauren-vintage-mangas-curtas/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/camisetas/camiseta-ralph-lauren-grey-blue/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/camisetas/camiseta-ralph-lauren-grey/</loc>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://fbelegancelux.com.br/camisetas/camiseta-ralph-lauren-grey/</loc>
     <priority>0.7</priority>
   </url>
 </urlset>
