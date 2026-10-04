@@ -191,7 +191,7 @@ body {
 .cat-tab.active { color: #F2EFE9; border-bottom-color: #B8924F; }
 
 /* ========== DESTAQUE (produto mais vendido) ========== */
-.featured-banner { background: #141416; border-bottom: 1px solid rgba(242,239,233,.08); }
+.featured-banner { background: #141416; border-top: 1px solid rgba(242,239,233,.08); border-bottom: 1px solid rgba(242,239,233,.08); }
 .featured-inner {
     max-width: 1400px;
     margin: 0 auto;
