@@ -58,7 +58,7 @@
     href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400&family=Jost:wght@300;400;500;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2">
 
 </head>
 
@@ -134,11 +134,6 @@
 
   <main>
     <div class="container">
-      <div class="cat-showcase">
-        <div class="grid-header"><h2>Categorias</h2></div>
-        <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
-      </div>
-
       <div class="plp-headrow">
         <h1 id="filterMenuLabel">Casacos <span id="plpCount">(0)</span></h1>
         <div class="plp-headrow-right">
@@ -173,6 +168,11 @@
           <button type="button" class="procurados-arrow procurados-arrow-next" id="procuradosNext" style="display:none" aria-label="Próxima página"><i class="fas fa-chevron-right"></i></button>
           <div class="product-grid" id="product-grid"></div>
         </div>
+      </div>
+
+      <div class="cat-showcase">
+        <div class="grid-header"><h2>Categorias</h2></div>
+        <div class="cat-showcase-grid" id="catShowcaseGrid"></div>
       </div>
 
       <div class="curated-section" id="lancamentosSection" style="display: none;">
@@ -296,7 +296,7 @@
     <!-- Também precisa manter os campos de add produto ocultos para o script.js existente -->
     <div style="display:none">
       <input type="text" id="prodNome"><textarea id="prodDesc"></textarea><input type="text" id="prodPreco"
-        value="R$ 0,00"><textarea id="prodImagens"></textarea><input type="file" id="prodImageFiles" accept="image/*"
+        value="R$ 0,00"><input type="text" id="prodPrecoAntigo" value="R$ 0,00"><textarea id="prodImagens"></textarea><input type="file" id="prodImageFiles" accept="image/*"
         multiple><select id="prodCategoria">
         <option value="casacos">Casacos</option>
         <option value="camisetas">Camisetas</option>
@@ -2090,8 +2090,20 @@
           <div class="adm-fr"><label>Nome do produto</label><input type="text" id="adm-f-nome"
               placeholder="Ex: Camiseta Lux Premium"></div>
           <div class="adm-f2">
-            <div class="adm-fr"><label>Preço</label><input type="text" id="adm-f-preco" placeholder="R$ 0,00"
+            <div class="adm-fr"><label>Preço atual</label><input type="text" id="adm-f-preco" placeholder="R$ 0,00"
                 value="R$ 0,00"></div>
+            <div class="adm-fr"><label>Preço antigo (para cálculo de desconto)</label><input type="text" id="adm-f-preco-antigo" placeholder="R$ 0,00"
+                value="R$ 0,00"></div>
+          </div>
+          <div class="adm-fr" id="adm-row-desconto" style="display:none;margin-top:-6px;margin-bottom:14px;">
+            <div id="adm-f-desconto-box" style="padding:10px 14px;background:rgba(184,146,79,0.12);border:1px solid rgba(184,146,79,0.35);border-radius:6px;display:flex;align-items:center;justify-content:space-between;">
+              <span id="adm-f-desconto-badge" style="color:#B8924F;font-weight:600;font-size:0.85rem;display:flex;align-items:center;gap:6px;">
+                <i class="ti ti-discount-2"></i> <span id="adm-f-desconto-txt">0% OFF</span>
+              </span>
+              <span id="adm-f-desconto-economia" style="color:#aaa;font-size:0.8rem;">Economia de R$ 0,00</span>
+            </div>
+          </div>
+          <div class="adm-f2">
             <div class="adm-fr"><label>Categoria</label>
               <select id="adm-f-cat">
                 <option value="casacos">Casacos</option>
@@ -2221,7 +2233,9 @@
       </div>
       <div class="edit-form-group"><label>Descrição</label><textarea id="editDesc" rows="3"
           placeholder="Descrição completa"></textarea></div>
-      <div class="edit-form-group"><label>Preço (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00">
+      <div class="edit-form-group"><label>Preço atual (R$)</label><input type="text" id="editPreco" placeholder="R$ 0,00">
+      </div>
+      <div class="edit-form-group"><label>Preço antigo (R$)</label><input type="text" id="editPrecoAntigo" placeholder="R$ 0,00">
       </div>
       <div class="edit-form-group"><label>Categoria</label><select id="editCategoria">
           <option value="casacos">Casacos</option>
@@ -2303,7 +2317,7 @@
       id="toastMessage">Produto adicionado à sacola</span><i class="fas fa-times toast-close" id="toastClose"></i>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=2"></script>
 </body>
 
 </html>

@@ -199,6 +199,7 @@
         if(!Array.isArray(np.images)) np.images = Array.isArray(p.images)?p.images:[];
         if(!Array.isArray(np.tamanhos) && np.tamanhos) np.tamanhos = String(np.tamanhos).split(',').map(x=>x.trim()).filter(Boolean);
         np.quantidade = (p.quantidade !== undefined && p.quantidade !== null) ? Math.max(0, parseInt(p.quantidade, 10) || 0) : 1;
+        np.preco_antigo = p.preco_antigo || '';
         return np;
     }
 
@@ -925,10 +926,21 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         if (TAMANHO_CATS.includes(prod.categoria) && prod.tamanhos?.length) sizeLabel = prod.tamanhos.join(' · ');
         else if (NUMERO_CATS.includes(prod.categoria) && prod.numeracao) sizeLabel = prod.numeracao;
         const statusHtml = prod.status !== 'disponiveis' ? `<span class="status-badge ${sClass}">${sLabel}</span>` : '';
+
+        const precoAtualNum = precoNum(prod.preco);
+        const precoAntigoNum = precoNum(prod.preco_antigo);
+        const temDesconto = precoAntigoNum > precoAtualNum && precoAtualNum > 0;
+        const descontoPct = temDesconto ? Math.round(((precoAntigoNum - precoAtualNum) / precoAntigoNum) * 100) : 0;
+        const discountHtml = temDesconto ? `<div class="product-discount-circle" title="${descontoPct}% de desconto"><span>-${descontoPct}%</span></div>` : '';
+        const priceHtml = temDesconto
+            ? `<span class="product-price-old">${escapeHtml(prod.preco_antigo)}</span><span class="product-price-current">${escapeHtml(prod.preco)}</span>`
+            : escapeHtml(prod.preco);
+
         card.innerHTML = `
-            <div class="product-image-container">
+            <div class="product-image-container${temDesconto ? ' has-discount' : ''}">
                 <span class="product-tag">${escapeHtml(tagLabel)}</span>
                 ${statusHtml}
+                ${discountHtml}
                 <img class="product-image" src="${images[0] ? escapeHtml(fotoVitrine(images[0])) : 'https://placehold.co/600x800?text=Sem+imagem'}" alt="${escapeHtml(prod.nome)}" loading="lazy" decoding="async" width="600" height="800" data-original="${escapeHtml(images[0]||'')}" onerror="fbFotoFalhou(this)">
                 ${images.length>1 ? `<div class="nav-arrow nav-arrow-left" data-dir="prev"><i class="fas fa-chevron-left"></i></div><div class="nav-arrow nav-arrow-right" data-dir="next"><i class="fas fa-chevron-right"></i></div>` : ''}
                 <button class="btn-favorite${isFav?' active':''}" title="Favoritar"><i class="${isFav?'fas':'far'} fa-heart"></i></button>
@@ -939,7 +951,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                     <h3 class="product-title">${escapeHtml(prod.nome)}</h3>
                     <div class="product-size-info">${sizeLabel}</div>
                 </div>
-                <div class="product-price">${prod.preco}</div>
+                <div class="product-price">${priceHtml}</div>
             </div>`;
         card.querySelector('.btn-add-cart').addEventListener('click', e => { e.stopPropagation(); isSold ? showToast('❌ Item já vendido', true) : addToCart(prod); });
         card.querySelector('.btn-favorite').addEventListener('click', e => {
@@ -1564,7 +1576,18 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
         document.getElementById('mobileSheetTitle').innerText    = prod.nome;
         document.getElementById('mobileSheetCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
-        document.getElementById('mobileSheetPrice').innerText    = prod.preco;
+        const sheetPriceEl = document.getElementById('mobileSheetPrice');
+        const precoAtualNum = precoNum(prod.preco);
+        const precoAntigoNum = precoNum(prod.preco_antigo);
+        const temDesconto = precoAntigoNum > precoAtualNum && precoAtualNum > 0;
+        if (sheetPriceEl) {
+            if (temDesconto) {
+                const pct = Math.round(((precoAntigoNum - precoAtualNum) / precoAntigoNum) * 100);
+                sheetPriceEl.innerHTML = `<span class="product-price-old">${escapeHtml(prod.preco_antigo)}</span> <span class="product-price-current">${escapeHtml(prod.preco)}</span> <span class="product-discount-pill">-${pct}%</span>`;
+            } else {
+                sheetPriceEl.innerText = prod.preco;
+            }
+        }
         document.getElementById('mobileSheetDesc').innerText     = prod.descricao_completa || '';
         document.getElementById('mobileSheetCopiarLink').onclick = () => copiarLinkDoProduto(prod);
 
@@ -1668,7 +1691,18 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     function abrirModal(prod) {
         document.getElementById('modalTitle').innerText = prod.nome;
         document.getElementById('modalCategory').innerText = CAT_LABEL[prod.categoria] || prod.categoria;
-        document.getElementById('modalPrice').innerText = prod.preco;
+        const modalPriceEl = document.getElementById('modalPrice');
+        const precoAtualNum = precoNum(prod.preco);
+        const precoAntigoNum = precoNum(prod.preco_antigo);
+        const temDesconto = precoAntigoNum > precoAtualNum && precoAtualNum > 0;
+        if (modalPriceEl) {
+            if (temDesconto) {
+                const pct = Math.round(((precoAntigoNum - precoAtualNum) / precoAntigoNum) * 100);
+                modalPriceEl.innerHTML = `<span class="product-price-old">${escapeHtml(prod.preco_antigo)}</span> <span class="product-price-current">${escapeHtml(prod.preco)}</span> <span class="product-discount-pill">-${pct}%</span>`;
+            } else {
+                modalPriceEl.innerText = prod.preco;
+            }
+        }
         document.getElementById('modalDesc').innerText = prod.descricao_completa || '';
         // onclick (e não addEventListener) porque abrirModal roda uma vez
         // por peça: com listener, cada abertura empilharia mais um.
@@ -1869,6 +1903,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         document.getElementById('editNome').value = prod.nome;
         document.getElementById('editDesc').value = prod.descricao_completa||'';
         document.getElementById('editPreco').value = prod.preco;
+        if (document.getElementById('editPrecoAntigo')) document.getElementById('editPrecoAntigo').value = prod.preco_antigo || 'R$ 0,00';
         document.getElementById('editCategoria').value = prod.categoria;
         document.getElementById('editStatus').value = prod.status;
         updateEditSizeFields(prod);
@@ -1927,6 +1962,8 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         const nome = document.getElementById('editNome').value.trim();
         const desc = document.getElementById('editDesc').value.trim();
         let preco = document.getElementById('editPreco').value.trim();
+        const preco_antigo_raw = document.getElementById('editPrecoAntigo')?.value.trim() || '';
+        const preco_antigo = (preco_antigo_raw && preco_antigo_raw !== 'R$ 0,00') ? preco_antigo_raw : '';
         const categoria = document.getElementById('editCategoria').value;
         const status = document.getElementById('editStatus').value;
         if (!nome||!preco) { alert('Nome e preço são obrigatórios'); return; }
@@ -1962,7 +1999,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             }
         }
 
-        const updates = { nome, descricao_completa:desc, preco, categoria, status, images:imgs, tamanhos, numeracao };
+        const updates = { nome, descricao_completa:desc, preco, preco_antigo, categoria, status, images:imgs, tamanhos, numeracao };
         const ok = await atualizarProduto(currentEditId, updates);
         if (ok) { document.getElementById('editModal').style.display='none'; document.body.style.overflow='auto'; showToast('Produto atualizado!'); }
     });
@@ -2567,6 +2604,9 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
             const fd = new FormData();
             fd.append('nome', nome);
             fd.append('preco', preco);
+            const preco_antigo_raw = admEl('adm-f-preco-antigo')?.value.trim() || '';
+            const preco_antigo = (preco_antigo_raw && preco_antigo_raw !== 'R$ 0,00') ? preco_antigo_raw : '';
+            fd.append('preco_antigo', preco_antigo);
             fd.append('categoria', categoria);
             fd.append('status', status);
             fd.append('descricao_completa', descricao_completa);
@@ -2596,6 +2636,15 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                 if(admTab==='dashboard') admRenderDash();
             } catch(e){admToast('Erro: '+e.message);}        
         });
+
+        // Cálculo dinâmico de desconto no admin
+        const admInputPreco = admEl('adm-f-preco');
+        const admInputPrecoAntigo = admEl('adm-f-preco-antigo');
+        if (admInputPreco) admInputPreco.addEventListener('input', admAtualizarCalculoDesconto);
+        if (admInputPrecoAntigo) {
+            bindPreco(admInputPrecoAntigo);
+            admInputPrecoAntigo.addEventListener('input', admAtualizarCalculoDesconto);
+        }
 
         // Cliques nos botões de tamanho/numeração já são conectados em
         // renderSizeButtonGroup() (chamado na carga inicial e sempre que
@@ -2636,12 +2685,35 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
         }
     }
 
+    function admAtualizarCalculoDesconto() {
+        const pAtual = admPn(admEl('adm-f-preco')?.value);
+        const pAntigo = admPn(admEl('adm-f-preco-antigo')?.value);
+        const row = admEl('adm-row-desconto');
+        const txt = admEl('adm-f-desconto-txt');
+        const eco = admEl('adm-f-desconto-economia');
+        if (!row || !txt || !eco) return;
+
+        if (pAntigo > pAtual && pAtual > 0) {
+            const pct = Math.round(((pAntigo - pAtual) / pAntigo) * 100);
+            const diffCentavos = Math.round((pAntigo - pAtual) * 100);
+            txt.textContent = `${pct}% OFF`;
+            eco.textContent = `Economia de ${digitosParaPreco(String(diffCentavos))}`;
+            row.style.display = 'block';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+
     function admOpenModal(p) {
         admEditId = p?p.id:null;
         admNewFiles = [];
         admEl('adm-m-title').textContent = p?'Editar produto':'Novo produto';
         admEl('adm-f-nome').value = p?p.nome||'':'';
         admEl('adm-f-preco').value = p?p.preco||'R$ 0,00':'R$ 0,00';
+        if (admEl('adm-f-preco-antigo')) {
+            admEl('adm-f-preco-antigo').value = (p && p.preco_antigo) ? p.preco_antigo : 'R$ 0,00';
+        }
+        admAtualizarCalculoDesconto();
         admEl('adm-f-cat').value = p?p.categoria||'casacos':'casacos';
         admEl('adm-f-status').value = p?p.status||'disponiveis':'disponiveis';
         admEl('adm-f-desc').value = p?p.descricao_completa||'':'';
@@ -2817,7 +2889,18 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
                     </div>
                 </td>
                 <td><span class="adm-catpill">${ADM_CATS[p.categoria]||p.categoria||'—'}</span>${p.marca?`<div style="font-size:10px;color:#555;margin-top:2px">${admEsc(p.marca)}</div>`:''}</td>
-                <td style="font-weight:500;color:#B8924F">${p.preco||'—'}</td>
+                <td style="font-weight:500">
+                    <div><span style="color:#B8924F">${p.preco||'—'}</span></div>
+                    ${(() => {
+                        const pAntigoNum = admPn(p.preco_antigo);
+                        const pAtualNum = admPn(p.preco);
+                        if (pAntigoNum > pAtualNum && pAtualNum > 0) {
+                            const pct = Math.round(((pAntigoNum - pAtualNum) / pAntigoNum) * 100);
+                            return `<div style="font-size:10px;color:#888;text-decoration:line-through;margin-top:2px">${admEsc(p.preco_antigo)} <span style="color:#e67e22;font-weight:600">(-${pct}%)</span></div>`;
+                        }
+                        return '';
+                    })()}
+                </td>
                 <td>
                     <div class="adm-qty-ctrl" data-id="${p.id}">
                         <button type="button" class="adm-qty-btn minus" data-qty-delta="-1" data-id="${p.id}" title="Diminuir estoque">−</button>
@@ -3481,10 +3564,25 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     window.addEventListener('click', e => { if(e.target===cartModal) cartModal.style.display='none'; });
 
     // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
-    window.addEventListener('scroll', () => document.querySelector('.header').classList.toggle('shrink', window.scrollY > 10));
+    const headerEl = document.querySelector('.header');
+    function updateHeaderHeightVar() {
+        if (headerEl) {
+            document.documentElement.style.setProperty('--header-height', headerEl.offsetHeight + 'px');
+        }
+    }
+    window.addEventListener('scroll', () => {
+        if (headerEl) headerEl.classList.toggle('shrink', window.scrollY > 10);
+        updateHeaderHeightVar();
+    }, { passive: true });
+    window.addEventListener('resize', updateHeaderHeightVar);
+    updateHeaderHeightVar();
+
     bindPreco(document.getElementById('prodPreco'));
+    bindPreco(document.getElementById('prodPrecoAntigo'));
     bindPreco(document.getElementById('adm-f-preco'));
+    bindPreco(document.getElementById('adm-f-preco-antigo'));
     bindPreco(document.getElementById('editPreco'));
+    bindPreco(document.getElementById('editPrecoAntigo'));
     if (typeof renderSizeButtonGroup === 'function') {
         renderSizeButtonGroup('adm-f-tamanhos-buttons', SIZES, syncSizesToInput);
         renderSizeButtonGroup('adm-f-numeracao-buttons', NUMEROS, syncNumerosToInput);

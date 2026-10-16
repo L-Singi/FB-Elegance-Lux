@@ -35,7 +35,7 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', upload.array('images'), async (req, res) => {
   try {
-    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao } = req.body;
+    const { nome, descricao_completa, preco, preco_antigo, categoria, status, tamanhos, numeracao } = req.body;
     let uploadedUrls = [];
     
     if (req.files && req.files.length) {
@@ -58,6 +58,7 @@ app.post('/api/products', upload.array('images'), async (req, res) => {
       nome, 
       descricao_completa, 
       preco, 
+      preco_antigo: preco_antigo || null,
       images: uploadedUrls, 
       categoria, 
       status 
@@ -82,7 +83,7 @@ app.post('/api/products', upload.array('images'), async (req, res) => {
 app.put('/api/products/:id', upload.array('newImages'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages } = req.body;
+    const { nome, descricao_completa, preco, preco_antigo, categoria, status, tamanhos, numeracao, existingImages } = req.body;
     
     const { data: currentProduct, error: fetchError } = await supabase
       .from('produtos')
@@ -118,6 +119,7 @@ app.put('/api/products/:id', upload.array('newImages'), async (req, res) => {
       nome,
       descricao_completa,
       preco,
+      preco_antigo: preco_antigo || null,
       categoria,
       status,
       images: allImages

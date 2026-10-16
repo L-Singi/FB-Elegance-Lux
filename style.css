@@ -1,7 +1,11 @@
 /* ========== RESET & BASE ========== */
+:root {
+    --header-height: 84px;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html { overflow-x: hidden; max-width: 100%; }
+html { overflow-x: clip; max-width: 100%; }
 body {
     background-color: #0A0A0B;
     color: #F2EFE9;
@@ -9,7 +13,7 @@ body {
     font-weight: 350;
     line-height: 1.5;
     scroll-behavior: smooth;
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
 }
 
@@ -26,8 +30,12 @@ body {
     border-bottom: 1px solid rgba(242,239,233,.08);
 }
 
-/* ========== HERO ========== */
+/* ========== HERO (Sticky Parallax Cover) ========== */
 .hero {
+    position: sticky;
+    top: var(--header-height, 62px);
+    z-index: 1;
+    background-color: #0A0A0B;
     border-bottom: 1px solid rgba(242,239,233,.08);
 }
 .hero-inner {
@@ -162,7 +170,12 @@ body {
 
 /* ========== ABAS DE CATEGORIA (abaixo do banner) ========== */
 .cat-tabs {
+    position: relative;
+    z-index: 10;
+    background-color: #0A0A0B;
+    border-top: 1px solid rgba(242,239,233,.08);
     border-bottom: 1px solid rgba(242,239,233,.08);
+    box-shadow: 0 -24px 48px rgba(0,0,0,0.85);
     overflow: hidden;
 }
 .cat-tabs-inner {
@@ -290,6 +303,18 @@ body {
 .cart-btn:hover { background: #B8924F; color: #0A0A0B; }
 
 /* ========== CABEÇALHO DE CATÁLOGO (PLP) ========== */
+main {
+    position: relative;
+    z-index: 10;
+    background-color: #0A0A0B;
+}
+
+.footer {
+    position: relative;
+    z-index: 10;
+    background-color: #0A0A0B;
+}
+
 .filters-section { margin: 76px 0 0; }
 .result-info { display: none; }
 
@@ -300,6 +325,7 @@ body {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 16px;
+    padding-top: 52px;
     padding-bottom: 20px;
     margin-bottom: 32px;
     border-bottom: 1px solid rgba(242,239,233,.12);
@@ -627,7 +653,85 @@ body {
 .product-title { font-size: 0.95rem; font-weight: 400; margin: 0; color: #F2EFE9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .product-size-info { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8880; margin-top: 4px; }
 .product-size-info:empty { display: none; }
-.product-price { font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: #B8924F; white-space: nowrap; }
+.product-price {
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #B8924F;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.product-price-old {
+    font-size: 0.88em;
+    text-decoration: line-through;
+    color: #8E8880;
+    font-weight: 300;
+}
+
+.product-price-current {
+    color: #B8924F;
+    font-weight: 500;
+}
+
+/* ========== CÍRCULO PULSANTE DE DESCONTO ========== */
+@keyframes discount-pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(184, 146, 79, 0.7);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 9px rgba(184, 146, 79, 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(184, 146, 79, 0);
+    }
+}
+
+.product-discount-circle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #B8924F;
+    color: #0A0A0B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    z-index: 4;
+    pointer-events: none;
+    animation: discount-pulse 2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.product-image-container.has-discount .btn-favorite {
+    top: 56px;
+}
+
+.product-discount-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #B8924F;
+    color: #0A0A0B;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
 
 /* ========== BOTÕES ========== */
 .cart-actions button,

@@ -488,7 +488,7 @@ app.get('/api/produtos/:id', async (req, res) => {
 
 app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.array('images', 10), async (req, res) => {
     try {
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade } = req.body;
+        const { nome, descricao_completa, preco, preco_antigo, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade } = req.body;
 
         if (!nome || !nome.trim()) {
             return res.status(400).json({ error: 'Nome é obrigatório' });
@@ -518,13 +518,18 @@ app.post('/api/produtos', requireAuth, requirePermissao('produtos'), upload.arra
             ? Math.max(0, parseInt(quantidade, 10))
             : 1;
 
+        const precoAntigoVal = (preco_antigo && String(preco_antigo).trim() && String(preco_antigo).trim() !== 'R$ 0,00')
+            ? String(preco_antigo).trim()
+            : null;
+
         const result = await pool.query(
-            `INSERT INTO produtos (nome, descricao_completa, preco, images, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+            `INSERT INTO produtos (nome, descricao_completa, preco, preco_antigo, images, categoria, status, tamanhos, numeracao, marca, mais_procurado, quantidade)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
             [
                 nome.trim(),
                 descricao_completa || '',
                 preco || 'R$ 0,00',
+                precoAntigoVal,
                 JSON.stringify(imageUrls),
                 categoria || 'casacos',
                 status || 'disponiveis',
@@ -626,7 +631,7 @@ app.put('/api/produtos/:id/estoque', requireAuth, requirePermissao('produtos'), 
 app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.array('newImages', 10), async (req, res) => {
     try {
         const { id } = req.params;
-        const { nome, descricao_completa, preco, categoria, status, tamanhos, numeracao, existingImages, marca, mais_procurado, quantidade } = req.body;
+        const { nome, descricao_completa, preco, preco_antigo, categoria, status, tamanhos, numeracao, existingImages, marca, mais_procurado, quantidade } = req.body;
 
         const current = await pool.query('SELECT * FROM produtos WHERE id = $1', [id]);
         if (current.rows.length === 0) {
@@ -661,6 +666,11 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
             if (!isNaN(parsed)) qtdVal = Math.max(0, parsed);
         }
 
+        const precoAntigoProvided = preco_antigo !== undefined;
+        const precoAntigoVal = (preco_antigo && String(preco_antigo).trim() && String(preco_antigo).trim() !== 'R$ 0,00')
+            ? String(preco_antigo).trim()
+            : null;
+
         const result = await pool.query(
             `UPDATE produtos SET
                 nome = COALESCE($1, nome),
@@ -673,8 +683,9 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 numeracao = $8,
                 marca = $9,
                 mais_procurado = COALESCE($10, mais_procurado),
-                quantidade = COALESCE($11, quantidade)
-             WHERE id = $12 RETURNING *`,
+                quantidade = COALESCE($11, quantidade),
+                preco_antigo = CASE WHEN $12::boolean THEN $13 ELSE preco_antigo END
+             WHERE id = $14 RETURNING *`,
             [
                 nome || null,
                 descricao_completa || null,
@@ -687,6 +698,8 @@ app.put('/api/produtos/:id', requireAuth, requirePermissao('produtos'), upload.a
                 marca || null,
                 mais_procurado === undefined ? null : mais_procurado === 'true',
                 qtdVal,
+                precoAntigoProvided,
+                precoAntigoVal,
                 id
             ]
         );
