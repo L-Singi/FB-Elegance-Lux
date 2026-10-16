@@ -305,7 +305,7 @@
     }
     function clearCart()        { cart = []; saveCart(); }
 
-    function precoNum(p) { return parseFloat((p||'').replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0; }
+    function precoNum(p) { return parseFloat(String(p || '').replace(/[^\d,]/g, '').replace(',', '.')) || 0; }
 
     function renderCartModal() {
         const c = document.getElementById('cartItemsList');
@@ -2176,7 +2176,7 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
     const ADM_STATUS_OPTS = {disponiveis:'Disponível',lancamentos:'Lançamento',vendido:'Vendido',embreve:'Em breve'};
     const ADM_STATUS_CLS = {disponiveis:'adm-p-disp',lancamentos:'adm-p-lanc',vendido:'adm-p-vend',embreve:'adm-p-brev'};
 
-    const admPn = p => parseFloat((p||'').replace('R$','').replace(/\./g,'').replace(',','.').trim())||0;
+    const admPn = p => parseFloat(String(p || '').replace(/[^\d,]/g, '').replace(',', '.')) || 0;
     const admFR = v => 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const admRt = d => { if(!d)return'—'; const s=(Date.now()-new Date(d))/1000; if(s<60)return'agora'; if(s<3600)return Math.floor(s/60)+'min atrás'; if(s<86400)return Math.floor(s/3600)+'h atrás'; return Math.floor(s/86400)+'d atrás'; };
     const admEsc = s => { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; };
