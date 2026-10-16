@@ -3565,16 +3565,55 @@ Empresa consolidada em Londrina, no Paraná, com **mais de 1000 produtos entregu
 
     // ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
     const headerEl = document.querySelector('.header');
+    const searchInputEl = document.getElementById('searchInput');
+    const searchHeaderEl = document.querySelector('.search-header');
+    let lastScrollY = window.scrollY;
+    let isSearchHidden = false;
+
     function updateHeaderHeightVar() {
         if (headerEl) {
             document.documentElement.style.setProperty('--header-height', headerEl.offsetHeight + 'px');
         }
     }
-    window.addEventListener('scroll', () => {
-        if (headerEl) headerEl.classList.toggle('shrink', window.scrollY > 10);
+
+    function onWindowScroll() {
+        const currentY = Math.max(0, window.scrollY);
+        const delta = currentY - lastScrollY;
+
+        if (headerEl) {
+            headerEl.classList.toggle('shrink', currentY > 10);
+
+            // Não esconde a barra se o usuário estiver digitando/focando nela
+            const isSearchFocused = searchInputEl && (document.activeElement === searchInputEl);
+
+            if (currentY <= 20) {
+                // No topo da página: sempre visível
+                if (isSearchHidden) {
+                    headerEl.classList.remove('search-hidden');
+                    isSearchHidden = false;
+                }
+            } else if (!isSearchFocused) {
+                if (delta > 6 && !isSearchHidden) {
+                    // Rolando para baixo -> esconde a barra de pesquisa
+                    headerEl.classList.add('search-hidden');
+                    isSearchHidden = true;
+                } else if (delta < -6 && isSearchHidden) {
+                    // Rolando para cima -> volta a exibir a barra de pesquisa
+                    headerEl.classList.remove('search-hidden');
+                    isSearchHidden = false;
+                }
+            }
+        }
+
+        lastScrollY = currentY;
         updateHeaderHeightVar();
-    }, { passive: true });
+    }
+
+    window.addEventListener('scroll', onWindowScroll, { passive: true });
     window.addEventListener('resize', updateHeaderHeightVar);
+    if (searchHeaderEl) {
+        searchHeaderEl.addEventListener('transitionend', updateHeaderHeightVar);
+    }
     updateHeaderHeightVar();
 
     bindPreco(document.getElementById('prodPreco'));
